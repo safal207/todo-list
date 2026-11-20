@@ -23,6 +23,16 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.goto(origin, { waitUntil: "networkidle" });
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: "networkidle" });
+    assert.equal(await page.title(), "Сделано — начни задачу и увидь результат");
+    assert.equal(await page.locator('meta[property="og:title"]').getAttribute("content"),
+      "Сделано — начни задачу и увидь результат");
+    assert.match(await page.locator('meta[property="og:description"]').getAttribute("content"),
+      /Начни прямо сейчас!/);
+    assert.equal(await page.locator('meta[property="og:url"]').getAttribute("content"),
+      "https://safal207.github.io/todo-list/");
+    assert.equal(await page.locator('meta[name="twitter:card"]').getAttribute("content"), "summary");
+    assert.equal(await page.locator('link[rel="canonical"]').getAttribute("href"),
+      "https://safal207.github.io/todo-list/");
     assert.equal(await page.locator("#page-heading").textContent(), "Список задач");
     assert.equal(await page.locator(".site-header .brand-icon").count(), 1);
     assert.equal(await page.locator(".site-header .brand-icon").evaluate((el) => getComputedStyle(el).animationName), "brand-check");
