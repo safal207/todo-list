@@ -138,6 +138,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.match(await recipient.locator("#shared-achievement-heading").textContent(), /50%/);
     assert.match(await recipient.locator("#shared-achievement-detail").textContent(), /1 из 2/);
     assert.equal(await recipient.locator("li.task").count(), 0);
+    await recipient.screenshot({ path: "artifacts/referral-" + width + ".png", fullPage: true });
     assert.ok(!(await recipient.locator("body").textContent()).includes(label),
       "Recipient must not see the sender's task titles");
     await recipient.locator("#shared-start").click();
@@ -170,7 +171,26 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.match(copiedText, /share=1/);
     assert.ok(!copiedText.includes(label), "Copied text must not contain private task name");
     assert.match(await page.locator("#share-feedback").textContent(), /скопированы/);
+    assert.equal(await page.locator("#share-manual").evaluate(el => el.open), false,
+      "Long text should be collapsed to keep dialog compact on phones");
+    const overflow = await page.evaluate(() => ({
+      viewport: window.innerWidth, width: document.documentElement.scrollWidth
+    }));
+    assert.ok(overflow.width <= overflow.viewport + 1, "Share dialog causes overflow");
     await page.screenshot({ path: "artifacts/share-progress-" + width + ".png", fullPage: true });
+
+    // Reproduce blocked clipboard in embedded Android/WebView browsers.
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true, value: { writeText: async () => { throw new Error("Blocked"); } }
+      });
+      document.execCommand = () => false;
+    });
+    await page.locator("#share-copy").click();
+    assert.equal(await page.locator("#share-manual").evaluate(el => el.open), true,
+      "Manual fallback must expose selectable text");
+    assert.match(await page.locator("#share-feedback").textContent(), /Текст выделен/);
+    await page.screenshot({ path: "artifacts/share-fallback-" + width + ".png", fullPage: true });
     await page.locator("#share-close").click();
     assert.ok(await page.evaluate(() => window.__vibrationEvents.length) >= 2, "Haptic calls on add and complete");
 
