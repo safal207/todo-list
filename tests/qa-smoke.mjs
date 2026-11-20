@@ -59,6 +59,12 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#task-form").isVisible(), true);
     assert.equal(await page.locator("#share-progress").isEnabled(), true,
       "Sharing action should never appear broken/disabled");
+    // Tripwire: the new user starts with one small, achievable step.
+    assert.equal(await page.locator("#first-step-guide").isVisible(), true);
+    assert.match(await page.locator("#first-step-label").textContent(), /МИССИЯ 1 ИЗ 2/);
+    assert.equal(await page.locator("#first-win-card").isVisible(), false);
+    await page.locator("#first-step-cta").click();
+    assert.equal(await page.locator("#task-title").evaluate(el => document.activeElement === el), true);
     await page.locator("#share-progress").click();
     assert.equal(await page.locator("#share-dialog").isVisible(), true);
     assert.equal(await page.locator("#share-empty-action").isVisible(), true);
@@ -82,6 +88,13 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#task-form button[type=submit]").click();
     const task = page.locator("li.task").filter({ hasText: label });
     assert.equal(await task.count(), 1);
+    assert.match(await page.locator("#first-step-label").textContent(), /МИССИЯ 2 ИЗ 2/);
+    assert.match(await page.locator("#first-step-title").textContent(), /Закрой первую задачу/);
+    // Even if the active task is hidden by the Done filter, CTA must reveal and focus it.
+    await page.locator('button[data-filter="done"]').click();
+    await page.locator("#first-step-cta").click();
+    assert.equal(await task.isVisible(), true);
+    assert.equal(await task.locator(".task-checkbox").evaluate(el => document.activeElement === el), true);
     await page.locator("#share-progress").click();
     const shareZeroText = await page.locator("#share-ready-text").inputValue();
     assert.match(shareZeroText, /0% — 0 из 1 задач выполнено/);
@@ -172,6 +185,26 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.screenshot({ path: "artifacts/tasks-populated-" + width + ".png", fullPage: true });
 
     await task.locator(".task-checkbox").check();
+    assert.equal(await page.locator("#first-step-guide").isVisible(), false);
+    assert.equal(await page.locator("#first-win-card").isVisible(), true);
+    assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
+    assert.equal(await page.evaluate(() => localStorage.getItem("sdelano.first-win.v1")), "1");
+    const firstWinLayout = await page.evaluate(() => ({
+      viewport: window.innerWidth, full: document.documentElement.scrollWidth
+    }));
+    assert.ok(firstWinLayout.full <= firstWinLayout.viewport + 1,
+      "First win card must not cause horizontal scroll");
+    await page.screenshot({ path: "artifacts/first-win-" + width + ".png", fullPage: true });
+    await page.locator("#first-win-share").click();
+    assert.equal(await page.locator("#share-dialog").isVisible(), true,
+      "First-win share button must reuse the existing referral flow");
+    await page.locator("#share-close").click();
+    await page.locator("#first-win-next").click();
+    assert.equal(await page.locator("#first-win-card").isVisible(), false);
+    assert.equal(await page.locator("#task-title").evaluate(el => document.activeElement === el), true,
+      "Next step CTA must focus the input instead of adding a fake task");
+    assert.equal(await page.locator("li.task").count(), 1,
+      "Next step CTA must not create tasks automatically");
     assert.equal((await page.locator("#percentage").textContent()).trim(), "100%");
     const completed = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
     assert.equal(completed.done, true);
@@ -318,6 +351,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.reload({ waitUntil: "networkidle" });
     const restored = page.locator("li.task").filter({ hasText: label });
     assert.equal(await restored.locator(".task-checkbox").isChecked(), true);
+    assert.equal(await page.locator("#first-step-guide").isVisible(), false,
+      "Mission must not restart for a returning user");
+    assert.equal(await page.locator("#first-win-card").isVisible(), false,
+      "One-time victory must not pop up again on reload");
     const frozen = (await restored.locator(".task-clock").textContent()).trim();
     await page.waitForTimeout(1250);
     assert.equal((await restored.locator(".task-clock").textContent()).trim(), frozen);
@@ -358,10 +395,40 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1")));
     assert.ok(migrated[0].startedAt > 0 && migrated[0].elapsedMs === 0);
 
+    // Legacy histories, even when all tasks were reopened, must not get fake first-win rewards.
+    await page.evaluate(() => {
+      localStorage.removeItem("sdelano.first-win.v1");
+      localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
+        { title: "Reopened historical task", done: false }
+      ]));
+      localStorage.setItem("sdelano.tasks.history.v1", JSON.stringify([
+        { action: "done", at: Date.now() - 100000 }
+      ]));
+    });
+    await page.reload({ waitUntil: "networkidle" });
+    assert.equal(await page.locator("#first-step-guide").isVisible(), false,
+      "A user who completed a task before must not see onboarding again");
+    await page.locator(".task-checkbox").check();
+    assert.equal(await page.locator("#first-win-card").isVisible(), false,
+      "A historical completion must suppress the new-user first win");
+    // Dismissal should preserve normal navigation and remove the card from tab order.
+    await page.evaluate(() => {
+      localStorage.clear();
+      localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
+        { title: "Fresh onboarding test", done: false }
+      ]));
+    });
+    await page.reload({ waitUntil: "networkidle" });
+    await page.locator(".task-checkbox").check();
+    await page.locator("#first-win-dismiss").click();
+    assert.equal(await page.locator("#first-win-card").isVisible(), false);
+    assert.equal(await page.locator("#share-progress").evaluate(el => document.activeElement === el), true);
+
     const oldPage = await page.goto(origin + "/goals/", { waitUntil: "domcontentloaded" });
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
     assert.equal(pageErrors.length, 0, "JS errors: " + pageErrors.join("; "));
-    console.log("PASS " + width + "x" + height + ": responsive layout, timers, feedback, legacy storage, removed goals");
+    console.log("PASS " + width + "x" + height +
+      ": tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
   } catch (error) {
     errors.push(width + "x" + height + ": " + (error.stack || error.message));
     console.error("FAIL " + width + "x" + height + ": " + error.message);
