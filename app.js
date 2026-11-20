@@ -114,6 +114,13 @@ let preparedShare = null;
 let preparedPosterFile = null;
 let posterLoad = null;
 
+function syncImageShareButton() {
+  shareImageNative.hidden = !(preparedPosterFile &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [preparedPosterFile] }));
+}
+
 // Sharing the JPG as a real file does not depend on Telegram's link-card bot.
 // Preload before the user taps the file-share button: Web Share requires a
 // user gesture and fetching inside the gesture can lose transient activation.
@@ -124,9 +131,7 @@ function preloadSharePoster() {
       if (!response.ok) throw new Error("Poster unavailable");
       const blob = await response.blob();
       preparedPosterFile = new File([blob], "sdelano-shag-1.jpg", { type: "image/jpeg" });
-      shareImageNative.hidden = !(typeof navigator.share === "function" &&
-        typeof navigator.canShare === "function" &&
-        navigator.canShare({ files: [preparedPosterFile] }));
+      syncImageShareButton();
     })
     .catch(() => { shareImageNative.hidden = true; });
   return posterLoad;
@@ -158,6 +163,7 @@ function openShareDialog() {
   shareFeedback.textContent = "";
   shareManual.open = false;
   preloadSharePoster();
+  syncImageShareButton();
   preparedShare = tasks.length > 0 ? progressShareData() : null;
   const { percent = 0, done = 0, total = 0 } = preparedShare ?? {};
   sharePercent.textContent = `${percent}%`;
