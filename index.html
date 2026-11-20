@@ -131,8 +131,11 @@
           <a id="share-whatsapp" href="https://wa.me/" target="_blank" rel="noopener noreferrer">WhatsApp</a>
         </div>
         <button id="share-copy" class="share-copy-button" type="button">Скопировать приглашение и ссылку</button>
-        <label class="share-field-label" for="share-ready-text">Текст для отправки вручную</label>
-        <textarea id="share-ready-text" class="share-ready-text" rows="5" readonly spellcheck="false"></textarea>
+        <details id="share-manual" class="share-manual">
+          <summary>Показать текст и ссылку</summary>
+          <label class="share-field-label" for="share-ready-text">Текст для отправки вручную</label>
+          <textarea id="share-ready-text" class="share-ready-text" rows="5" readonly spellcheck="false"></textarea>
+        </details>
       </div>
       <p id="share-feedback" class="share-feedback" role="status" aria-live="polite"></p>
       <p class="share-privacy">Только процент и количество задач. Ни названия, ни время выполнения не отправляются.</p>
