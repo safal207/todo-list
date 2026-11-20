@@ -1,0 +1,49 @@
+name: QA smoke — tasks UI
+
+on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "styles.css"
+      - "app.js"
+      - "goals/**"
+      - "tests/qa-smoke.mjs"
+      - ".github/workflows/qa-smoke.yml"
+  push:
+    branches:
+      - ux/focus-on-tasks
+    paths:
+      - "index.html"
+      - "styles.css"
+      - "app.js"
+      - "goals/**"
+      - "tests/qa-smoke.mjs"
+      - ".github/workflows/qa-smoke.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install headless Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Serve and test mobile + desktop
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
+          node tests/qa-smoke.mjs
+      - name: Upload visual snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tasks-ui-screenshots
+          path: artifacts/
+          if-no-files-found: ignore
