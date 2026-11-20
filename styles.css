@@ -457,28 +457,8 @@ h1 {
 }
 
 
-/* Tiny brand greeting: decorative and non-blocking. */
-.startup-brand {
-  position: fixed;
-  z-index: 30;
-  top: 1.6rem;
-  left: 50%;
-  display: flex;
-  align-items: center;
-  gap: .2rem;
-  padding: .5rem .85rem;
-  border: 1.5px solid var(--ink);
-  border-radius: 1rem;
-  color: var(--ink);
-  background: var(--sun);
-  box-shadow: 0 .25rem 0 #2c192244, 0 1.2rem 2rem #2c192222;
-  font-size: 1rem;
-  opacity: 0;
-  pointer-events: none;
-  animation: brand-hello 1.25s ease-out both;
-}
-.startup-brand .brand-icon { width: 1.6rem; border: 0; background: transparent; }
-.startup-brand .brand-icon::before { width: .8rem; height: .45rem; }
+/* The real brand mark makes a quick hello without covering controls. */
+.site-header .brand-icon { animation: brand-check .9s ease-out both; }
 
 .feedback-toggle {
   min-height: 2.6rem;
@@ -565,11 +545,10 @@ h1 {
   opacity: 1;
   transform: translate(-50%, 0);
 }
-@keyframes brand-hello {
-  0% { opacity: 0; transform: translate(-50%, -1rem) scale(.87); }
-  18% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
-  56% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -.65rem) scale(.98); }
+@keyframes brand-check {
+  0% { opacity: .45; transform: rotate(-20deg) scale(.65); }
+  48% { opacity: 1; transform: rotate(5deg) scale(1.18); }
+  100% { opacity: 1; transform: rotate(-6deg) scale(1); }
 }
 @keyframes task-pop {
   0% { transform: scale(1); }
@@ -588,7 +567,7 @@ h1 {
   .task-toast { font-size: .82rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .startup-brand { display: none; animation: none; }
+  .site-header .brand-icon { animation: none; }
   .task-celebrate, .task-celebrate::after { animation: none; }
   .task-celebrate::after { content: none; }
   .task-toast { transition: none; }
