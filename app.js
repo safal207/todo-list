@@ -2,6 +2,7 @@
 
 const STORAGE_KEY = "todo-list.tasks.v1";
 const TASK_HISTORY_KEY = "sdelano.tasks.history.v1";
+const FIRST_WIN_KEY = "sdelano.first-win.v1";
 const clock = window.taskClock;
 const feedback = window.taskFeedback;
 let needsClockMigration = false;
@@ -21,6 +22,15 @@ const progressPanel = document.querySelector("#progress-panel");
 const progress = document.querySelector("#progress");
 const percentage = document.querySelector("#percentage");
 const summary = document.querySelector("#progress-summary");
+const firstStepGuide = document.querySelector("#first-step-guide");
+const firstStepLabel = document.querySelector("#first-step-label");
+const firstStepTitle = document.querySelector("#first-step-title");
+const firstStepDetail = document.querySelector("#first-step-detail");
+const firstStepCta = document.querySelector("#first-step-cta");
+const firstWinCard = document.querySelector("#first-win-card");
+const firstWinNext = document.querySelector("#first-win-next");
+const firstWinShare = document.querySelector("#first-win-share");
+const firstWinDismiss = document.querySelector("#first-win-dismiss");
 const shareProgressButton = document.querySelector("#share-progress");
 const nextStep = document.querySelector("#next-step");
 const nextDetail = document.querySelector("#next-detail");
@@ -55,6 +65,21 @@ function loadTasks() {
 }
 
 const tasks = loadTasks();
+
+// Do not award "first victory" again to returning or legacy users. The
+// history check also covers a completed task which was reopened or deleted.
+function hadFirstWinBefore() {
+  if (tasks.some((task) => task.done)) return true;
+  try {
+    if (localStorage.getItem(FIRST_WIN_KEY) === "1") return true;
+    const history = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
+    return Array.isArray(history) && history.some((event) => event?.action === "done");
+  } catch {
+    return false;
+  }
+}
+let firstWinAchieved = hadFirstWinBefore();
+let firstWinVisible = false;
 
 function saveTasks() {
   try {
@@ -326,6 +351,46 @@ function recordTaskActivity(task, action) {
   } catch { /* The list is usable with unavailable history. */ }
 }
 
+function renderFirstStep() {
+  firstStepGuide.hidden = firstWinAchieved;
+  firstWinCard.hidden = !firstWinVisible;
+  if (firstWinAchieved) return;
+  const hasTask = tasks.length > 0;
+  firstStepLabel.textContent = hasTask ? "МИССИЯ 2 ИЗ 2" : "МИССИЯ 1 ИЗ 2";
+  firstStepTitle.textContent = hasTask ? "Закрой первую задачу" : "Запиши одно небольшое дело";
+  firstStepDetail.textContent = hasTask ?
+    "Сделал дело? Поставь галочку — первый шаг будет засчитан." :
+    "Не нужно составлять большой план. Начни с одной задачи.";
+  firstStepCta.textContent = hasTask ? "Перейти к задаче" : "Записать первый шаг";
+}
+
+firstStepCta.addEventListener("click", () => {
+  feedback.play("tap");
+  if (tasks.length === 0) {
+    titleInput.focus();
+    return;
+  }
+  // The unfinished checkbox might be hidden under the Done filter.
+  if (activeFilter === "done") {
+    activeFilter = "all";
+    updateList();
+  }
+  list.querySelector(".task-checkbox:not(:checked)")?.focus();
+});
+firstWinNext.addEventListener("click", () => {
+  feedback.play("tap");
+  firstWinVisible = false;
+  renderFirstStep();
+  titleInput.focus();
+});
+firstWinShare.addEventListener("click", openShareDialog);
+firstWinDismiss.addEventListener("click", () => {
+  feedback.play("tap");
+  firstWinVisible = false;
+  renderFirstStep();
+  shareProgressButton.focus();
+});
+
 function updateProgress() {
   const total = tasks.length;
   const completed = tasks.filter((task) => task.done).length;
@@ -353,6 +418,7 @@ function updateProgress() {
   if (summary.textContent !== status) {
     summary.textContent = status;
   }
+  renderFirstStep();
 }
 
 function updateList() {
@@ -409,13 +475,23 @@ function appendTask(task) {
 
   checkbox.addEventListener("change", () => {
     const now = Date.now();
+    const newFirstWin = checkbox.checked && !firstWinAchieved;
     if (checkbox.checked) {
       clock.finish(task, now);
       feedback.play("complete");
       row.classList.remove("task-celebrate");
       void row.offsetWidth;
       row.classList.add("task-celebrate");
-      announceDone(task);
+      if (newFirstWin) {
+        firstWinAchieved = true;
+        firstWinVisible = true;
+        try {
+          localStorage.setItem(FIRST_WIN_KEY, "1");
+        } catch { /* Keep the milestone in memory for this session. */ }
+        showToast("Первая победа! Один шаг уже сделан.");
+      } else {
+        announceDone(task);
+      }
     } else {
       clock.reopen(task, now);
       feedback.play("reopen");
@@ -429,6 +505,13 @@ function appendTask(task) {
     updateList();
     if (row.hidden) {
       focusAfterRemoval(visibleNeighborCheckbox(row));
+    }
+    // On small screens the progress card is below the task list.
+    if (newFirstWin && matchMedia("(max-width: 47rem)").matches) {
+      requestAnimationFrame(() => firstWinCard.scrollIntoView({
+        block: "nearest",
+        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+      }));
     }
   });
 
