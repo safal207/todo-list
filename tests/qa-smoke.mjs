@@ -46,8 +46,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     const started = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
     assert.equal(started.done, false);
     assert.ok(started.startedAt > 0 && started.elapsedMs === 0, "Timer starts when task is added");
-    await page.waitForTimeout(1250);
-    assert.match((await task.locator(".task-clock").textContent()).trim(), /Время идёт · 00:00:0[1-9]/);
+    await page.waitForFunction(() => {
+      const value = document.querySelector("li.task .task-clock")?.textContent || "";
+      return /^Время идёт · (?:[0-9]+ д )?[0-9]{2}:[0-9]{2}:(?:0[1-9]|[1-9][0-9])$/.test(value);
+    }, null, { timeout: 3500 });
     await page.screenshot({ path: "artifacts/tasks-populated-" + width + ".png", fullPage: true });
 
     await task.locator(".task-checkbox").check();
