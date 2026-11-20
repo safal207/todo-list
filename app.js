@@ -21,6 +21,7 @@ const progressPanel = document.querySelector("#progress-panel");
 const progress = document.querySelector("#progress");
 const percentage = document.querySelector("#percentage");
 const summary = document.querySelector("#progress-summary");
+const shareProgressButton = document.querySelector("#share-progress");
 const nextStep = document.querySelector("#next-step");
 const nextDetail = document.querySelector("#next-detail");
 const storageNote = document.querySelector("#storage-note");
@@ -77,12 +78,69 @@ feedbackToggle.addEventListener("click", () => {
   renderFeedbackToggle();
 });
 
-function announceDone(task) {
+function showToast(message) {
   clearTimeout(toastTimeout);
-  toast.textContent = "Отлично! " + clock.display(task) + " ✦";
+  toast.textContent = message;
   toast.classList.add("is-visible");
   toastTimeout = setTimeout(() => toast.classList.remove("is-visible"), 2800);
 }
+
+function announceDone(task) {
+  showToast("Отлично! " + clock.display(task) + " ✦");
+}
+
+// Share only aggregate counts. Never include task titles, their duration,
+// timestamps or localStorage; recipients start with their own empty list.
+const SHARE_URL = "https://safal207.github.io/todo-list/";
+
+function progressShareData() {
+  const total = tasks.length;
+  const done = tasks.reduce((sum, task) => sum + Number(task.done), 0);
+  const percent = total ? Math.floor((done / total) * 100) : 0;
+  const headline = total === done ? "Все задачи закрыты!" :
+    done === 0 ? "Я начал(а) двигаться к цели!" : "Меньше «потом». Больше «готово»!";
+  const text = `${headline}\nМой прогресс в «Сделано»: ${percent}% — ${done} из ${total} задач выполнено.\n\nХватит кормить задачи «завтраками». Жми и делай!`;
+  return { title: "Мой прогресс — Сделано", text, url: SHARE_URL };
+}
+
+async function copyProgress(text) {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch { /* Clipboard API can be blocked. Try the selection fallback. */ }
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.readOnly = true;
+  field.setAttribute("aria-hidden", "true");
+  field.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+  document.body.append(field);
+  field.select();
+  let copied = false;
+  try { copied = document.execCommand("copy"); } catch {}
+  field.remove();
+  return copied;
+}
+
+shareProgressButton.addEventListener("click", async () => {
+  if (tasks.length === 0) return;
+  feedback.play("tap");
+  const data = progressShareData();
+  if (typeof navigator.share === "function") {
+    try {
+      await navigator.share(data);
+      showToast("Прогрессом поделились! ✦");
+      return;
+    } catch (error) {
+      // Closing a native share sheet is not an error and must not copy data.
+      if (error?.name === "AbortError") return;
+    }
+  }
+  const copied = await copyProgress(`${data.text}\n\n${data.url}`);
+  showToast(copied ? "Прогресс и ссылка скопированы! ✦" :
+    "Не удалось скопировать. Разрешите доступ к буферу обмена.");
+});
 
 function recordTaskActivity(task, action) {
   try {
@@ -113,6 +171,9 @@ function updateProgress() {
     nextDetail.textContent = "Когда закончите, поставьте галочку рядом с задачей.";
   }
 
+  shareProgressButton.disabled = total === 0;
+  shareProgressButton.title = total === 0 ? "Добавьте задачу, чтобы поделиться прогрессом" :
+    "Поделиться процентом и количеством готовых задач";
   progress.value = ratio;
   percentage.textContent = `${ratio}%`;
   if (summary.textContent !== status) {
