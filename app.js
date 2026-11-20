@@ -274,9 +274,7 @@ updateList();
 function updateClocks() {
   for (const update of clockUpdates.values()) update();
 }
-setInterval(() => {
-  if (!document.hidden) updateClocks();
-}, 1000);
+setInterval(updateClocks, 250);
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) updateClocks();
 });
