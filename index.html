@@ -76,6 +76,13 @@
             <p id="percentage" class="percentage" aria-hidden="true">0%</p>
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
             <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <div class="share-progress-block">
+              <button id="share-progress" class="share-progress-button" type="button" disabled aria-describedby="share-progress-hint">
+                <span class="share-arrow" aria-hidden="true">↗</span>
+                Поделиться прогрессом
+              </button>
+              <p id="share-progress-hint" class="share-progress-hint">Только цифры и ссылка. Названия задач останутся у вас.</p>
+            </div>
             <div class="next-action">
               <p id="next-step">Начните с одной задачи</p>
               <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
