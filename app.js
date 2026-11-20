@@ -110,31 +110,71 @@ const sharedAchievement = document.querySelector("#shared-achievement");
 const sharedHeading = document.querySelector("#shared-achievement-heading");
 const sharedDetail = document.querySelector("#shared-achievement-detail");
 const sharedStart = document.querySelector("#shared-start");
+const sharePosterPreview = document.querySelector("#share-poster-preview");
+const shareImageDownload = document.querySelector("#share-image-download");
 let preparedShare = null;
 let preparedPosterFile = null;
-let posterLoad = null;
+let posterPreviewURL = null;
+let posterRequest = 0;
 
 function syncImageShareButton() {
-  shareImageNative.hidden = !(preparedPosterFile &&
-    typeof navigator.share === "function" &&
-    typeof navigator.canShare === "function" &&
-    navigator.canShare({ files: [preparedPosterFile] }));
+  let supported = false;
+  try {
+    supported = Boolean(preparedPosterFile &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [preparedPosterFile] }));
+  } catch { /* Some WebViews throw from canShare. Download remains available. */ }
+  shareImageNative.hidden = !supported;
 }
 
-// Sharing the JPG as a real file does not depend on Telegram's link-card bot.
-// Preload before the user taps the file-share button: Web Share requires a
-// user gesture and fetching inside the gesture can lose transient activation.
-function preloadSharePoster() {
-  if (posterLoad) return posterLoad;
-  posterLoad = fetch("assets/share-step-1-v2.jpg")
-    .then(async (response) => {
-      if (!response.ok) throw new Error("Poster unavailable");
+function resetPosterPreview() {
+  if (posterPreviewURL) URL.revokeObjectURL(posterPreviewURL);
+  posterPreviewURL = null;
+  preparedPosterFile = null;
+  sharePosterPreview.src = "assets/share-step-1-v2.jpg";
+  sharePosterPreview.alt = "ШАГ: запиши первую задачу — твой ход!";
+  shareImageDownload.href = "assets/share-step-1-v2.jpg";
+  shareImageDownload.download = "sdelano-shag-1.jpg";
+  shareImageDownload.textContent = "Скачать картинку для Telegram";
+  syncImageShareButton();
+}
+
+function usePersonalPoster(file, data) {
+  if (posterPreviewURL) URL.revokeObjectURL(posterPreviewURL);
+  posterPreviewURL = URL.createObjectURL(file);
+  preparedPosterFile = file;
+  sharePosterPreview.src = posterPreviewURL;
+  sharePosterPreview.alt = "ШАГ: выполнено " + data.done + " из " + data.total +
+    " задач, " + data.percent + "%. Твой ход — запиши первую задачу.";
+  shareImageDownload.href = posterPreviewURL;
+  shareImageDownload.download = file.name;
+  shareImageDownload.textContent = "Скачать мою карточку JPG";
+  syncImageShareButton();
+}
+
+// Prepare before tapping Share: Web Share requires a user gesture, and an
+// asynchronous image generation inside the click can lose transient activation.
+async function preparePersonalPoster(data, request) {
+  try {
+    const file = await window.achievementPoster.create({ done: data.done, total: data.total });
+    if (request !== posterRequest) return; // Do not attach a stale result.
+    usePersonalPoster(file, data);
+  } catch {
+    if (request !== posterRequest) return;
+    // A real image remains shareable on devices without canvas JPEG support.
+    try {
+      const response = await fetch("assets/share-step-1-v2.jpg");
+      if (!response.ok) return;
       const blob = await response.blob();
+      if (request !== posterRequest) return;
       preparedPosterFile = new File([blob], "sdelano-shag-1.jpg", { type: "image/jpeg" });
       syncImageShareButton();
-    })
-    .catch(() => { shareImageNative.hidden = true; });
-  return posterLoad;
+      shareFeedback.textContent = "Персональная картинка недоступна. Можно отправить общий постер.";
+    } catch {
+      shareFeedback.textContent = "Картинка недоступна. Поделись ссылкой или текстом.";
+    }
+  }
 }
 
 function progressShareData() {
@@ -162,9 +202,10 @@ function openShareDialog() {
   feedback.play("tap");
   shareFeedback.textContent = "";
   shareManual.open = false;
-  preloadSharePoster();
-  syncImageShareButton();
+  const request = ++posterRequest;
+  resetPosterPreview();
   preparedShare = tasks.length > 0 ? progressShareData() : null;
+  if (preparedShare) void preparePersonalPoster(preparedShare, request);
   const { percent = 0, done = 0, total = 0 } = preparedShare ?? {};
   sharePercent.textContent = `${percent}%`;
   shareSummary.textContent = `Выполнено ${done} из ${total}`;

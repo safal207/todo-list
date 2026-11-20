@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="clock.js" defer></script>
     <script src="effects.js" defer></script>
+    <script src="share-poster.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
@@ -140,8 +141,9 @@
           <a id="share-whatsapp" href="https://wa.me/" target="_blank" rel="noopener noreferrer">WhatsApp</a>
         </div>
         <div class="share-photo-options">
-          <p class="share-photo-label">Telegram показывает только текст? Отправь сам постер:</p>
-          <button id="share-image-native" class="share-copy-button" type="button" hidden>Отправить картинку через телефон</button>
+          <p class="share-photo-label">Личный постер с реальными цифрами. Ни названия задач, ни таймеры в него не попадут.</p>
+          <img id="share-poster-preview" class="share-personal-preview" src="assets/share-step-1-v2.jpg" width="1200" height="630" alt="ШАГ: запиши первую задачу — твой ход!">
+          <button id="share-image-native" class="share-copy-button" type="button" hidden>Отправить мою карточку через телефон</button>
           <a id="share-image-download" class="share-photo-download" href="assets/share-step-1-v2.jpg" download="sdelano-shag-1.jpg">Скачать картинку для Telegram</a>
         </div>
         <button id="share-copy" class="share-copy-button" type="button">Скопировать приглашение и ссылку</button>
