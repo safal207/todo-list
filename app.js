@@ -55,7 +55,7 @@ function updateProgress() {
   const total = tasks.length;
   const completed = tasks.filter((task) => task.done).length;
   const ratio = total > 0 ? Math.floor((completed * 100) / total) : 0;
-  let status = `Выполнено ${completed} из ${total}`;
+  const status = `Выполнено ${completed} из ${total}`;
 
   if (total === 0) {
     progressPanel.dataset.stage = "first";
@@ -65,7 +65,6 @@ function updateProgress() {
     progressPanel.dataset.stage = "done";
     nextStep.textContent = "Всё сделано!";
     nextDetail.textContent = "Появится новое дело — добавьте его в список.";
-    status += ". Все задачи выполнены.";
   } else {
     progressPanel.dataset.stage = "working";
     nextStep.textContent = completed === 0 ? "Выполните первую задачу" : "Возьмитесь за следующее дело";

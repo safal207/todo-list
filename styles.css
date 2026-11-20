@@ -481,7 +481,11 @@ h1 {
 @media (max-width: 35rem) {
   .workspace { width: calc(100% - 1.5rem); padding-block-start: 1rem; }
   .brand-icon { width: min(2.25rem, 10vw); margin-inline-end: min(.55rem, 2.75vw); }
-  .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    container-type: inline-size;
+  }
   .hero-copy { min-width: 0; padding: min(1.25rem, 6vw); }
   .hero-copy h1 {
     font-size: clamp(1.9rem, 8vw, 2.55rem);
@@ -489,14 +493,14 @@ h1 {
   }
   .hero-copy p { max-width: 18rem; }
   .start-button {
-    max-width: calc(100% - min(23vw, 7rem));
-    padding-inline: .7rem;
+    max-width: calc(100% - min(20vw, 7rem));
+    padding-inline: .6rem;
     overflow-wrap: anywhere;
   }
   .hero-art {
     position: absolute;
     inset: auto min(1rem, 4vw) .75rem auto;
-    width: min(23vw, 7rem);
+    width: min(21vw, 7rem);
   }
   .hero-sun { box-shadow: 0 0 0 .2rem #d0472f, 0 0 0 .33rem #ae2f1c; }
   .hero-art img { width: 90%; }
@@ -504,6 +508,11 @@ h1 {
   .task-label { gap: .6rem; padding-inline: min(.7rem, 3vw); }
   .task-checkbox { width: 22px; height: 22px; }
   .delete-button { width: 44px; height: 44px; }
+}
+
+@container (max-width: 12em) {
+  .start-button { max-width: 100%; }
+  .hero-art { display: none; }
 }
 
 @media (max-width: 28rem) {
