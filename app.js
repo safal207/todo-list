@@ -11,7 +11,6 @@ const filteredEmpty = document.querySelector("#filtered-empty");
 const filteredMessage = document.querySelector("#filtered-message");
 const filterGroup = document.querySelector("#filter-group");
 const filterButtons = [...filterGroup.querySelectorAll("button[data-filter]")];
-const startButton = document.querySelector("#start-button");
 const sampleButton = document.querySelector("#sample-button");
 const clearFilterButton = document.querySelector("#clear-filter");
 const progressPanel = document.querySelector("#progress-panel");
@@ -178,7 +177,6 @@ function addTask(title) {
   return checkbox;
 }
 
-startButton.addEventListener("click", () => titleInput.focus());
 sampleButton.addEventListener("click", () => addTask("Запланировать главное дело").focus());
 
 for (const button of filterButtons) {
