@@ -24,7 +24,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.evaluate(() => localStorage.clear());
     await page.reload({ waitUntil: "networkidle" });
     assert.equal(await page.locator("#page-heading").textContent(), "Список задач");
-    assert.equal(await page.locator(".startup-brand").count(), 1);
+    assert.equal(await page.locator(".site-header .brand-icon").count(), 1);
+    assert.equal(await page.locator(".site-header .brand-icon").evaluate((el) => getComputedStyle(el).animationName), "brand-check");
     assert.equal(await page.locator("#start-button").count(), 0);
     assert.equal(await page.locator("#feedback-toggle").textContent(), "Отклик: вкл");
     assert.equal(await page.locator("#task-form").isVisible(), true);
