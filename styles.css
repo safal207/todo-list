@@ -830,3 +830,92 @@ h1 {
   border-radius: .55rem;
   background: #201926;
 }
+
+/* Tripwire mission: one small task, first completion, next action.
+   Deliberately inline and dismissible; no blocking modal or fake rewards. */
+.first-step-guide, .first-win-card {
+  margin-block-start: 1rem;
+  padding: 1rem;
+  border-radius: .9rem;
+}
+.first-step-guide {
+  border: 1.5px solid #a996c8;
+  color: #fff8e9;
+  background: #42345f;
+}
+.first-step-kicker, .first-win-kicker {
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .075em;
+}
+.first-step-kicker { color: #ffd45f; }
+.first-step-guide h3, .first-win-card h3 {
+  margin: .35rem 0 .35rem;
+  font-size: clamp(1.13rem, 3.5vw, 1.5rem);
+  line-height: 1.2;
+  font-weight: 850;
+}
+.first-step-guide > p:not(.first-step-kicker) {
+  color: #e9dffb;
+  font-size: .88rem;
+}
+.first-step-button, .first-win-next, .first-win-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.85rem;
+  padding: .55rem .75rem;
+  border: 2px solid #2c1922;
+  border-radius: .68rem;
+  font-weight: 850;
+  font-size: .88rem;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.first-step-button {
+  width: 100%;
+  margin-block-start: .8rem;
+  color: #2c1922;
+  background: #ffd45f;
+}
+.first-step-button:hover { background: #ffe18a; }
+.first-win-card {
+  border: 2px solid #2c1922;
+  color: #2c1922;
+  background: #fff7e7;
+  box-shadow: 0 .2rem 0 #2c192244;
+  animation: first-win-appear .26s ease-out;
+}
+.first-win-kicker { color: #a7301f; }
+.first-win-card > p:not(.first-win-kicker) {
+  color: #69534e;
+  font-size: .88rem;
+  line-height: 1.45;
+}
+.first-win-actions {
+  display: grid;
+  gap: .5rem;
+  margin-block-start: .9rem;
+}
+.first-win-next { color: #fff8e9; background: #bd351f; }
+.first-win-next:hover { background: #a92b17; }
+.first-win-share { color: #2c1922; background: #eadfff; }
+.first-win-share:hover { background: #ddcbfa; }
+.first-win-dismiss {
+  display: block;
+  margin: .75rem auto 0;
+  padding: .25rem .5rem;
+  border: 0;
+  color: #55404b;
+  background: transparent;
+  font-size: .82rem;
+  text-decoration: underline;
+}
+@keyframes first-win-appear {
+  from { opacity: .65; transform: translateY(.5rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .first-win-card { animation: none; }
+}
