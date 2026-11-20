@@ -6,7 +6,6 @@ const clock = window.taskClock;
 const feedback = window.taskFeedback;
 let needsClockMigration = false;
 const clockUpdates = new Map();
-const taskRows = new Map();
 const form = document.querySelector("#task-form");
 const titleInput = document.querySelector("#task-title");
 const list = document.querySelector("#tasks");
@@ -55,13 +54,6 @@ function loadTasks() {
 }
 
 const tasks = loadTasks();
-// Existing installations may contain completed tasks below active tasks.
-// Keep each group's original relative order during this one-time migration.
-const originalTaskOrder = tasks.slice();
-tasks.sort((first, second) => Number(second.done) - Number(first.done));
-if (tasks.some((task, index) => task !== originalTaskOrder[index])) {
-  needsClockMigration = true;
-}
 
 function saveTasks() {
   try {
@@ -128,47 +120,7 @@ function updateProgress() {
   }
 }
 
-function syncTaskOrder() {
-  // Move existing nodes rather than replacing them: timers and listeners survive.
-  for (let index = 0; index < tasks.length; index += 1) {
-    const row = taskRows.get(tasks[index]);
-    if (list.children[index] !== row) {
-      list.insertBefore(row, list.children[index] ?? null);
-    }
-  }
-
-  const activeCount = tasks.reduce((count, task) => count + Number(!task.done), 0);
-  let position = 0;
-  for (const task of tasks) {
-    const row = taskRows.get(task);
-    const picker = row.querySelector(".task-priority");
-    const control = row.querySelector(".priority-control");
-    const finishedBadge = row.querySelector(".finished-pill");
-
-    control.hidden = task.done;
-    finishedBadge.hidden = !task.done;
-    if (task.done) {
-      picker.disabled = true;
-      continue;
-    }
-    picker.disabled = false;
-    position += 1;
-    if (picker.options.length !== activeCount) {
-      picker.replaceChildren(...Array.from({ length: activeCount }, (_, index) => {
-        const option = document.createElement("option");
-        option.value = String(index + 1);
-        option.textContent = "№" + (index + 1);
-        return option;
-      }));
-    }
-    picker.value = String(position);
-    picker.setAttribute("aria-label", `Место задачи «${task.title}» в очереди, ${position} из ${activeCount}`);
-    picker.title = `Задача №${position}. Нажмите, чтобы изменить очерёдность.`;
-  }
-}
-
 function updateList() {
-  syncTaskOrder();
   for (const button of filterButtons) {
     button.setAttribute("aria-pressed", String(button.dataset.filter === activeFilter));
   }
@@ -209,9 +161,7 @@ function appendTask(task) {
   const row = template.content.firstElementChild.cloneNode(true);
   const checkbox = row.querySelector(".task-checkbox");
   const deleteButton = row.querySelector(".delete-button");
-  const prioritySelect = row.querySelector(".task-priority");
   const timeLabel = row.querySelector(".task-clock");
-  taskRows.set(task, row);
   const updateClock = () => { timeLabel.textContent = clock.display(task); };
   clockUpdates.set(task, updateClock);
   row.classList.toggle("task-finished", task.done);
@@ -221,34 +171,6 @@ function appendTask(task) {
   checkbox.checked = task.done;
   deleteButton.setAttribute("aria-label", `Удалить задачу «${task.title}»`);
   deleteButton.title = "Удалить задачу";
-
-  prioritySelect.addEventListener("change", () => {
-    if (task.done) return;
-    const activeCount = tasks.reduce((count, item) => count + Number(!item.done), 0);
-    const destination = Number(prioritySelect.value);
-    if (!Number.isInteger(destination) || destination < 1 || destination > activeCount) return;
-
-    const current = tasks.indexOf(task);
-    const completedCount = tasks.length - activeCount;
-    const target = completedCount + destination - 1;
-    if (current === target) return;
-
-    tasks.splice(current, 1);
-    tasks.splice(target, 0, task);
-    saveTasks();
-    recordTaskActivity(task, "priority");
-    feedback.play("tap");
-    updateList();
-
-    row.classList.remove("priority-moved");
-    void row.offsetWidth;
-    row.classList.add("priority-moved");
-    prioritySelect.focus({ preventScroll: true });
-    row.scrollIntoView?.({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
-      block: "nearest"
-    });
-  });
 
   checkbox.addEventListener("change", () => {
     const now = Date.now();
@@ -264,11 +186,6 @@ function appendTask(task) {
       feedback.play("reopen");
       row.classList.remove("task-celebrate");
     }
-    // Completed items always lead the list. Reopened items return to
-    // the end of the unfinished queue and can be reprioritized.
-    tasks.splice(tasks.indexOf(task), 1);
-    if (task.done) tasks.unshift(task);
-    else tasks.push(task);
     row.classList.toggle("task-finished", task.done);
     updateClock();
     saveTasks();
@@ -284,7 +201,6 @@ function appendTask(task) {
     feedback.play("remove");
     const neighbor = visibleNeighborCheckbox(row);
     clockUpdates.delete(task);
-    taskRows.delete(task);
     tasks.splice(tasks.indexOf(task), 1);
     row.remove();
     saveTasks();

@@ -87,70 +87,6 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await restored.locator(".delete-button").click();
     assert.equal(await page.locator("li.task").count(), 0);
 
-    // Priority ranking: all seven choices, instant moves, completed tasks first,
-    // save/reload, and no modification to the running clocks.
-    const priorityTitles = Array.from({ length: 7 }, (_, i) => "Priority " + width + "-" + (i + 1));
-    const getOrder = () => page.locator("li.task .task-title").allTextContents();
-    const findPriorityRow = (title) => page.locator("li.task").filter({
-      has: page.locator(".task-title", { hasText: title })
-    });
-    for (const title of priorityTitles) {
-      await page.locator("#task-title").fill(title);
-      await page.locator("#task-form button[type=submit]").click();
-    }
-    assert.deepEqual(await getOrder(), priorityTitles);
-    const firstSelect = page.locator("li.task").first().locator(".task-priority");
-    assert.deepEqual(await firstSelect.locator("option").allTextContents(),
-      ["№1", "№2", "№3", "№4", "№5", "№6", "№7"]);
-    const priorTimes = await page.evaluate(() =>
-      Object.fromEntries(JSON.parse(localStorage.getItem("todo-list.tasks.v1"))
-        .map(task => [task.title, task.startedAt])));
-    const last = findPriorityRow(priorityTitles[6]);
-    await last.locator(".task-priority").selectOption("1");
-    assert.deepEqual(await getOrder(), [priorityTitles[6], ...priorityTitles.slice(0, 6)]);
-    assert.equal(await last.locator(".task-checkbox").isChecked(), false);
-    assert.deepEqual(await page.locator("li.task .task-priority:not(:disabled)").evaluateAll(
-      nodes => nodes.map(node => node.value)),
-      ["1", "2", "3", "4", "5", "6", "7"]);
-    const laterTimes = await page.evaluate(() =>
-      Object.fromEntries(JSON.parse(localStorage.getItem("todo-list.tasks.v1"))
-        .map(task => [task.title, task.startedAt])));
-    assert.deepEqual(laterTimes, priorTimes, "Reordering cannot restart stopwatches");
-
-    await findPriorityRow(priorityTitles[2]).locator(".task-checkbox").check();
-    assert.deepEqual(await getOrder(), [priorityTitles[2], priorityTitles[6],
-      priorityTitles[0], priorityTitles[1], ...priorityTitles.slice(3, 6)]);
-    assert.equal(await findPriorityRow(priorityTitles[2]).locator(".finished-pill").isVisible(), true);
-    assert.equal(await findPriorityRow(priorityTitles[2]).locator(".priority-control").isVisible(), false);
-
-    // A second reordering happens only within unfinished tasks; completed stays above.
-    await findPriorityRow(priorityTitles[1]).locator(".task-priority").selectOption("1");
-    const expectedOrder = [priorityTitles[2], priorityTitles[1], priorityTitles[6],
-      priorityTitles[0], ...priorityTitles.slice(3, 6)];
-    assert.deepEqual(await getOrder(), expectedOrder);
-    await page.screenshot({ path: "artifacts/priorities-" + width + ".png", fullPage: true });
-    await page.reload({ waitUntil: "networkidle" });
-    assert.deepEqual(await getOrder(), expectedOrder, "Priority must survive reload");
-    assert.equal(await findPriorityRow(priorityTitles[1]).locator(".task-priority").inputValue(), "1");
-
-    await page.locator('button[data-filter="active"]').click();
-    assert.deepEqual(await page.locator("li.task:visible .task-title").allTextContents(),
-      expectedOrder.slice(1));
-    await page.locator('button[data-filter="all"]').click();
-    await findPriorityRow(priorityTitles[2]).locator(".task-checkbox").uncheck();
-    assert.deepEqual(await getOrder(), [...expectedOrder.slice(1), priorityTitles[2]],
-      "Reopened completed task returns to end of queue");
-    assert.equal(await findPriorityRow(priorityTitles[2]).locator(".task-priority").inputValue(), "7");
-
-    await findPriorityRow(priorityTitles[1]).locator(".delete-button").click();
-    assert.equal(await page.locator("li.task").count(), 6);
-    assert.deepEqual(await page.locator("li.task .task-priority:not(:disabled)").evaluateAll(
-      nodes => nodes.map(node => node.value)), ["1", "2", "3", "4", "5", "6"]);
-    await page.reload({ waitUntil: "networkidle" });
-    assert.equal(await page.locator("li.task").count(), 6);
-    await page.evaluate(() => localStorage.removeItem("todo-list.tasks.v1"));
-    await page.reload({ waitUntil: "networkidle" });
-
     // Migration: old lists are preserved; we never invent durations for historical completions.
     await page.evaluate(() => {
       const longAgo = Date.now() - (86400000 + 2 * 3600000 + 3 * 60000);
@@ -167,10 +103,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await long.locator(".task-checkbox").check();
     assert.match((await long.locator(".task-clock").textContent()).trim(), /1 д 2 ч 3 мин/);
     const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1")));
-    const legacyActiveData = migrated.find((task) => task.title === "Legacy active");
-    assert.ok(legacyActiveData.startedAt > 0 && legacyActiveData.elapsedMs === 0);
-    assert.equal(migrated[0].title, "Long task",
-      "Finished tasks must be ordered before unfinished legacy tasks");
+    assert.ok(migrated[0].startedAt > 0 && migrated[0].elapsedMs === 0);
 
     const oldPage = await page.goto(origin + "/goals/", { waitUntil: "domcontentloaded" });
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
