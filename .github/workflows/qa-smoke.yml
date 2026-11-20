@@ -8,6 +8,7 @@ on:
       - "app.js"
       - "clock.js"
       - "effects.js"
+      - "invite/index.html"
       - "tests/qa-smoke.mjs"
       - ".github/workflows/qa-smoke.yml"
   push:
@@ -19,6 +20,7 @@ on:
       - "app.js"
       - "clock.js"
       - "effects.js"
+      - "invite/index.html"
       - "tests/qa-smoke.mjs"
       - ".github/workflows/qa-smoke.yml"
 
