@@ -1,6 +1,7 @@
 "use strict";
 
 const STORAGE_KEY = "todo-list.tasks.v1";
+const TASK_HISTORY_KEY = "sdelano.tasks.history.v1";
 const form = document.querySelector("#task-form");
 const titleInput = document.querySelector("#task-title");
 const list = document.querySelector("#tasks");
@@ -49,6 +50,15 @@ function saveTasks() {
   } catch {
     setStorageWarning(true);
   }
+}
+
+function recordTaskActivity(task, action) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
+    const history = Array.isArray(saved) ? saved : [];
+    history.push({ title: task.title, action, at: Date.now() });
+    localStorage.setItem(TASK_HISTORY_KEY, JSON.stringify(history.slice(-300)));
+  } catch { /* The list is usable with unavailable history. */ }
 }
 
 function updateProgress() {
@@ -128,6 +138,7 @@ function appendTask(task) {
   checkbox.addEventListener("change", () => {
     task.done = checkbox.checked;
     saveTasks();
+    recordTaskActivity(task, task.done ? "done" : "reopen");
     updateProgress();
     updateList();
     if (row.hidden) {
@@ -140,6 +151,7 @@ function appendTask(task) {
     tasks.splice(tasks.indexOf(task), 1);
     row.remove();
     saveTasks();
+    recordTaskActivity(task, "delete");
     updateProgress();
     if (tasks.length === 0) {
       activeFilter = "all";
@@ -160,6 +172,7 @@ function addTask(title) {
     activeFilter = "all";
   }
   saveTasks();
+  recordTaskActivity(task, "created");
   updateProgress();
   updateList();
   return checkbox;

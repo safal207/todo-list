@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#fff7e7">
+    <meta name="description" content="Превратите большую цель в план со сроками, развилками и понятным следующим шагом.">
+    <title>Большая цель — Сделано</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="goals.css">
+    <link rel="stylesheet" href="rewards.css">
+    <link rel="stylesheet" href="portfolio.css">
+    <script src="templates.js" defer></script>
+    <script src="templates-en.js" defer></script>
+    <script src="state.js" defer></script>
+    <script src="language.js" defer></script>
+    <script src="rewards.js" defer></script>
+    <script src="portfolio.js" defer></script>
+    <script src="goals.js" defer></script>
+  </head>
+  <body class="goals-page">
+    <div class="workspace">
+      <header class="site-header">
+        <a class="wordmark" href="../" aria-label="Сделано, список задач"><span class="brand-icon" aria-hidden="true"></span> Сделано<span class="wordmark-period">.</span></a>
+        <nav class="site-links" aria-label="Разделы приложения">
+          <a href="../">Список задач</a>
+          <a href="./" aria-current="page">Большая цель</a>
+        </nav>
+        <div id="language-controls" class="view-buttons" role="group" aria-label="Язык">
+          <button type="button" data-language="ru" aria-pressed="true" lang="ru">RU</button>
+          <button type="button" data-language="en" aria-pressed="false" lang="en">EN</button>
+        </div>
+      </header>
+
+      <main>
+        <section id="goal-launch" aria-labelledby="launch-heading">
+          <div class="launch-hero">
+            <div class="launch-copy">
+              <h1 id="launch-heading">Большая цель.<br>Первый шаг.</h1>
+              <p>Запишите цель и срок. Получите маршрут с этапами, решениями и понятным результатом каждого шага.</p>
+            </div>
+            <div class="launch-art" aria-hidden="true"><img src="goal-steps.webp" width="640" height="640" alt=""></div>
+          </div>
+
+          <section class="builder panel" aria-labelledby="builder-heading">
+            <div class="section-heading">
+              <h2 id="builder-heading">Составьте план</h2>
+              <button id="back-to-goal" type="button" class="quiet-button" hidden>Вернуться к плану</button>
+            </div>
+            <form id="goal-form">
+              <div class="goal-fields">
+                <label for="goal-title">Моя цель<input id="goal-title" name="title" placeholder="Например, провести разговор на английском" maxlength="120" required></label>
+                <label for="goal-date">Срок<input id="goal-date" name="deadline" type="date" required></label>
+              </div>
+              <div class="goal-fields goal-classification">
+                <label for="goal-horizon">Горизонт<select id="goal-horizon" name="horizon"></select></label>
+                <label for="goal-area">Сфера<select id="goal-area" name="area"></select></label>
+                <label for="goal-parent">Подцель для<select id="goal-parent" name="parentId"></select></label>
+              </div>
+              <div class="builder-footer">
+                <button id="goal-submit" class="primary-button" type="submit" aria-describedby="template-hint">Создать план и запустить отсчёт</button>
+                <p id="template-hint" class="muted"></p>
+              </div>
+              <fieldset class="template-fieldset">
+                <legend>Шаблон плана</legend>
+                <div id="template-options" class="template-options"></div>
+              </fieldset>
+            </form>
+          </section>
+        </section>
+
+        <section id="goal-workspace" aria-labelledby="active-heading" hidden>
+          <div class="goal-switcher">
+            <label for="goal-select">Мои цели</label>
+            <select id="goal-select"></select>
+            <button id="new-goal" type="button" class="quiet-button">+ Новая цель</button>
+            <button id="new-subgoal" type="button" class="quiet-button">+ Подцель</button>
+            <button id="open-portfolio" type="button" class="quiet-button" aria-controls="portfolio" aria-expanded="false">Карта и история</button>
+          </div>
+          <section id="portfolio" class="portfolio panel" aria-labelledby="portfolio-heading" hidden>
+            <div class="section-heading">
+              <h2 id="portfolio-heading" tabindex="-1">Карта целей</h2>
+              <div id="portfolio-views" class="view-buttons" role="group" aria-label="Вид карты целей">
+                <button type="button" data-portfolio="graph" aria-pressed="true">Граф</button>
+                <button type="button" data-portfolio="table" aria-pressed="false">Таблица</button>
+                <button type="button" data-portfolio="goals" aria-pressed="false">История целей</button>
+                <button type="button" data-portfolio="tasks" aria-pressed="false">История задач</button>
+              </div>
+            </div>
+            <div id="portfolio-body"></div>
+          </section>
+
+          <div class="overview">
+            <section id="goal-summary" class="goal-summary" data-complete="false" aria-labelledby="active-heading">
+              <p id="goal-category" class="goal-category"></p>
+              <h1 id="active-heading" tabindex="-1"></h1>
+              <div class="goal-progress">
+                <progress id="goal-progress" aria-label="Выполненные шаги" value="0" max="1"></progress>
+                <p id="goal-count"></p>
+              </div>
+              <p id="goal-complete" hidden>Маршрут завершён! Все шаги выполнены.</p>
+            </section>
+
+            <section class="deadline-panel" aria-labelledby="deadline-heading">
+              <h2 id="deadline-heading">До срока</h2>
+              <p class="timer" id="goal-timer" role="timer" aria-live="off"></p>
+              <p id="deadline-label" class="deadline-label"></p>
+              <details id="deadline-editor">
+                <summary>Изменить срок</summary>
+                <form id="deadline-form">
+                  <label for="deadline-value">Новая дата</label>
+                  <input id="deadline-value" name="deadline" type="date" required>
+                  <button type="submit" class="quiet-button">Сохранить срок</button>
+                </form>
+              </details>
+            </section>
+          </div>
+
+          <div class="plan-layout">
+            <section class="plan-panel panel" aria-labelledby="plan-heading">
+              <div class="section-heading plan-heading">
+                <h2 id="plan-heading" tabindex="-1">Маршрут</h2>
+                <div id="view-buttons" class="view-buttons" role="group" aria-label="Вид плана">
+                  <button type="button" data-view="path" aria-pressed="true">Карточки</button>
+                  <button type="button" data-view="kanban" aria-pressed="false">Канбан</button>
+                  <button type="button" data-view="gantt" aria-pressed="false">Гант</button>
+                  <button type="button" data-view="matrix" aria-pressed="false">Матрица</button>
+                </div>
+              </div>
+              <p id="plan-description" class="plan-description muted"></p>
+              <div id="plan-content"></div>
+            </section>
+
+            <aside class="goal-sidebar">
+              <section class="focus-panel panel" aria-labelledby="focus-heading">
+                <h2 id="focus-heading">Следующий шаг</h2>
+                <p id="focus-step" class="focus-step"></p>
+                <p id="focus-result" class="muted"></p>
+                <button id="focus-button" class="primary-button" type="button" hidden>Открыть карточку</button>
+                <p id="streak-label" class="streak-label" hidden></p>
+                <button id="share-progress" class="quiet-button" type="button">Сводка для партнёра</button>
+              </section>
+              <section id="rewards-panel" class="panel" aria-label="Награды и рейтинг"></section>
+
+              <section class="reflection-panel panel" aria-labelledby="reflection-heading">
+                <h2 id="reflection-heading">6 минут на себя</h2>
+                <p id="reflection-date" class="muted"></p>
+                <form id="reflection-form">
+                  <label for="small-step">3 минуты утром · Главное дело сегодня<textarea id="small-step" name="smallStep" rows="2" maxlength="240"></textarea></label>
+                  <label for="daily-win">3 минуты вечером · Что получилось?<textarea id="daily-win" name="win" rows="2" maxlength="240"></textarea></label>
+                  <label for="daily-takeaway">Что поможет завтра?<textarea id="daily-takeaway" name="takeaway" rows="2" maxlength="240"></textarea></label>
+                  <button type="submit" class="quiet-button">Сохранить заметку</button>
+                </form>
+              </section>
+            </aside>
+          </div>
+        </section>
+        <p id="action-status" class="status-note" role="status"></p>
+        <p id="goal-storage-warning" class="storage-warning" role="status" hidden>Сохранение недоступно. Изменения могут исчезнуть после обновления страницы.</p>
+      </main>
+
+      <footer class="goals-footer">
+        <p>Цели и заметки сохраняются в этом браузере.</p>
+        <a href="https://github.com/safal207/todo-list#методики-большой-цели">Как устроены методики</a>
+      </footer>
+    </div>
+    <dialog id="evidence-dialog" aria-labelledby="evidence-heading">
+      <form id="evidence-form">
+        <h2 id="evidence-heading">Подтвердить шаг</h2>
+        <p id="evidence-result"></p>
+        <label for="evidence-note">Что получилось? <span class="muted">Необязательно</span></label>
+        <textarea id="evidence-note" name="evidence" rows="3" maxlength="500"></textarea>
+        <label class="proof-field" for="evidence-file">Фото или скриншот <span class="muted">до 5 МБ</span></label>
+        <input id="evidence-file" name="proof" type="file" accept="image/png,image/jpeg,image/webp">
+        <p id="proof-error" class="storage-warning" role="alert"></p>
+        <div class="dialog-actions">
+          <button id="cancel-evidence" class="quiet-button" type="button">Отмена</button>
+          <button id="confirm-evidence" class="primary-button" type="submit">Подтвердить шаг</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="proof-dialog" aria-labelledby="proof-title">
+      <div>
+        <h2 id="proof-title">Подтверждение шага</h2>
+        <p id="proof-feedback" class="muted" role="status"></p>
+        <img id="proof-image" alt="Изображение, прикреплённое к шагу" hidden>
+        <button id="close-proof" class="quiet-button" type="button">Закрыть</button>
+      </div>
+    </dialog>
+    <dialog id="share-dialog" aria-labelledby="share-heading">
+      <div>
+        <h2 id="share-heading">Сводка для партнёра</h2>
+        <label for="share-summary">Цель, срок, прогресс и следующий шаг</label>
+        <textarea id="share-summary" rows="6" readonly></textarea>
+        <div class="dialog-actions">
+          <button id="close-share" class="quiet-button" type="button">Закрыть</button>
+          <button id="copy-share" class="primary-button" type="button">Копировать</button>
+        </div>
+        <div class="social-links" aria-label="Поделиться в соцсетях">
+          <a id="share-telegram" href="https://t.me/share/url" target="_blank" rel="noopener noreferrer">Telegram</a>
+          <a id="share-vk" href="https://vk.com/share.php" target="_blank" rel="noopener noreferrer">VK</a>
+          <button id="share-native" type="button" class="quiet-button" hidden>Поделиться</button>
+        </div>
+        <p id="share-feedback" class="muted" role="status"></p>
+      </div>
+    </dialog>
+  </body>
+</html>

@@ -1,0 +1,43 @@
+#rewards-panel { background: #fff1cb; }
+
+.reward-score-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .3rem .55rem;
+  margin-block: .4rem .15rem;
+}
+
+.reward-score {
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.reward-rank { font-weight: 740; }
+.reward-next, .reward-rule { font-size: .85rem; }
+.reward-rule { margin-block-start: .45rem; }
+
+.reward-badges {
+  display: grid;
+  gap: .4rem;
+  list-style: none;
+  padding: 0;
+  margin: .65rem 0 0;
+}
+
+.reward-badge {
+  display: grid;
+  gap: .1rem;
+  padding: .4rem .55rem;
+  border: 1px dashed #b59466;
+  border-radius: .58rem;
+  background: #fff8e9;
+}
+
+.reward-badge[data-earned="true"] {
+  border: 1px solid #96a960;
+  background: #ecf5cb;
+}
+
+.reward-badge span { color: var(--muted); font-size: .82rem; }
