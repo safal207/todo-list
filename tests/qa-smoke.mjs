@@ -177,7 +177,11 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#share-close").click();
 
     // Referral upsell: the recipient sees the 50% result and their own blank list.
-    const recipientContext = await browser.newContext({ viewport: { width, height } });
+    const recipientContext = await browser.newContext({
+      viewport: { width, height },
+      isMobile: width < 600,
+      hasTouch: width < 600
+    });
     const recipient = await recipientContext.newPage();
     await recipient.goto(origin + "/invite/" + new URL(receiverUrl).search, { waitUntil: "networkidle" });
     assert.equal(await recipient.locator("h1").textContent(), "Твой ход. Начни с одной задачи!");
@@ -189,6 +193,29 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg");
     assert.match(await recipient.locator("#friend-score").textContent(), /1 из 2 задач \(50%\)/);
     assert.equal(await recipient.locator("img").getAttribute("src"), "../assets/share-step-1-v2.jpg");
+    // Regression: Telegram's mobile webview previously magnified the poster and
+    // clipped its text. Keep the *whole* image inside a bounded, visible frame.
+    const posterLayout = await recipient.locator(".poster-frame img").evaluate((img) => {
+      const box = img.getBoundingClientRect();
+      const frame = img.parentElement.getBoundingClientRect();
+      return {
+        naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight,
+        width: box.width, height: box.height, bottom: box.bottom,
+        frameWidth: frame.width, fit: getComputedStyle(img).objectFit,
+        scrollWidth: document.documentElement.scrollWidth,
+        viewportWidth: window.innerWidth, viewportHeight: window.innerHeight
+      };
+    });
+    assert.equal(posterLayout.naturalWidth, 1200, "Invite poster should load");
+    assert.equal(posterLayout.naturalHeight, 630, "Invite poster should retain its dimensions");
+    assert.equal(posterLayout.fit, "contain", "Image must never use cover cropping");
+    assert.ok(posterLayout.width <= posterLayout.frameWidth + 1, "Poster wider than frame");
+    assert.ok(posterLayout.height <= Math.min(posterLayout.viewportHeight * 0.35, 300) + 2,
+      "Poster should be capped to avoid a giant zoomed image on a phone");
+    assert.ok(posterLayout.scrollWidth <= posterLayout.viewportWidth + 1,
+      "Invite poster causes horizontal overflow");
+    assert.ok(posterLayout.bottom < posterLayout.viewportHeight * 0.8,
+      "Entire poster should remain near the top of the first screen");
     assert.equal(await recipient.locator("#start-own").isVisible(), true);
     await recipient.screenshot({ path: "artifacts/referral-" + width + ".png", fullPage: true });
     assert.ok(!(await recipient.locator("body").textContent()).includes(label),
