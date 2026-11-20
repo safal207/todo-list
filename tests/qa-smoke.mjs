@@ -39,6 +39,9 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#start-button").count(), 0);
     assert.equal(await page.locator("#feedback-toggle").textContent(), "Отклик: вкл");
     assert.equal(await page.locator("#task-form").isVisible(), true);
+    assert.equal(await page.locator("#share-progress").isDisabled(), true,
+      "Share is unavailable before any task exists");
+    assert.match(await page.locator("#share-progress-hint").textContent(), /Названия задач останутся у вас/);
 
     const layout = await page.evaluate(() => ({
       width: innerWidth,
@@ -54,6 +57,19 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#task-form button[type=submit]").click();
     const task = page.locator("li.task").filter({ hasText: label });
     assert.equal(await task.count(), 1);
+    assert.equal(await page.locator("#share-progress").isEnabled(), true);
+    await page.evaluate(() => {
+      window.__shares = [];
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async (payload) => { window.__shares.push(payload); }
+      });
+    });
+    await page.locator("#share-progress").click();
+    const shareZero = await page.evaluate(() => window.__shares[0]);
+    assert.match(shareZero.text, /0% — 0 из 1 задач выполнено/);
+    assert.equal(shareZero.url, "https://safal207.github.io/todo-list/");
+    assert.ok(!JSON.stringify(shareZero).includes(label), "Private task title must not be shared");
     const started = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
     assert.equal(started.done, false);
     assert.ok(started.startedAt > 0 && started.elapsedMs === 0, "Timer starts when task is added");
@@ -70,6 +86,40 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(completed.startedAt, null);
     assert.ok(completed.elapsedMs >= 1000, "Elapsed time saved on completion");
     assert.match((await task.locator(".task-clock").textContent()).trim(), /^Готово за /);
+    await page.locator("#share-progress").click();
+    const shareFull = await page.evaluate(() => window.__shares.at(-1));
+    assert.match(shareFull.text, /100% — 1 из 1 задач выполнено/);
+    assert.match(shareFull.text, /Все задачи закрыты!/);
+    assert.ok(!JSON.stringify(shareFull).includes(label), "Do not share private task title");
+
+    // Partial progress must reflect the entire list, regardless of the filter.
+    await page.locator("#task-title").fill("Private extra " + width);
+    await page.locator("#task-form button[type=submit]").click();
+    assert.equal(await page.locator("#percentage").textContent(), "50%");
+    await page.locator("#share-progress").click();
+    const shareHalf = await page.evaluate(() => window.__shares.at(-1));
+    assert.match(shareHalf.text, /50% — 1 из 2 задач выполнено/);
+    assert.ok(!JSON.stringify(shareHalf).includes("Private extra"));
+    await page.locator("li.task").filter({ hasText: "Private extra " + width })
+      .locator(".delete-button").click();
+    assert.equal(await page.locator("#percentage").textContent(), "100%");
+
+    // On browsers without Web Share API, copy both progress and app URL.
+    await page.evaluate(() => {
+      window.__copiedText = "";
+      Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: async (value) => { window.__copiedText = value; } }
+      });
+    });
+    await page.locator("#share-progress").click();
+    await page.waitForFunction(() => window.__copiedText.includes("https://safal207.github.io/todo-list/"));
+    const copiedText = await page.evaluate(() => window.__copiedText);
+    assert.match(copiedText, /100% — 1 из 1 задач выполнено/);
+    assert.ok(!copiedText.includes(label), "Copied text must not contain private task name");
+    assert.match(await page.locator("#task-toast").textContent(), /скопированы/);
+    await page.screenshot({ path: "artifacts/share-progress-" + width + ".png", fullPage: true });
     assert.ok(await page.evaluate(() => window.__vibrationEvents.length) >= 2, "Haptic calls on add and complete");
 
     await page.locator('button[data-filter="done"]').click();
@@ -96,6 +146,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal((await page.locator("#percentage").textContent()).trim(), "0%");
     await restored.locator(".delete-button").click();
     assert.equal(await page.locator("li.task").count(), 0);
+    assert.equal(await page.locator("#share-progress").isDisabled(), true);
 
     // Migration: old lists are preserved; we never invent durations for historical completions.
     await page.evaluate(() => {
