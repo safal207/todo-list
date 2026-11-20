@@ -37,7 +37,7 @@
                 <input id="task-title" name="title" type="text" placeholder="Например, отправить отчёт" maxlength="200" autocomplete="off" required>
                 <button class="add-button" type="submit">Начать задачу</button>
               </div>
-              <p class="timer-hint">Таймер стартует сразу. При выполнении остановится и покажет результат.</p>
+              <p class="timer-hint">Таймер стартует сразу. Выбирайте очерёдность кнопкой № справа от задачи.</p>
             </form>
 
             <div class="task-section">
@@ -79,7 +79,14 @@
           <input class="task-checkbox" type="checkbox">
           <span class="task-copy"><span class="task-title"></span><span class="task-clock"></span></span>
         </label>
-        <button class="delete-button" type="button"><span class="trash-icon" aria-hidden="true"></span></button>
+        <div class="task-actions">
+          <label class="priority-control">
+            <span class="priority-caption">Место в очереди</span>
+            <select class="task-priority" aria-label="Очерёдность задачи"></select>
+          </label>
+          <span class="finished-pill" hidden>Готово</span>
+          <button class="delete-button" type="button"><span class="trash-icon" aria-hidden="true"></span></button>
+        </div>
       </li>
     </template>
     <div id="task-toast" class="task-toast" role="status" aria-live="polite"></div>
