@@ -92,6 +92,22 @@
             <p id="percentage" class="percentage" aria-hidden="true">0%</p>
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
             <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
+              <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
+              <h3 id="first-step-title">Запиши одно небольшое дело</h3>
+              <p id="first-step-detail">Не нужно составлять большой план. Начни с одной задачи.</p>
+              <button id="first-step-cta" class="first-step-button" type="button">Записать первый шаг</button>
+            </section>
+            <section id="first-win-card" class="first-win-card" aria-labelledby="first-win-title" hidden>
+              <p class="first-win-kicker">✓ ПЕРВАЯ ПОБЕДА</p>
+              <h3 id="first-win-title">Первый шаг сделан!</h3>
+              <p>Первая задача закрыта. Сохрани темп: выбери ещё одно дело или поделись достижением.</p>
+              <div class="first-win-actions">
+                <button id="first-win-next" class="first-win-next" type="button">Записать следующий шаг</button>
+                <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
+              </div>
+              <button id="first-win-dismiss" class="first-win-dismiss" type="button">Не сейчас</button>
+            </section>
             <div class="share-progress-block">
               <button id="share-progress" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
                 <span class="share-arrow" aria-hidden="true">↗</span>
