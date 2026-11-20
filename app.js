@@ -116,7 +116,7 @@ function progressShareData() {
   const percent = total ? Math.floor((done / total) * 100) : 0;
   const headline = done === total ? "Все задачи закрыты. Сделано!" :
     done === 0 ? "Хватит кормить задачи «завтраками»!" : "Меньше «потом». Больше «готово»!";
-  const text = `${headline}\\n\\nМой результат в «Сделано»: ${percent}% — ${done} из ${total} задач выполнено.\\n\\nТвой ход! Запиши первую задачу — таймер пойдёт сразу.`;
+  const text = `${headline}\n\nМой результат в «Сделано»: ${percent}% — ${done} из ${total} задач выполнено.\n\nТвой ход! Запиши первую задачу — таймер пойдёт сразу.`;
   const link = new URL(SHARE_URL);
   link.searchParams.set("share", "1");
   link.searchParams.set("done", String(done));
@@ -140,7 +140,7 @@ function openShareDialog() {
   shareEmptyAction.hidden = Boolean(preparedShare);
   shareActions.hidden = !preparedShare;
   if (preparedShare) {
-    const readyText = `${preparedShare.text}\\n\\n${preparedShare.url}`;
+    const readyText = `${preparedShare.text}\n\n${preparedShare.url}`;
     shareReadyText.value = readyText;
     shareNative.hidden = typeof navigator.share !== "function";
     const telegramLink = new URL("https://t.me/share/url");
@@ -208,7 +208,7 @@ for (const provider of [shareTelegram, shareWhatsApp]) {
 // Links contain a snapshot, never the sender's task names or private storage.
 function initSharedAchievement() {
   const params = new URLSearchParams(location.search);
-  const parseCount = (value) => /^\\d{1,4}$/.test(value ?? "") ? Number(value) : NaN;
+  const parseCount = (value) => /^\d{1,4}$/.test(value ?? "") ? Number(value) : NaN;
   const done = parseCount(params.get("done"));
   const total = parseCount(params.get("total"));
   if (params.get("share") !== "1" || !Number.isInteger(total) ||
