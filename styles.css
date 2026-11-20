@@ -511,8 +511,8 @@ h1 {
 }
 
 @container (max-width: 12em) {
-  .start-button { max-width: 100%; }
-  .hero-art { display: none; }
+  .start-button { max-width: 100%; padding-inline: min(.6em, 12px); }
+  .start-button span, .hero-art { display: none; }
 }
 
 @media (max-width: 28rem) {
