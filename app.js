@@ -123,7 +123,7 @@ function progressShareData() {
   link.searchParams.set("done", String(done));
   link.searchParams.set("total", String(total));
   link.searchParams.set("utm_source", "progress_share");
-  link.searchParams.set("utm_campaign", "step_one_poster");
+  link.searchParams.set("utm_campaign", "step_one_poster_v2");
   return { title: "Мой результат — Сделано", text, url: link.toString(), percent, done, total };
 }
 

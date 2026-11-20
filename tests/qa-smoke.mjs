@@ -31,24 +31,23 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator('meta[property="og:url"]').getAttribute("content"),
       "https://safal207.github.io/todo-list/");
     // Social crawlers must receive a stable raster OG image with a visible CTA.
-    const sharePoster = "https://safal207.github.io/todo-list/assets/share-poster.png";
+    const sharePoster = "https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg";
     assert.equal(await page.locator('meta[property="og:image"]').getAttribute("content"), sharePoster);
     assert.equal(await page.locator('meta[property="og:image:secure_url"]').getAttribute("content"), sharePoster);
     assert.equal(await page.locator('meta[name="twitter:image"]').getAttribute("content"), sharePoster);
     assert.equal(await page.locator('meta[name="twitter:card"]').getAttribute("content"), "summary_large_image");
-    assert.equal(await page.locator('meta[property="og:image:type"]').getAttribute("content"), "image/png");
-    assert.equal(await page.locator('meta[property="og:image:width"]').getAttribute("content"), "1672");
-    assert.equal(await page.locator('meta[property="og:image:height"]').getAttribute("content"), "941");
+    assert.equal(await page.locator('meta[property="og:image:type"]').getAttribute("content"), "image/jpeg");
+    assert.equal(await page.locator('meta[property="og:image:width"]').getAttribute("content"), "1200");
+    assert.equal(await page.locator('meta[property="og:image:height"]').getAttribute("content"), "630");
     assert.match(await page.locator('meta[property="og:image:alt"]').getAttribute("content"), /ЗАПИШИ ЗАДАЧУ/);
     if (width === 390) {
-      const posterResponse = await page.request.get(origin + "/assets/share-poster.png");
+      const posterResponse = await page.request.get(origin + "/assets/share-step-1-v2.jpg");
       assert.equal(posterResponse.status(), 200, "Poster must be published as a real file");
-      assert.match(posterResponse.headers()["content-type"] ?? "", /^image\/png/);
+      assert.match(posterResponse.headers()["content-type"] ?? "", /^image\/jpeg/);
       const posterBytes = await posterResponse.body();
       assert.ok(posterBytes.length > 100000, "Poster should not be empty");
-      assert.equal(posterBytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
-      assert.equal(posterBytes.readUInt32BE(16), 1672);
-      assert.equal(posterBytes.readUInt32BE(20), 941);
+      assert.equal(posterBytes.subarray(0, 2).toString("hex"), "ffd8");
+      assert.ok(posterBytes.length < 500000, "Compact preview for Telegram");
     }
     assert.equal(await page.locator('link[rel="canonical"]').getAttribute("href"),
       "https://safal207.github.io/todo-list/");
@@ -94,7 +93,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(referralURL.searchParams.get("share"), "1");
     assert.equal(referralURL.searchParams.get("done"), "0");
     assert.equal(referralURL.searchParams.get("total"), "1");
-    assert.equal(referralURL.searchParams.get("utm_campaign"), "step_one_poster");
+    assert.equal(referralURL.searchParams.get("utm_campaign"), "step_one_poster_v2");
     assert.match(whatsApp.searchParams.get("text"), /Твой ход!/);
     assert.ok(!telegram.toString().includes(encodeURIComponent(label)));
     await page.locator("#share-close").click();
@@ -156,7 +155,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await recipient.goto(origin + new URL(receiverUrl).search, { waitUntil: "networkidle" });
     assert.equal(await recipient.locator("#shared-achievement").isVisible(), true);
     assert.equal(await recipient.locator('meta[property="og:image"]').getAttribute("content"),
-      "https://safal207.github.io/todo-list/assets/share-poster.png");
+      "https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg");
     assert.match(await recipient.locator("#shared-achievement-heading").textContent(), /50%/);
     assert.match(await recipient.locator("#shared-achievement-detail").textContent(), /1 из 2/);
     assert.equal(await recipient.locator("li.task").count(), 0);
