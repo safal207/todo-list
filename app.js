@@ -98,6 +98,7 @@ const shareCopy = document.querySelector("#share-copy");
 const shareTelegram = document.querySelector("#share-telegram");
 const shareWhatsApp = document.querySelector("#share-whatsapp");
 const shareReadyText = document.querySelector("#share-ready-text");
+const shareManual = document.querySelector("#share-manual");
 const shareFeedback = document.querySelector("#share-feedback");
 const shareEmptyAction = document.querySelector("#share-empty-action");
 const shareActions = document.querySelector("#share-actions");
@@ -133,6 +134,7 @@ function closeShareDialog() {
 function openShareDialog() {
   feedback.play("tap");
   shareFeedback.textContent = "";
+  shareManual.open = false;
   preparedShare = tasks.length > 0 ? progressShareData() : null;
   const { percent = 0, done = 0, total = 0 } = preparedShare ?? {};
   sharePercent.textContent = `${percent}%`;
@@ -191,6 +193,7 @@ shareCopy.addEventListener("click", async () => {
       return;
     }
   } catch { /* Clipboard permission can be denied by some WebViews. */ }
+  shareManual.open = true;
   shareReadyText.focus();
   shareReadyText.select();
   try {
