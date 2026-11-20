@@ -90,7 +90,7 @@ function announceDone(task) {
 }
 
 // Viral referral: share aggregate counts only, with a recipient-facing CTA.
-const SHARE_URL = "https://safal207.github.io/todo-list/";
+const SHARE_URL = "https://safal207.github.io/todo-list/invite/";
 const shareDialog = document.querySelector("#share-dialog");
 const shareClose = document.querySelector("#share-close");
 const shareNative = document.querySelector("#share-native");
@@ -98,6 +98,7 @@ const shareCopy = document.querySelector("#share-copy");
 const shareTelegram = document.querySelector("#share-telegram");
 const shareWhatsApp = document.querySelector("#share-whatsapp");
 const shareReadyText = document.querySelector("#share-ready-text");
+const shareImageNative = document.querySelector("#share-image-native");
 const shareManual = document.querySelector("#share-manual");
 const shareFeedback = document.querySelector("#share-feedback");
 const shareEmptyAction = document.querySelector("#share-empty-action");
@@ -110,6 +111,31 @@ const sharedHeading = document.querySelector("#shared-achievement-heading");
 const sharedDetail = document.querySelector("#shared-achievement-detail");
 const sharedStart = document.querySelector("#shared-start");
 let preparedShare = null;
+let preparedPosterFile = null;
+let posterLoad = null;
+
+function syncImageShareButton() {
+  shareImageNative.hidden = !(preparedPosterFile &&
+    typeof navigator.share === "function" &&
+    typeof navigator.canShare === "function" &&
+    navigator.canShare({ files: [preparedPosterFile] }));
+}
+
+// Sharing the JPG as a real file does not depend on Telegram's link-card bot.
+// Preload before the user taps the file-share button: Web Share requires a
+// user gesture and fetching inside the gesture can lose transient activation.
+function preloadSharePoster() {
+  if (posterLoad) return posterLoad;
+  posterLoad = fetch("assets/share-step-1-v2.jpg")
+    .then(async (response) => {
+      if (!response.ok) throw new Error("Poster unavailable");
+      const blob = await response.blob();
+      preparedPosterFile = new File([blob], "sdelano-shag-1.jpg", { type: "image/jpeg" });
+      syncImageShareButton();
+    })
+    .catch(() => { shareImageNative.hidden = true; });
+  return posterLoad;
+}
 
 function progressShareData() {
   const total = tasks.length;
@@ -123,7 +149,7 @@ function progressShareData() {
   link.searchParams.set("done", String(done));
   link.searchParams.set("total", String(total));
   link.searchParams.set("utm_source", "progress_share");
-  link.searchParams.set("utm_campaign", "step_one_poster_v2");
+  link.searchParams.set("utm_campaign", "telegram_invite_v1");
   return { title: "Мой результат — Сделано", text, url: link.toString(), percent, done, total };
 }
 
@@ -136,6 +162,8 @@ function openShareDialog() {
   feedback.play("tap");
   shareFeedback.textContent = "";
   shareManual.open = false;
+  preloadSharePoster();
+  syncImageShareButton();
   preparedShare = tasks.length > 0 ? progressShareData() : null;
   const { percent = 0, done = 0, total = 0 } = preparedShare ?? {};
   sharePercent.textContent = `${percent}%`;
@@ -183,6 +211,25 @@ shareNative.addEventListener("click", async () => {
       "Системная отправка недоступна. Выбери Telegram, WhatsApp или скопируй текст.";
   }
 });
+shareImageNative.addEventListener("click", async () => {
+  if (!preparedShare || !preparedPosterFile || typeof navigator.share !== "function") return;
+  feedback.play("tap");
+  // Include the URL in text for services which drop the separate 'url' field
+  // when sharing a media file as a Telegram photo/caption.
+  const attachment = {
+    title: "Сделано — твой ход!",
+    text: `${preparedShare.text}\n\n${preparedShare.url}`,
+    files: [preparedPosterFile]
+  };
+  try {
+    await navigator.share(attachment);
+    shareFeedback.textContent = "Изображение передано в меню отправки.";
+  } catch (error) {
+    shareFeedback.textContent = error?.name === "AbortError" ? "Отправка отменена." :
+      "Браузер не передал фото. Скачай картинку ниже и прикрепи её в Telegram.";
+  }
+});
+
 shareCopy.addEventListener("click", async () => {
   if (!preparedShare) return;
   feedback.play("tap");

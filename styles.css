@@ -790,3 +790,31 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .shared-start-button, .share-primary, .share-providers a, .share-copy-button { transition: none; }
 }
+
+/* Telegram photo fallback: users can send a real JPEG, not just an OG preview. */
+.share-photo-options {
+  display: grid;
+  gap: .5rem;
+  padding: .7rem;
+  border: 1.5px dashed #cfa96a;
+  border-radius: .7rem;
+  background: #fff4db;
+}
+.share-photo-label { color: #6b4434; font-size: .8rem; font-weight: 750; line-height: 1.4; }
+.share-photo-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.65rem;
+  padding: .55rem .7rem;
+  border: 1.5px solid #5c3b2d;
+  border-radius: .55rem;
+  color: #40291d;
+  background: #fffdf7;
+  font-size: .82rem;
+  font-weight: 800;
+  text-decoration: none;
+  text-align: center;
+}
+.share-photo-download:hover { background: #ffe1a4; }
+.share-photo-download:focus-visible { outline: 3px solid #246bbd; outline-offset: 3px; }
