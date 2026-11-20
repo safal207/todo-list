@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
 import { chromium } from "playwright";
 
 const browser = await chromium.launch({ headless: true });
 const origin = "http://127.0.0.1:8765";
 const failures = [];
+mkdirSync("artifacts", { recursive: true });
 
 for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
   const context = await browser.newContext({ viewport: { width, height } });
@@ -30,12 +32,14 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       `Horizontal overflow: ${JSON.stringify(layout)}`);
     assert.ok(layout.formTop < height,
       `Task form is below the fold: ${JSON.stringify(layout)}`);
+    await page.screenshot({ path: `artifacts/tasks-${width}.png`, fullPage: true });
 
     const label = `QA smoke ${width}`;
     await page.locator("#task-title").fill(label);
     await page.locator("#task-form button[type=submit]").click();
     const task = page.locator("li.task").filter({ hasText: label });
     assert.equal(await task.count(), 1);
+    await page.screenshot({ path: `artifacts/tasks-populated-${width}.png`, fullPage: true });
 
     await task.locator(".task-checkbox").check();
     assert.equal((await page.locator("#percentage").textContent()).trim(), "100%");
