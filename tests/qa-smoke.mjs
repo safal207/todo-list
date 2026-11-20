@@ -126,17 +126,39 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#share-progress").click();
     await page.waitForFunction(() => !document.querySelector("#share-image-native").hidden);
     const downloadLink = page.locator("#share-image-download");
-    assert.equal(await downloadLink.getAttribute("href"), "assets/share-step-1-v2.jpg");
-    assert.equal(await downloadLink.getAttribute("download"), "sdelano-shag-1.jpg");
+    await page.waitForFunction(() =>
+      document.querySelector("#share-image-download")?.download === "sdelano-progress-0-of-1.jpg");
+    assert.match(await downloadLink.getAttribute("href"), /^blob:/);
+    assert.equal(await downloadLink.getAttribute("download"), "sdelano-progress-0-of-1.jpg");
+    const posterZero = await page.evaluate(async () => {
+      const img = document.querySelector("#share-poster-preview");
+      await img.decode();
+      const bytes = new Uint8Array(await (await fetch(img.src)).arrayBuffer());
+      const checksum = bytes.reduce((sum, value, i) => (sum + value * (i % 311 + 1)) % 2147483647, 0);
+      return { naturalWidth: img.naturalWidth, naturalHeight: img.naturalHeight,
+        size: bytes.length, first: bytes[0], second: bytes[1], checksum, alt: img.alt };
+    });
+    assert.equal(posterZero.naturalWidth, 1200);
+    assert.equal(posterZero.naturalHeight, 630);
+    assert.ok(posterZero.size > 5000, "Generated JPG must be nonempty");
+    assert.equal(posterZero.first, 0xff);
+    assert.equal(posterZero.second, 0xd8);
+    assert.match(posterZero.alt, /0 из 1/);
+    assert.ok(!(await page.evaluate(async () => {
+      try { await window.achievementPoster.create({ done: 2, total: 1 }); return true; }
+      catch { return false; }
+    })), "Invalid progress must be rejected");
     await page.locator("#share-image-native").click();
     const photoPayload = await page.evaluate(() => {
       const event = window.__shares.at(-1);
       return { fileCount: event.files?.length, type: event.files?.[0]?.type,
-        fileSize: event.files?.[0]?.size, text: event.text };
+        fileSize: event.files?.[0]?.size, fileName: event.files?.[0]?.name,
+        text: event.text };
     });
     assert.equal(photoPayload.fileCount, 1);
     assert.equal(photoPayload.type, "image/jpeg");
-    assert.ok(photoPayload.fileSize > 10000);
+    assert.ok(photoPayload.fileSize > 5000);
+    assert.equal(photoPayload.fileName, "sdelano-progress-0-of-1.jpg");
     assert.match(photoPayload.text, /\/invite\/\?share=1/);
     assert.ok(!photoPayload.text.includes(label), "Photo caption must hide private task names");
     await page.locator("#share-close").click();
@@ -158,6 +180,18 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.match((await task.locator(".task-clock").textContent()).trim(), /^Готово за /);
     await page.locator("#share-progress").click();
     assert.equal(await page.locator("#share-preview-percentage").textContent(), "100%");
+    await page.waitForFunction(() =>
+      document.querySelector("#share-image-download")?.download === "sdelano-progress-1-of-1.jpg");
+    const posterFull = await page.evaluate(async () => {
+      const img = document.querySelector("#share-poster-preview");
+      await img.decode();
+      const bytes = new Uint8Array(await (await fetch(img.src)).arrayBuffer());
+      return { checksum: bytes.reduce((sum, value, i) =>
+        (sum + value * (i % 311 + 1)) % 2147483647, 0), alt: img.alt };
+    });
+    assert.notEqual(posterFull.checksum, posterZero.checksum,
+      "Achievement JPG must change with real completion data");
+    assert.match(posterFull.alt, /1 из 1.*100%/);
     const shareFull = await page.locator("#share-ready-text").inputValue();
     assert.match(shareFull, /100% — 1 из 1 задач выполнено/);
     assert.match(shareFull, /Все задачи закрыты/);
@@ -169,6 +203,9 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#task-form button[type=submit]").click();
     assert.equal(await page.locator("#percentage").textContent(), "50%");
     await page.locator("#share-progress").click();
+    await page.waitForFunction(() =>
+      document.querySelector("#share-image-download")?.download === "sdelano-progress-1-of-2.jpg");
+    assert.match(await page.locator("#share-poster-preview").getAttribute("alt"), /1 из 2.*50%/);
     const shareHalf = await page.locator("#share-ready-text").inputValue();
     assert.match(shareHalf, /50% — 1 из 2 задач выполнено/);
     assert.ok(!shareHalf.includes("Private extra"));
