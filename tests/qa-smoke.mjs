@@ -93,7 +93,9 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(referralURL.searchParams.get("share"), "1");
     assert.equal(referralURL.searchParams.get("done"), "0");
     assert.equal(referralURL.searchParams.get("total"), "1");
-    assert.equal(referralURL.searchParams.get("utm_campaign"), "step_one_poster_v2");
+    assert.equal(referralURL.searchParams.get("utm_campaign"), "telegram_invite_v1");
+    assert.equal(referralURL.pathname, "/todo-list/invite/",
+      "Telegram shares must use a new canonical OG page, not the cached homepage");
     assert.match(whatsApp.searchParams.get("text"), /Твой ход!/);
     assert.ok(!telegram.toString().includes(encodeURIComponent(label)));
     await page.locator("#share-close").click();
@@ -110,8 +112,33 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#share-native").click();
     const shareZero = await page.evaluate(() => window.__shares[0]);
     assert.match(shareZero.text, /0% — 0 из 1 задач выполнено/);
-    assert.match(shareZero.url, /share=1/);
+    assert.match(shareZero.url, /\/invite\/\?share=1/);
     assert.ok(!JSON.stringify(shareZero).includes(label), "Native share must hide task name");
+    await page.locator("#share-close").click();
+
+    // Android fallback: send actual JPEG bytes as a native photo attachment,
+    // independent of Telegram's cached link preview.
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, "canShare", {
+        configurable: true, value: (data) => Boolean(data.files?.length)
+      });
+    });
+    await page.locator("#share-progress").click();
+    await page.waitForFunction(() => !document.querySelector("#share-image-native").hidden);
+    const downloadLink = page.locator("#share-image-download");
+    assert.equal(await downloadLink.getAttribute("href"), "assets/share-step-1-v2.jpg");
+    assert.equal(await downloadLink.getAttribute("download"), "sdelano-shag-1.jpg");
+    await page.locator("#share-image-native").click();
+    const photoPayload = await page.evaluate(() => {
+      const event = window.__shares.at(-1);
+      return { fileCount: event.files?.length, type: event.files?.[0]?.type,
+        fileSize: event.files?.[0]?.size, text: event.text };
+    });
+    assert.equal(photoPayload.fileCount, 1);
+    assert.equal(photoPayload.type, "image/jpeg");
+    assert.ok(photoPayload.fileSize > 10000);
+    assert.match(photoPayload.text, /\/invite\/\?share=1/);
+    assert.ok(!photoPayload.text.includes(label), "Photo caption must hide private task names");
     await page.locator("#share-close").click();
     const started = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
     assert.equal(started.done, false);
@@ -152,23 +179,29 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     // Referral upsell: the recipient sees the 50% result and their own blank list.
     const recipientContext = await browser.newContext({ viewport: { width, height } });
     const recipient = await recipientContext.newPage();
-    await recipient.goto(origin + new URL(receiverUrl).search, { waitUntil: "networkidle" });
-    assert.equal(await recipient.locator("#shared-achievement").isVisible(), true);
+    await recipient.goto(origin + "/invite/" + new URL(receiverUrl).search, { waitUntil: "networkidle" });
+    assert.equal(await recipient.locator("h1").textContent(), "Твой ход. Начни с одной задачи!");
+    assert.equal(await recipient.locator('meta[property="og:url"]').getAttribute("content"),
+      "https://safal207.github.io/todo-list/invite/");
+    assert.equal(await recipient.locator('link[rel="canonical"]').getAttribute("href"),
+      "https://safal207.github.io/todo-list/invite/");
     assert.equal(await recipient.locator('meta[property="og:image"]').getAttribute("content"),
       "https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg");
-    assert.match(await recipient.locator("#shared-achievement-heading").textContent(), /50%/);
-    assert.match(await recipient.locator("#shared-achievement-detail").textContent(), /1 из 2/);
-    assert.equal(await recipient.locator("li.task").count(), 0);
+    assert.match(await recipient.locator("#friend-score").textContent(), /1 из 2 задач \(50%\)/);
+    assert.equal(await recipient.locator("img").getAttribute("src"), "../assets/share-step-1-v2.jpg");
+    assert.equal(await recipient.locator("#start-own").isVisible(), true);
     await recipient.screenshot({ path: "artifacts/referral-" + width + ".png", fullPage: true });
     assert.ok(!(await recipient.locator("body").textContent()).includes(label),
       "Recipient must not see the sender's task titles");
-    await recipient.locator("#shared-start").click();
-    assert.equal(await recipient.locator("#task-title").evaluate(el => document.activeElement === el), true);
+    assert.match(await recipient.locator("#start-own").getAttribute("href"), /\/todo-list\/\?utm_source=progress_share/);
+    await recipient.goto(origin + "/", { waitUntil: "networkidle" });
+    assert.equal(await recipient.locator("li.task").count(), 0, "Recipient starts with independent tasks");
     await recipient.locator("#task-title").fill("Recipient task");
     await recipient.locator("#task-form button[type=submit]").click();
     assert.equal(await recipient.locator("li.task").count(), 1);
-    await recipient.goto(origin + "/?share=1&done=9999&total=2", { waitUntil: "networkidle" });
-    assert.equal(await recipient.locator("#shared-achievement").isVisible(), false);
+    await recipient.goto(origin + "/invite/?done=9999&total=2", { waitUntil: "networkidle" });
+    assert.match(await recipient.locator("#friend-score").textContent(),
+      /Друг поделился результатом/, "Invalid share URL cannot inject a fake result");
     await recipientContext.close();
     await page.locator("li.task").filter({ hasText: "Private extra " + width })
       .locator(".delete-button").click();
@@ -198,6 +231,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       viewport: window.innerWidth, width: document.documentElement.scrollWidth
     }));
     assert.ok(overflow.width <= overflow.viewport + 1, "Share dialog causes overflow");
+    assert.equal(await page.locator("#share-image-download").isVisible(), true);
     await page.screenshot({ path: "artifacts/share-progress-" + width + ".png", fullPage: true });
 
     // Reproduce blocked clipboard in embedded Android/WebView browsers.
