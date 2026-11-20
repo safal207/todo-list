@@ -2,6 +2,10 @@
 
 const STORAGE_KEY = "todo-list.tasks.v1";
 const TASK_HISTORY_KEY = "sdelano.tasks.history.v1";
+const clock = window.taskClock;
+const feedback = window.taskFeedback;
+let needsClockMigration = false;
+const clockUpdates = new Map();
 const form = document.querySelector("#task-form");
 const titleInput = document.querySelector("#task-title");
 const list = document.querySelector("#tasks");
@@ -21,6 +25,9 @@ const nextStep = document.querySelector("#next-step");
 const nextDetail = document.querySelector("#next-detail");
 const storageNote = document.querySelector("#storage-note");
 const storageWarning = document.querySelector("#storage-warning");
+const feedbackToggle = document.querySelector("#feedback-toggle");
+const toast = document.querySelector("#task-toast");
+let toastTimeout;
 let activeFilter = "all";
 
 function setStorageWarning(visible) {
@@ -31,9 +38,15 @@ function setStorageWarning(visible) {
 function loadTasks() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return Array.isArray(stored)
-      ? stored.filter((task) => typeof task?.title === "string" && typeof task.done === "boolean")
-      : [];
+    if (!Array.isArray(stored)) return [];
+    return stored
+      .filter((task) => typeof task?.title === "string" && typeof task.done === "boolean")
+      .map((task) => {
+        if (!("elapsedMs" in task) || (!task.done && !Number.isFinite(task.startedAt))) {
+          needsClockMigration = true;
+        }
+        return clock.normalize(task);
+      });
   } catch {
     setStorageWarning(true);
     return [];
@@ -49,6 +62,26 @@ function saveTasks() {
   } catch {
     setStorageWarning(true);
   }
+}
+
+if (needsClockMigration) saveTasks();
+
+function renderFeedbackToggle() {
+  const enabled = feedback.isEnabled();
+  feedbackToggle.setAttribute("aria-pressed", String(enabled));
+  feedbackToggle.textContent = enabled ? "Отклик: вкл" : "Отклик: выкл";
+}
+renderFeedbackToggle();
+feedbackToggle.addEventListener("click", () => {
+  feedback.setEnabled(!feedback.isEnabled());
+  renderFeedbackToggle();
+});
+
+function announceDone(task) {
+  clearTimeout(toastTimeout);
+  toast.textContent = "Отлично! " + clock.display(task) + " ✦";
+  toast.classList.add("is-visible");
+  toastTimeout = setTimeout(() => toast.classList.remove("is-visible"), 2800);
 }
 
 function recordTaskActivity(task, action) {
@@ -128,6 +161,11 @@ function appendTask(task) {
   const row = template.content.firstElementChild.cloneNode(true);
   const checkbox = row.querySelector(".task-checkbox");
   const deleteButton = row.querySelector(".delete-button");
+  const timeLabel = row.querySelector(".task-clock");
+  const updateClock = () => { timeLabel.textContent = clock.display(task); };
+  clockUpdates.set(task, updateClock);
+  row.classList.toggle("task-finished", task.done);
+  updateClock();
 
   row.querySelector(".task-title").textContent = task.title;
   checkbox.checked = task.done;
@@ -135,7 +173,21 @@ function appendTask(task) {
   deleteButton.title = "Удалить задачу";
 
   checkbox.addEventListener("change", () => {
-    task.done = checkbox.checked;
+    const now = Date.now();
+    if (checkbox.checked) {
+      clock.finish(task, now);
+      feedback.play("complete");
+      row.classList.remove("task-celebrate");
+      void row.offsetWidth;
+      row.classList.add("task-celebrate");
+      announceDone(task);
+    } else {
+      clock.reopen(task, now);
+      feedback.play("reopen");
+      row.classList.remove("task-celebrate");
+    }
+    row.classList.toggle("task-finished", task.done);
+    updateClock();
     saveTasks();
     recordTaskActivity(task, task.done ? "done" : "reopen");
     updateProgress();
@@ -146,7 +198,9 @@ function appendTask(task) {
   });
 
   deleteButton.addEventListener("click", () => {
+    feedback.play("remove");
     const neighbor = visibleNeighborCheckbox(row);
+    clockUpdates.delete(task);
     tasks.splice(tasks.indexOf(task), 1);
     row.remove();
     saveTasks();
@@ -164,7 +218,8 @@ function appendTask(task) {
 }
 
 function addTask(title) {
-  const task = { title, done: false };
+  const task = clock.create(title);
+  feedback.play("add");
   tasks.push(task);
   const checkbox = appendTask(task);
   if (activeFilter === "done") {
@@ -181,18 +236,21 @@ sampleButton.addEventListener("click", () => addTask("Запланировать
 
 for (const button of filterButtons) {
   button.addEventListener("click", () => {
+    feedback.play("tap");
     activeFilter = button.dataset.filter;
     updateList();
   });
 }
 
 clearFilterButton?.addEventListener("click", () => {
+  feedback.play("tap");
   activeFilter = "all";
   updateList();
   filterButtons.find((button) => button.dataset.filter === activeFilter)?.focus();
 });
 
 titleInput.addEventListener("input", () => titleInput.setCustomValidity(""));
+titleInput.addEventListener("pointerdown", () => feedback.play("tap"));
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -212,3 +270,11 @@ form.addEventListener("submit", (event) => {
 tasks.forEach(appendTask);
 updateProgress();
 updateList();
+
+function updateClocks() {
+  for (const update of clockUpdates.values()) update();
+}
+setInterval(updateClocks, 250);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) updateClocks();
+});

@@ -6,7 +6,8 @@ on:
       - "index.html"
       - "styles.css"
       - "app.js"
-      - "goals/**"
+      - "clock.js"
+      - "effects.js"
       - "tests/qa-smoke.mjs"
       - ".github/workflows/qa-smoke.yml"
   push:
@@ -16,7 +17,8 @@ on:
       - "index.html"
       - "styles.css"
       - "app.js"
-      - "goals/**"
+      - "clock.js"
+      - "effects.js"
       - "tests/qa-smoke.mjs"
       - ".github/workflows/qa-smoke.yml"
 
