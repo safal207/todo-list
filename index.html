@@ -3,53 +3,76 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Простой список задач с сохранением в браузере.">
-    <meta name="theme-color" content="#f5f3fb">
-    <title>Список задач</title>
+    <meta name="description" content="Сделано — список задач с быстрым стартом, фильтрами и наглядным прогрессом.">
+    <meta name="theme-color" content="#fff7e7">
+    <title>Сделано — список задач</title>
     <link rel="stylesheet" href="styles.css">
     <script src="app.js" defer></script>
   </head>
   <body>
-    <main class="workspace">
-      <header class="page-header">
-        <span class="page-icon" aria-hidden="true"></span>
-        <h1>Список задач</h1>
+    <div class="workspace">
+      <header class="site-header">
+        <div class="wordmark"><span class="brand-icon" aria-hidden="true"></span> Сделано<span class="wordmark-period">.</span></div>
+        <p id="storage-note" class="storage-note"><span aria-hidden="true"></span> Сохраняется в браузере</p>
+        <p id="storage-warning" class="storage-warning" role="status" hidden>Сохранение недоступно. Изменения могут исчезнуть после обновления страницы.</p>
       </header>
 
-      <div class="board">
-        <section class="task-panel" aria-labelledby="tasks-heading">
-          <form id="task-form">
-            <label for="task-title">Новая задача</label>
-            <div class="form-controls">
-              <input id="task-title" name="title" type="text" placeholder="Например, отправить отчёт" maxlength="200" autocomplete="off" required>
-              <button class="add-button" type="submit"><span aria-hidden="true">+</span> Добавить</button>
-            </div>
-          </form>
-
-          <div class="task-section">
-            <h2 id="tasks-heading">Задачи</h2>
-            <ul id="tasks" class="task-list" role="list"></ul>
-            <div id="empty-state" class="empty-state">
-              <span class="empty-icon" aria-hidden="true"><i></i></span>
-              <p><strong>Задач пока нет</strong></p>
-              <p>Добавьте первую задачу в форму выше.</p>
-            </div>
+      <main>
+        <section class="hero" aria-labelledby="page-heading">
+          <div class="hero-copy">
+            <h1 id="page-heading">Список задач</h1>
+            <p>Запишите дело, отметьте его галочкой и&nbsp;увидите свой прогресс.</p>
+            <button id="start-button" class="start-button" type="button"><span aria-hidden="true">+</span> Добавить задачу</button>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <span class="hero-sun"></span>
+            <img src="hero-check.webp" width="640" height="640" alt="">
           </div>
         </section>
 
-        <aside class="progress-panel" aria-labelledby="progress-heading">
-          <h2 id="progress-heading">Прогресс</h2>
-          <p id="percentage" class="percentage" aria-hidden="true">0%</p>
-          <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
-          <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
-        </aside>
-      </div>
+        <div class="board">
+          <section class="task-panel" aria-labelledby="tasks-heading">
+            <h2 id="tasks-heading">Мои задачи</h2>
+            <form id="task-form">
+              <label for="task-title">Новая задача</label>
+              <div class="form-controls">
+                <input id="task-title" name="title" type="text" placeholder="Например, отправить отчёт" maxlength="200" autocomplete="off" required>
+                <button class="add-button" type="submit">Добавить</button>
+              </div>
+            </form>
 
-      <footer class="page-footer">
-        <p id="storage-note">Задачи сохраняются в этом браузере.</p>
-        <p id="storage-warning" class="storage-warning" role="status" hidden>Сохранение недоступно. Изменения могут исчезнуть после обновления страницы.</p>
-      </footer>
-    </main>
+            <div class="task-section">
+              <div id="filter-group" class="filters" role="group" aria-label="Фильтр задач" hidden>
+                <button type="button" data-filter="all" aria-pressed="true">Все</button>
+                <button type="button" data-filter="active" aria-pressed="false">В работе</button>
+                <button type="button" data-filter="done" aria-pressed="false">Готово</button>
+              </div>
+              <ul id="tasks" class="task-list" role="list"></ul>
+              <div id="empty-state" class="empty-state">
+                <span class="empty-icon brand-icon" aria-hidden="true"></span>
+                <div><p><strong>Задач пока нет</strong></p><p>Начните со своего дела или возьмите пример.</p></div>
+                <button id="sample-button" class="outline-button" type="button">Добавить пример</button>
+              </div>
+              <div id="filtered-empty" class="filtered-empty" hidden>
+                <p id="filtered-message"></p>
+                <button id="clear-filter" class="outline-button" type="button">Показать все</button>
+              </div>
+            </div>
+          </section>
+
+          <aside id="progress-panel" class="progress-panel" data-stage="first" aria-labelledby="progress-heading">
+            <h2 id="progress-heading">Прогресс</h2>
+            <p id="percentage" class="percentage" aria-hidden="true">0%</p>
+            <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
+            <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <div class="next-action">
+              <p id="next-step">Начните с одной задачи</p>
+              <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
 
     <template id="task-template">
       <li class="task">
