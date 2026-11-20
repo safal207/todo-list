@@ -748,6 +748,9 @@ h1 {
 .share-providers a:hover, .share-copy-button:hover { background: #dfcbff; }
 .share-copy-button {
   width: 100%;
+  padding: .6rem .7rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
   background: #ffd45f;
 }
 .share-copy-button:hover { background: #ffe18a; }
