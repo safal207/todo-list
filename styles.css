@@ -741,7 +741,9 @@ h1 {
   font-weight: 800;
   text-align: center;
   text-decoration: none;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  font-size: .91rem;
+  padding-inline: .35rem;
 }
 .share-providers a:hover, .share-copy-button:hover { background: #dfcbff; }
 .share-copy-button {
@@ -749,7 +751,19 @@ h1 {
   background: #ffd45f;
 }
 .share-copy-button:hover { background: #ffe18a; }
-.share-field-label { font-size: .78rem; font-weight: 800; color: #69534e; }
+.share-manual {
+  padding: .4rem .55rem;
+  border: 1px dashed #ddc9b0;
+  border-radius: .6rem;
+  background: #fffaf0;
+}
+.share-manual summary {
+  font-size: .82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.share-manual[open] { display: grid; gap: .4rem; }
+.share-field-label { display: block; font-size: .78rem; font-weight: 800; color: #69534e; }
 .share-ready-text {
   display: block;
   width: 100%;
