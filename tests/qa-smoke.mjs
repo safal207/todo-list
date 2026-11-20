@@ -167,7 +167,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await long.locator(".task-checkbox").check();
     assert.match((await long.locator(".task-clock").textContent()).trim(), /1 д 2 ч 3 мин/);
     const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1")));
-    assert.ok(migrated[0].startedAt > 0 && migrated[0].elapsedMs === 0);
+    const legacyActiveData = migrated.find((task) => task.title === "Legacy active");
+    assert.ok(legacyActiveData.startedAt > 0 && legacyActiveData.elapsedMs === 0);
+    assert.equal(migrated[0].title, "Long task",
+      "Finished tasks must be ordered before unfinished legacy tasks");
 
     const oldPage = await page.goto(origin + "/goals/", { waitUntil: "domcontentloaded" });
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
