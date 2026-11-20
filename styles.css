@@ -627,3 +627,166 @@ h1 {
   .task-toast { transition: none; }
   .feedback-toggle:active, .filters button:active, .delete-button:active { transform: none; }
 }
+
+/* Conversion-focused progress sharing: visible choices, social proof, CTA. */
+.shared-achievement {
+  margin-block-end: 1rem;
+  padding: clamp(1rem, 3vw, 1.6rem);
+  border: 2px solid #2c1922;
+  border-radius: 1rem;
+  background: #e0f58e;
+  box-shadow: 0 .25rem 0 #2c1922;
+}
+.shared-kicker, .share-dialog-kicker {
+  display: block;
+  margin-block-end: .35rem;
+  font-size: .77rem;
+  font-weight: 850;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+.shared-achievement h2 {
+  margin-block-end: .45rem;
+  font-size: clamp(1.35rem, 4.5vw, 2rem);
+  font-weight: 850;
+  line-height: 1.15;
+}
+.shared-achievement p { margin-block-end: .8rem; max-width: 44rem; }
+.shared-start-button, .share-primary {
+  min-height: 2.8rem;
+  padding: .65rem 1rem;
+  border: 2px solid #2c1922;
+  border-radius: .65rem;
+  color: #fff8e9;
+  background: #bd351f;
+  font-weight: 800;
+}
+.shared-start-button:hover, .share-primary:hover { background: #a92b17; }
+.share-dialog {
+  width: min(calc(100vw - 1.25rem), 33rem);
+  max-height: min(90dvh, 50rem);
+  margin: auto;
+  padding: clamp(1rem, 4vw, 1.5rem);
+  overflow: auto;
+  border: 2px solid #2c1922;
+  border-radius: 1.15rem;
+  color: #2c1922;
+  background: #fffdf7;
+  box-shadow: 0 1rem 4rem #20152c44;
+}
+.share-dialog::backdrop { background: #25153d99; }
+.share-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .75rem;
+}
+.share-dialog-header h2 {
+  margin: 0;
+  font-size: clamp(1.25rem, 4vw, 1.6rem);
+  font-weight: 850;
+  line-height: 1.2;
+}
+.share-dialog-kicker { color: #bd351f; }
+.share-close {
+  flex: 0 0 auto;
+  width: 2.8rem;
+  height: 2.8rem;
+  border: 1.5px solid #e7d4b9;
+  border-radius: .65rem;
+  color: #2c1922;
+  background: #fff7e7;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+.share-close:hover { background: #eadfff; }
+.share-score {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .35rem .8rem;
+  margin-block: 1rem .75rem;
+  padding: .85rem 1rem;
+  border: 2px solid #2c1922;
+  border-radius: .9rem;
+  color: #fff8e9;
+  background: #2e2250;
+}
+.share-score strong {
+  font-size: clamp(2.5rem, 10vw, 3.4rem);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -.05em;
+  font-variant-numeric: tabular-nums;
+}
+.share-score span { font-weight: 750; }
+.share-dialog-description { margin-block-end: 1rem; color: #69534e; }
+.share-actions { display: grid; gap: .65rem; }
+.share-providers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .6rem;
+}
+.share-providers a, .share-copy-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 2.85rem;
+  padding: .5rem .7rem;
+  border: 2px solid #2c1922;
+  border-radius: .7rem;
+  color: #2c1922;
+  background: #eadfff;
+  font: inherit;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: .91rem;
+  padding-inline: .35rem;
+}
+.share-providers a:hover, .share-copy-button:hover { background: #dfcbff; }
+.share-copy-button {
+  width: 100%;
+  padding: .6rem .7rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  background: #ffd45f;
+}
+.share-copy-button:hover { background: #ffe18a; }
+.share-manual {
+  padding: .4rem .55rem;
+  border: 1px dashed #ddc9b0;
+  border-radius: .6rem;
+  background: #fffaf0;
+}
+.share-manual summary {
+  font-size: .82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.share-manual[open] { display: grid; gap: .4rem; }
+.share-field-label { display: block; font-size: .78rem; font-weight: 800; color: #69534e; }
+.share-ready-text {
+  display: block;
+  width: 100%;
+  min-height: 5.6rem;
+  padding: .65rem;
+  border: 1.5px solid #ddc9b0;
+  border-radius: .6rem;
+  color: #2c1922;
+  background: #fffaf0;
+  font: inherit;
+  font-size: .79rem;
+  resize: vertical;
+}
+.share-feedback { min-height: 1.3em; margin-block-start: .7rem; font-size: .85rem; font-weight: 800; color: #395c1f; }
+.share-privacy { margin-block-start: .3rem; color: #69534e; font-size: .75rem; line-height: 1.4; }
+.share-empty-action { display: grid; gap: .8rem; }
+@media (max-width: 28rem) {
+  .share-dialog { padding: 1rem; }
+  .shared-achievement { padding: .9rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shared-start-button, .share-primary, .share-providers a, .share-copy-button { transition: none; }
+}

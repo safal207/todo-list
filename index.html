@@ -33,6 +33,12 @@
       </header>
 
       <main>
+        <section id="shared-achievement" class="shared-achievement" aria-labelledby="shared-achievement-heading" hidden>
+          <span class="shared-kicker">Тебе бросили вызов</span>
+          <h2 id="shared-achievement-heading">Чей-то результат — твой повод начать!</h2>
+          <p id="shared-achievement-detail"></p>
+          <button id="shared-start" class="shared-start-button" type="button">Начать свои задачи</button>
+        </section>
         <section class="hero" aria-labelledby="page-heading">
           <div class="hero-copy">
             <h1 id="page-heading">Список задач</h1>
@@ -77,11 +83,11 @@
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
             <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
             <div class="share-progress-block">
-              <button id="share-progress" class="share-progress-button" type="button" disabled aria-describedby="share-progress-hint">
+              <button id="share-progress" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
                 <span class="share-arrow" aria-hidden="true">↗</span>
                 Поделиться прогрессом
               </button>
-              <p id="share-progress-hint" class="share-progress-hint">Только цифры и ссылка. Названия задач останутся у вас.</p>
+              <p id="share-progress-hint" class="share-progress-hint">Покажи свой результат и пригласи друга. Личные задачи останутся у тебя.</p>
             </div>
             <div class="next-action">
               <p id="next-step">Начните с одной задачи</p>
@@ -101,6 +107,39 @@
         <button class="delete-button" type="button"><span class="trash-icon" aria-hidden="true"></span></button>
       </li>
     </template>
+    <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-dialog-title" aria-describedby="share-dialog-description">
+      <div class="share-dialog-header">
+        <div>
+          <p class="share-dialog-kicker">Сделано · Делись победой</p>
+          <h2 id="share-dialog-title">Пусть друзья узнают, кто тут делает дела!</h2>
+        </div>
+        <button id="share-close" class="share-close" type="button" aria-label="Закрыть окно отправки">×</button>
+      </div>
+      <div class="share-score">
+        <strong id="share-preview-percentage">0%</strong>
+        <span id="share-preview-summary">Выполнено 0 из 0</span>
+      </div>
+      <p id="share-dialog-description" class="share-dialog-description">Твой прогресс — вызов друзьям. Покажи результат и предложи им начать свои задачи.</p>
+      <div id="share-empty-action" class="share-empty-action" hidden>
+        <p>Сначала запиши хотя бы одну задачу. Её таймер стартует автоматически — появится результат, которым можно поделиться.</p>
+        <button id="share-create-task" class="share-primary" type="button">Начать первую задачу</button>
+      </div>
+      <div id="share-actions" class="share-actions">
+        <button id="share-native" class="share-primary" type="button" hidden>Поделиться через телефон</button>
+        <div class="share-providers" aria-label="Куда отправить">
+          <a id="share-telegram" href="https://t.me/" target="_blank" rel="noopener noreferrer">Telegram</a>
+          <a id="share-whatsapp" href="https://wa.me/" target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </div>
+        <button id="share-copy" class="share-copy-button" type="button">Скопировать приглашение и ссылку</button>
+        <details id="share-manual" class="share-manual">
+          <summary>Показать текст и ссылку</summary>
+          <label class="share-field-label" for="share-ready-text">Текст для отправки вручную</label>
+          <textarea id="share-ready-text" class="share-ready-text" rows="5" readonly spellcheck="false"></textarea>
+        </details>
+      </div>
+      <p id="share-feedback" class="share-feedback" role="status" aria-live="polite"></p>
+      <p class="share-privacy">Только процент и количество задач. Ни названия, ни время выполнения не отправляются.</p>
+    </dialog>
     <div id="task-toast" class="task-toast" role="status" aria-live="polite"></div>
   </body>
 </html>
