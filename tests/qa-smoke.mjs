@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
-const browser = await chromium.launch({ headless: true });
+const engine = process.env.SDELANO_QA_ENGINE || "chromium";
+const browserType = { chromium, firefox, webkit }[engine];
+const browser = await browserType.launch({
+  headless: true,
+  executablePath: process.env.SDELANO_QA_EXECUTABLE
+});
 const origin = "http://127.0.0.1:8765";
 const errors = [];
 mkdirSync("artifacts", { recursive: true });
@@ -100,16 +105,14 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await task.locator(".task-checkbox").evaluate(el => document.activeElement === el), true);
     await page.locator("#share-progress").click();
     const shareZeroText = await page.locator("#share-ready-text").inputValue();
-    assert.match(shareZeroText, /0% — 0 из 1 задач выполнено/);
+    assert.match(shareZeroText, /0 из 1 дел \(0%\)/);
     assert.ok(!shareZeroText.includes(label), "Private task title must not be shared");
     assert.equal(await page.locator("#share-preview-percentage").textContent(), "0%");
+    assert.equal(await page.getByRole("link", { name: "Ссылка в Telegram" }).isVisible(), true);
     const telegram = new URL(await page.locator("#share-telegram").getAttribute("href"));
     const whatsApp = new URL(await page.locator("#share-whatsapp").getAttribute("href"));
     const referralURL = new URL(telegram.searchParams.get("url"));
-    assert.equal(referralURL.searchParams.get("share"), "1");
-    assert.equal(referralURL.searchParams.get("done"), "0");
-    assert.equal(referralURL.searchParams.get("total"), "1");
-    assert.equal(referralURL.searchParams.get("utm_campaign"), "telegram_invite_v1");
+    assert.equal(referralURL.search, "?r=0-1");
     assert.equal(referralURL.pathname, "/todo-list/invite/",
       "Telegram shares must use a new canonical OG page, not the cached homepage");
     assert.match(whatsApp.searchParams.get("text"), /Твой ход!/);
@@ -127,8 +130,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#share-native").isVisible(), true);
     await page.locator("#share-native").click();
     const shareZero = await page.evaluate(() => window.__shares[0]);
-    assert.match(shareZero.text, /0% — 0 из 1 задач выполнено/);
-    assert.match(shareZero.url, /\/invite\/\?share=1/);
+    assert.match(shareZero.text, /0 из 1 дел \(0%\)/);
+    assert.equal(shareZero.url, referralURL.href);
     assert.ok(!JSON.stringify(shareZero).includes(label), "Native share must hide task name");
     await page.locator("#share-close").click();
 
@@ -160,6 +163,24 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(posterZero.first, 0xff);
     assert.equal(posterZero.second, 0xd8);
     assert.match(posterZero.alt, /0 из 1/);
+    const ctaRight = await page.evaluate(async () => {
+      const prototype = CanvasRenderingContext2D.prototype;
+      const fillText = prototype.fillText;
+      let right;
+      prototype.fillText = function (text, x, ...args) {
+        if (text === "ЗАПИШИ ЗАДАЧУ") {
+          right = (x + this.measureText(text).actualBoundingBoxRight) / this.canvas.width;
+        }
+        return fillText.call(this, text, x, ...args);
+      };
+      try {
+        await window.achievementPoster.create({ done: 1, total: 1 });
+        return right;
+      } finally {
+        prototype.fillText = fillText;
+      }
+    });
+    assert.ok(ctaRight < 0.75, "Poster CTA clears Telegram's bottom-right timestamp");
     assert.ok(!(await page.evaluate(async () => {
       try { await window.achievementPoster.create({ done: 2, total: 1 }); return true; }
       catch { return false; }
@@ -175,7 +196,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(photoPayload.type, "image/jpeg");
     assert.ok(photoPayload.fileSize > 5000);
     assert.equal(photoPayload.fileName, "sdelano-progress-0-of-1.jpg");
-    assert.match(photoPayload.text, /\/invite\/\?share=1/);
+    assert.ok(photoPayload.text.endsWith(referralURL.href), "Photo caption contains the short link");
     assert.ok(!photoPayload.text.includes(label), "Photo caption must hide private task names");
     await page.locator("#share-close").click();
     const started = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
@@ -190,9 +211,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await task.locator(".task-checkbox").check();
     assert.equal(await page.locator("#first-step-guide").isVisible(), false);
     assert.equal(await page.locator("#first-win-card").isVisible(), true);
-    assert.equal(await page.locator("#task-toast").isVisible(), false,
-      "First-win card must not be obscured by a duplicate toast");
     assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
+    assert.match(await page.locator("#first-win-detail").textContent(), /Дело было открыто/);
     assert.equal(await page.locator("#next-action").isVisible(), false,
       "A visible first victory must not compete with the next-step upsell");
     assert.equal(await page.evaluate(() => localStorage.getItem("sdelano.first-win.v1")), "1");
@@ -223,7 +243,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(completed.done, true);
     assert.equal(completed.startedAt, null);
     assert.ok(completed.elapsedMs >= 1000, "Elapsed time saved on completion");
-    assert.match((await task.locator(".task-clock").textContent()).trim(), /^Готово за /);
+    assert.match((await task.locator(".task-clock").textContent()).trim(), /^Готово · было открыто /);
     await page.locator("#share-progress").click();
     assert.equal(await page.locator("#share-preview-percentage").textContent(), "100%");
     await page.waitForFunction(() =>
@@ -239,8 +259,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "Achievement JPG must change with real completion data");
     assert.match(posterFull.alt, /1 из 1.*100%/);
     const shareFull = await page.locator("#share-ready-text").inputValue();
-    assert.match(shareFull, /100% — 1 из 1 задач выполнено/);
-    assert.match(shareFull, /Все задачи закрыты/);
+    assert.match(shareFull, /1 из 1 дел \(100%\)\. Твой ход! Запиши задачу\./);
     assert.ok(!shareFull.includes(label), "Do not share private task title");
     await page.locator("#share-close").click();
 
@@ -261,7 +280,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await nextCheckbox.evaluate(el => document.activeElement === el), true);
     assert.equal(await nextCheckbox.isChecked(), false,
       "Upsell must never mark a task complete on the user's behalf");
-    assert.equal(await page.locator('button[data-filter="all"]').getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator('button[data-filter="active"]').getAttribute("aria-pressed"), "true");
     assert.equal(await page.locator("li.task").count(), 2);
     await page.screenshot({ path: "artifacts/next-step-" + width + ".png", fullPage: true });
     await page.locator("#share-progress").click();
@@ -269,7 +288,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       document.querySelector("#share-image-download")?.download === "sdelano-progress-1-of-2.jpg");
     assert.match(await page.locator("#share-poster-preview").getAttribute("alt"), /1 из 2.*50%/);
     const shareHalf = await page.locator("#share-ready-text").inputValue();
-    assert.match(shareHalf, /50% — 1 из 2 задач выполнено/);
+    assert.match(shareHalf, /1 из 2 дел \(50%\)/);
     assert.ok(!shareHalf.includes("Private extra"));
     const shareLink = new URL((await page.locator("#share-telegram").getAttribute("href")));
     const receiverUrl = shareLink.searchParams.get("url");
@@ -283,7 +302,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     });
     const recipient = await recipientContext.newPage();
     await recipient.goto(origin + "/invite/" + new URL(receiverUrl).search, { waitUntil: "networkidle" });
-    assert.equal(await recipient.locator("h1").textContent(), "Твой ход. Начни с одной задачи!");
+    assert.equal(await recipient.locator("h1").textContent(), "Твой ход. Запиши одну задачу!");
     assert.equal(await recipient.locator('meta[property="og:url"]').getAttribute("content"),
       "https://safal207.github.io/todo-list/invite/");
     assert.equal(await recipient.locator('link[rel="canonical"]').getAttribute("href"),
@@ -319,13 +338,29 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await recipient.screenshot({ path: "artifacts/referral-" + width + ".png", fullPage: true });
     assert.ok(!(await recipient.locator("body").textContent()).includes(label),
       "Recipient must not see the sender's task titles");
-    assert.match(await recipient.locator("#start-own").getAttribute("href"), /\/todo-list\/\?utm_source=progress_share/);
-    await recipient.goto(origin + "/", { waitUntil: "networkidle" });
+    await recipient.locator("#start-own").click();
+    assert.equal(new URL(recipient.url()).searchParams.get("utm_source"), "progress_share");
+    assert.equal(new URL(recipient.url()).searchParams.get("utm_campaign"), "telegram_invite_v1");
     assert.equal(await recipient.locator("li.task").count(), 0, "Recipient starts with independent tasks");
     await recipient.locator("#task-title").fill("Recipient task");
     await recipient.locator("#task-form button[type=submit]").click();
     assert.equal(await recipient.locator("li.task").count(), 1);
-    await recipient.goto(origin + "/invite/?done=9999&total=2", { waitUntil: "networkidle" });
+    await recipient.locator(".task-checkbox").check();
+    await recipient.reload();
+    assert.equal(await recipient.locator(".task-checkbox").isChecked(), true,
+      "The invited friend's first completion persists");
+    await recipient.locator(".task-checkbox").uncheck();
+    await recipient.locator(".task-checkbox").check();
+    const funnel = await recipient.evaluate(() => window.sdelanoAnalytics.summary());
+    for (const event of ["referral_opened", "referral_started", "referral_task_created",
+      "referral_task_completed"]) {
+      assert.equal(funnel.events[event], 1, "The funnel counts each step once");
+    }
+    assert.equal(funnel.referralConversion, 1);
+    await recipient.goto(origin + "/invite/?share=1&done=1&total=2", { waitUntil: "networkidle" });
+    assert.match(await recipient.locator("#friend-score").textContent(), /1 из 2 задач \(50%\)/,
+      "Older shared links still display the result");
+    await recipient.goto(origin + "/invite/?r=9999-2", { waitUntil: "networkidle" });
     assert.match(await recipient.locator("#friend-score").textContent(),
       /Друг поделился результатом/, "Invalid share URL cannot inject a fake result");
     await recipientContext.close();
@@ -349,8 +384,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#share-copy").click();
     await page.waitForFunction(() => window.__copiedText.includes("https://safal207.github.io/todo-list/"));
     const copiedText = await page.evaluate(() => window.__copiedText);
-    assert.match(copiedText, /100% — 1 из 1 задач выполнено/);
-    assert.match(copiedText, /share=1/);
+    assert.match(copiedText, /1 из 1 дел \(100%\)/);
+    assert.match(copiedText, /\/invite\/\?r=1-1$/);
     assert.ok(!copiedText.includes(label), "Copied text must not contain private task name");
     assert.match(await page.locator("#share-feedback").textContent(), /скопированы/);
     assert.equal(await page.locator("#share-manual").evaluate(el => el.open), false,
@@ -450,7 +485,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator(".task-checkbox").check();
     assert.equal(await page.locator("#first-win-card").isVisible(), false,
       "A historical completion must suppress the new-user first win");
-    // Dismissal should preserve normal navigation and remove the card from tab order.
+    // Taking a break replaces the reward with a quiet return action.
     await page.evaluate(() => {
       localStorage.clear();
       localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
@@ -459,9 +494,11 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     });
     await page.reload({ waitUntil: "networkidle" });
     await page.locator(".task-checkbox").check();
-    await page.locator("#first-win-dismiss").click();
+    await page.locator("#next-break").click();
     assert.equal(await page.locator("#first-win-card").isVisible(), false);
-    assert.equal(await page.locator("#share-progress").evaluate(el => document.activeElement === el), true);
+    assert.equal(await page.locator("#next-step").textContent(), "Передышка");
+    assert.equal(await page.locator("#next-action-button").evaluate(el => document.activeElement === el), true);
+    assert.equal(await page.locator("#share-progress").isVisible(), false);
 
     // Achievement #3: three different completed tasks (not one task checked thrice).
     const awardContext = await browser.newContext({ viewport: { width, height } });
@@ -514,11 +551,6 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         "Do not stack three competing CTAs");
       assert.equal(await award.locator("#three-steps-badge").isVisible(), false,
         "Compact award is shown after the celebration");
-      assert.equal(await award.locator("#task-toast").evaluate(el =>
-        el.classList.contains("is-visible")), false,
-        "A prior completion toast must not cover the milestone award");
-      assert.equal(await award.locator("#task-toast").isVisible(), false,
-        "An outgoing toast must disappear immediately, not fade over the big number");
       assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.three-steps.v1")), "1");
       assert.equal(await award.locator("li.task").count(), 3);
       const awardLayout = await award.evaluate(() => ({
@@ -530,7 +562,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await award.locator("#three-steps-share").click();
       assert.equal(await award.locator("#share-dialog").isVisible(), true);
       const awardShare = await award.locator("#share-ready-text").inputValue();
-      assert.match(awardShare, /3 из 3 задач выполнено/);
+      assert.match(awardShare, /3 из 3 дел \(100%\)/);
       assert.ok(!awardShare.includes("Private QA milestone"),
         "Sharing the milestone must not disclose task names");
       await award.locator("#share-close").click();
@@ -548,6 +580,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         "Reopening a task must not erase an earned milestone");
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
         "Earned awards persist when a task is reopened");
+      await award.locator('button[data-filter="active"]').click();
       await third.check();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false,
         "Rechecking the same task must not trigger the award twice");
@@ -584,8 +617,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
         assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: " + n);
         if (n === 5 || n === 10) {
-          assert.equal(await award.locator("#task-toast").isVisible(), false,
-            "A toast must never cover the progress roadmap at new milestones");
+          assert.equal(await award.locator("#next-step").textContent(), n + " дел сделано!");
+          assert.equal(await award.locator("#next-action[data-completion]").isVisible(), true);
         }
         if (n === 5) {
           assert.equal(await award.locator('#milestone-track li.is-earned').count(), 3);
@@ -614,6 +647,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await tenth.locator(".task-checkbox").uncheck();
       assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 10",
         "Personal best survives task reopen");
+      await award.locator('button[data-filter="active"]').click();
       await tenth.locator(".delete-button").click();
       assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 10",
         "Personal best survives task deletion");
@@ -647,10 +681,12 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await award.locator('#task-form button[type="submit"]').click();
       const oneTask = award.locator("li.task .task-checkbox");
       await oneTask.check();
-      await award.locator("#first-win-dismiss").click();
+      await award.locator("#next-break").click();
       await oneTask.uncheck();
+      await award.locator('button[data-filter="active"]').click();
       await oneTask.check();
       await oneTask.uncheck();
+      await award.locator('button[data-filter="active"]').click();
       await oneTask.check();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
@@ -658,16 +694,17 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 1",
         "Re-checking a single task cannot advance the record toward 3");
       assert.equal(await award.locator('#milestone-track li.is-earned').count(), 1);
-      // New third distinct task: dismiss should leave a usable next-step button.
+      // After the third award, a break leaves the badge and one return action.
       for (let n = 2; n <= 3; n++) {
         await award.locator("#task-title").fill("Distinct task " + n);
         await award.locator('#task-form button[type="submit"]').click();
         await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
       }
       assert.equal(await award.locator("#three-steps-card").isVisible(), true);
-      await award.locator("#three-steps-dismiss").click();
+      await award.locator("#next-break").click();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
+      assert.equal(await award.locator("#next-step").textContent(), "Передышка");
       assert.equal(await award.locator("#next-action-button").evaluate(el => document.activeElement === el), true);
       assert.equal(awardErrors.length, 0, "Milestone JS errors: " + awardErrors.join("; "));
     } finally {
@@ -677,7 +714,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     const oldPage = await page.goto(origin + "/goals/", { waitUntil: "domcontentloaded" });
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
     assert.equal(pageErrors.length, 0, "JS errors: " + pageErrors.join("; "));
-    console.log("PASS " + width + "x" + height +
+    console.log("PASS " + engine + " " + width + "x" + height +
       " : milestone roadmap 1-3-5-10, three-step achievement, contextual upsell, tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
   } catch (error) {
     errors.push(width + "x" + height + ": " + (error.stack || error.message));
@@ -687,6 +724,193 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await context.close();
   }
 }
+
+for (const method of ["getItem", "setItem"]) {
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    await page.addInitScript((method) => {
+      const key = "todo-list.tasks.v1";
+      const original = Storage.prototype[method];
+      const originalGet = Storage.prototype.getItem;
+      localStorage.setItem(key, JSON.stringify([{ title: "Existing task", done: false }]));
+      window.__readStoredTasks = () => originalGet.call(localStorage, key);
+      Storage.prototype[method] = function (name, ...args) {
+        if (name === key) throw new DOMException("Storage unavailable", "SecurityError");
+        return original.call(this, name, ...args);
+      };
+    }, method);
+    await page.goto(origin);
+    await page.locator("#task-title").fill("Session task");
+    await page.locator("#task-form button").click();
+    await page.getByRole("checkbox", { name: "Session task" }).check();
+    assert.equal(await page.locator("#storage-warning").isVisible(), true);
+    assert.equal(await page.evaluate(() => JSON.parse(window.__readStoredTasks())[0].title),
+      "Existing task", "Unavailable task storage must keep existing tasks untouched");
+  } catch (error) {
+    errors.push(method + ": " + (error.stack || error.message));
+  } finally {
+    await context.close();
+  }
+}
+
+const loopContext = await browser.newContext({
+  viewport: { width: 390, height: 844 }, hasTouch: true, reducedMotion: "reduce"
+});
+try {
+  const page = await loopContext.newPage();
+  await page.goto(origin);
+  const input = page.locator("#task-title");
+  for (const title of ["First task", "Second task", "Third task"]) {
+    await input.fill(title);
+    await page.locator("#task-form button").click();
+  }
+  const first = page.getByRole("checkbox", { name: "First task", exact: true });
+  const second = page.getByRole("checkbox", { name: "Second task", exact: true });
+  const third = page.getByRole("checkbox", { name: "Third task", exact: true });
+  const next = page.locator("#next-action-button");
+  const active = page.locator('button[data-filter="active"]');
+  const done = page.locator('button[data-filter="done"]');
+  const hint = page.locator("#timer-hint");
+
+  assert.match(await hint.textContent(), /После галочки покажем следующее дело/);
+  assert.equal(await first.getAttribute("aria-describedby"), "completion-hint");
+  await first.tap();
+  assert.equal(await active.getAttribute("aria-pressed"), "true");
+  assert.equal(await first.isVisible(), false);
+  assert.equal(await page.locator("li.task:visible").count(), 2);
+  assert.equal(await second.evaluate(el => document.activeElement === el), true);
+  assert.match(await hint.textContent(), /Отличная работа! Готово 1 из 3/);
+  assert.equal(await page.locator("#first-win-next").textContent(), "К следующему делу");
+  await done.click();
+  await page.locator("#first-win-next").click();
+  assert.equal(await active.getAttribute("aria-pressed"), "true");
+  assert.equal(await second.evaluate(el => document.activeElement === el), true);
+  assert.equal(await second.isChecked(), false);
+
+  await page.locator('button[data-filter="all"]').click();
+  await second.tap();
+  assert.equal(await active.getAttribute("aria-pressed"), "true");
+  assert.equal(await second.isVisible(), false);
+  assert.equal(await page.locator("li.task:visible").count(), 1);
+  assert.equal(await third.evaluate(el => document.activeElement === el), true);
+  assert.match(await hint.textContent(), /Готово 2 из 3/);
+  assert.equal(await page.locator("#next-step").textContent(), "Сделано!");
+  assert.equal(await page.locator("#next-action[data-completion]").isVisible(), true);
+  assert.equal(await next.textContent(), "К следующему делу");
+  await page.getByRole("button", { name: "Передохнуть", exact: true }).click();
+  assert.equal(await page.locator("#next-step").textContent(), "Передышка");
+  assert.match(await page.locator("#next-detail").textContent(), /Что помогло тебе закончить дело/);
+  assert.equal(await next.textContent(), "Вернуться к делу");
+  await page.reload();
+  assert.equal(await page.locator("#next-action[data-break]").isVisible(), true);
+  await next.click();
+  assert.equal(await third.evaluate(el => document.activeElement === el), true);
+  assert.equal(await third.isChecked(), false);
+  assert.equal(await page.locator("#next-step").textContent(), "В работе");
+  assert.equal(await page.locator("#share-progress").isVisible(), true);
+
+  await third.tap();
+  assert.equal(await done.getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("li.task:visible").count(), 3);
+  assert.equal(await done.evaluate(el => document.activeElement === el), true);
+  assert.match(await hint.textContent(), /Все дела сделаны! Прогресс 100%/);
+  assert.equal(await page.locator("#progress").evaluate(el => el.value), 100);
+  assert.equal(await page.locator("#three-steps-next").textContent(), "Записать ещё одно дело");
+  await page.locator("#three-steps-next").click();
+  assert.equal(await input.evaluate(el => document.activeElement === el), true);
+  assert.equal(await page.locator("li.task").count(), 3);
+
+  await input.fill("Fourth task");
+  await page.locator("#task-form button").click();
+  await page.getByRole("checkbox", { name: "Fourth task", exact: true }).tap();
+  assert.equal(await done.getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("#next-step").textContent(), "Сделано!");
+  assert.equal(await next.textContent(), "Записать ещё одно дело");
+  await next.click();
+  assert.equal(await input.evaluate(el => document.activeElement === el), true);
+  assert.equal(await page.locator("li.task").count(), 4);
+
+  // Feedback, break and the next task fit together even with a long mobile list.
+  await page.evaluate(() => {
+    const startedAt = Date.now() - 2 * 60 * 60 * 1000;
+    localStorage.setItem("todo-list.tasks.v1", JSON.stringify(Array.from({ length: 8 }, (_, i) => ({
+      title: "Queue task " + (i + 1), done: i === 0, elapsedMs: 0,
+      startedAt: i === 0 ? null : startedAt
+    }))));
+  });
+  await page.reload();
+  await page.getByRole("checkbox", { name: "Queue task 2", exact: true }).tap();
+  assert.equal(await page.locator("#next-detail").textContent(), "Дело было открыто 2 ч.");
+  assert.equal(await page.getByRole("button", { name: "Передохнуть", exact: true }).count(), 1);
+  const visibleHandoff = await page.evaluate(() =>
+    ["#timer-hint", "#next-break", "#tasks li:not([hidden])"].every(selector => {
+      const bounds = document.querySelector(selector).getBoundingClientRect();
+      return bounds.top >= -1 && bounds.bottom <= innerHeight + 1 && bounds.height > 0;
+    })
+  );
+  assert.equal(visibleHandoff, true, "Progress, break and the next task must fit in the mobile viewport");
+} catch (error) {
+  errors.push("task loop: " + (error.stack || error.message));
+} finally {
+  await loopContext.close();
+}
+
+const returnContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+try {
+  const page = await returnContext.newPage();
+  await page.goto(origin);
+  for (const hasCompletedBefore of [false, true]) {
+    await page.evaluate((hasCompletedBefore) => {
+      localStorage.clear();
+      const startedAt = Date.now() - 48 * 60 * 60 * 1000;
+      localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
+        { title: "Unfinished task", done: false, elapsedMs: 0, startedAt, doneAt: null }
+      ]));
+      if (hasCompletedBefore) localStorage.setItem("sdelano.first-win.v1", "1");
+    }, hasCompletedBefore);
+    await page.reload();
+    const resume = page.getByRole("button", { name: "К задаче", exact: true });
+    assert.equal(await resume.count(), 1, "Exactly one action resumes an unfinished task");
+    await page.locator('button[data-filter="done"]').click();
+    await resume.click();
+    const task = page.getByRole("checkbox", { name: "Unfinished task" });
+    assert.equal(await task.evaluate(el => document.activeElement === el), true);
+    assert.equal(await task.isChecked(), false);
+    await task.check();
+    assert.equal(await resume.isVisible(), false, "A completed list has no reminder");
+  }
+} catch (error) {
+  errors.push("retention: " + (error.stack || error.message));
+} finally {
+  await returnContext.close();
+}
+
+const metricsContext = await browser.newContext();
+try {
+  const page = await metricsContext.newPage();
+  await page.route(origin + "/", async route => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace("</head>",
+      '<meta name="sdelano-metrics-endpoint" content="/events"></head>');
+    await route.fulfill({ response, body });
+  });
+  await page.route(origin + "/events", route => route.fulfill({ status: 204 }));
+  await page.goto(origin + "/");
+  await page.locator("#task-title").fill("Private task title");
+  const [request] = await Promise.all([
+    page.waitForRequest(request => request.url() === origin + "/events" &&
+      request.postDataJSON().event === "task_created"),
+    page.locator("#task-form button").click()
+  ]);
+  assert.equal(request.method(), "POST");
+  assert.deepEqual(request.postDataJSON(), { event: "task_created" });
+} catch (error) {
+  errors.push("metrics delivery: " + (error.stack || error.message));
+} finally {
+  await metricsContext.close();
+}
+
 await browser.close();
 if (errors.length) {
   console.error(errors.join("\n\n"));

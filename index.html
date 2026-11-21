@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — узнал, сколько заняло. Меньше «потом». Больше «готово». Жми и делай!">
+    <meta name="description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
     <meta name="theme-color" content="#fff7e7">
     <title>Хватит кормить задачи «завтраками». Сделано!</title>
     <link rel="canonical" href="https://safal207.github.io/todo-list/">
@@ -14,7 +14,7 @@
     <meta property="og:site_name" content="Сделано">
     <meta property="og:url" content="https://safal207.github.io/todo-list/">
     <meta property="og:title" content="Хватит кормить задачи «завтраками». Сделано!">
-    <meta property="og:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — узнал, сколько заняло. Меньше «потом». Больше «готово». Жми и делай!">
+    <meta property="og:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
     <!-- Stable, publicly accessible PNG used in Telegram/WhatsApp and social link cards. -->
     <meta property="og:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
     <meta property="og:image:secure_url" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
@@ -26,12 +26,13 @@
     <meta name="twitter:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
-    <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — узнал, сколько заняло. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css">
-    <script src="clock.js" defer></script>
+    <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
+    <link rel="stylesheet" href="styles.css?v=completion-feedback">
+    <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
-    <script src="app.js" defer></script>
+    <script src="analytics.js" defer></script>
+    <script src="app.js?v=completion-feedback" defer></script>
   </head>
   <body>
     <div class="workspace">
@@ -49,24 +50,20 @@
           <p id="shared-achievement-detail"></p>
           <button id="shared-start" class="shared-start-button" type="button">Начать свои задачи</button>
         </section>
-        <section class="hero" aria-labelledby="page-heading">
-          <div class="hero-copy">
-            <h1 id="page-heading">Список задач</h1>
-            <p>Напишите задачу — время пошло. Выполните — сохраните результат.</p>
-          </div>
-        </section>
-
         <div class="board">
-          <section class="task-panel" aria-labelledby="tasks-heading">
-            <h2 id="tasks-heading">Мои задачи</h2>
+          <section class="task-panel" aria-labelledby="page-heading">
+            <h1 id="page-heading">Список задач</h1>
             <form id="task-form">
               <label for="task-title">Новая задача</label>
               <div class="form-controls">
-                <input id="task-title" name="title" type="text" placeholder="Например, отправить отчёт" maxlength="200" autocomplete="off" required>
-                <button class="add-button" type="submit">Начать задачу</button>
+                <input id="task-title" name="title" type="text" placeholder="Например, собрать рюкзак" maxlength="200" autocomplete="off" aria-describedby="timer-hint" required>
+                <button class="add-button" type="submit">Добавить задачу</button>
               </div>
-              <p class="timer-hint">Таймер стартует сразу. При выполнении остановится и покажет результат.</p>
             </form>
+            <div class="task-feedback">
+              <p id="timer-hint" class="timer-hint">Таймер начнётся сразу.</p>
+              <button id="next-break" class="task-break" type="button" hidden>Передохнуть</button>
+            </div>
 
             <div class="task-section">
               <div id="filter-group" class="filters" role="group" aria-label="Фильтр задач" hidden>
@@ -74,10 +71,11 @@
                 <button type="button" data-filter="active" aria-pressed="false">В работе</button>
                 <button type="button" data-filter="done" aria-pressed="false">Готово</button>
               </div>
+              <p id="completion-hint" hidden>После галочки покажем следующее дело, а в конце — «Готово».</p>
               <ul id="tasks" class="task-list" role="list"></ul>
               <div id="empty-state" class="empty-state">
                 <span class="empty-icon brand-icon" aria-hidden="true"></span>
-                <div><p><strong>Задач пока нет</strong></p><p>Начните со своего дела или возьмите пример.</p></div>
+                <div><p><strong>Задач пока нет</strong></p></div>
                 <button id="sample-button" class="outline-button" type="button">Добавить пример</button>
               </div>
               <div id="filtered-empty" class="filtered-empty" hidden>
@@ -92,6 +90,39 @@
             <p id="percentage" class="percentage" aria-hidden="true">0%</p>
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
             <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
+              <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
+              <h3 id="first-step-title">Запиши одно небольшое дело</h3>
+              <p id="first-step-detail">Например, собрать рюкзак.</p>
+              <button id="first-step-cta" class="first-step-button" type="button">Записать первый шаг</button>
+            </section>
+            <section id="first-win-card" class="first-win-card" aria-labelledby="first-win-title" hidden>
+              <h3 id="first-win-title">Первый шаг сделан!</h3>
+              <p id="first-win-detail">Твоё первое дело готово.</p>
+              <div class="first-win-actions">
+                <button id="first-win-next" class="first-win-next" type="button">Записать ещё одно дело</button>
+                <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
+              </div>
+            </section>
+            <section id="three-steps-card" class="three-steps-card" aria-labelledby="three-steps-title" hidden>
+              <p class="three-steps-kicker">ДОСТИЖЕНИЕ ОТКРЫТО</p>
+              <div class="three-steps-number" aria-hidden="true">3</div>
+              <h3 id="three-steps-title">3 ШАГА СДЕЛАНО!</h3>
+              <p class="three-steps-description">Теперь твой рекорд — три готовых дела.</p>
+              <div class="three-steps-actions">
+                <button id="three-steps-next" class="three-steps-next" type="button">Следующий шаг</button>
+                <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
+              </div>
+            </section>
+            <p id="three-steps-badge" class="three-steps-badge" hidden>
+              <span class="three-steps-badge-icon" aria-hidden="true">★</span>
+              <span>Достижение: 3 шага сделано</span>
+            </p>
+            <div id="next-action" class="next-action" hidden>
+              <p id="next-step">Следующий шаг</p>
+              <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
+              <button id="next-action-button" class="next-action-button" type="button">Продолжить</button>
+            </div>
             <section class="milestone-roadmap" aria-labelledby="milestone-heading">
               <div class="milestone-roadmap-heading">
                 <h3 id="milestone-heading">Дорожка достижений</h3>
@@ -114,48 +145,12 @@
               <progress id="milestone-next-progress" class="milestone-next-progress" max="1" value="0" aria-label="Прогресс к следующему достижению"></progress>
               <p id="milestone-next-label" class="milestone-next-label" role="status">Первый шаг — самая близкая цель.</p>
             </section>
-            <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
-              <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
-              <h3 id="first-step-title">Запиши одно небольшое дело</h3>
-              <p id="first-step-detail">Не нужно составлять большой план. Начни с одной задачи.</p>
-              <button id="first-step-cta" class="first-step-button" type="button">Записать первый шаг</button>
-            </section>
-            <section id="first-win-card" class="first-win-card" aria-labelledby="first-win-title" hidden>
-              <p class="first-win-kicker">✓ ПЕРВАЯ ПОБЕДА</p>
-              <h3 id="first-win-title">Первый шаг сделан!</h3>
-              <p>Первая задача закрыта. Сохрани темп: выбери ещё одно дело или поделись достижением.</p>
-              <div class="first-win-actions">
-                <button id="first-win-next" class="first-win-next" type="button">Записать следующий шаг</button>
-                <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
-              </div>
-              <button id="first-win-dismiss" class="first-win-dismiss" type="button">Не сейчас</button>
-            </section>
-            <section id="three-steps-card" class="three-steps-card" aria-labelledby="three-steps-title" hidden>
-              <p class="three-steps-kicker">ДОСТИЖЕНИЕ ОТКРЫТО</p>
-              <div class="three-steps-number" aria-hidden="true">3</div>
-              <h3 id="three-steps-title">3 ШАГА СДЕЛАНО!</h3>
-              <p class="three-steps-description">Три разных дела закрыты. Продолжай в своём темпе — каждый шаг имеет значение.</p>
-              <div class="three-steps-actions">
-                <button id="three-steps-next" class="three-steps-next" type="button">Следующий шаг</button>
-                <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
-              </div>
-              <button id="three-steps-dismiss" class="three-steps-dismiss" type="button">Не сейчас</button>
-            </section>
-            <p id="three-steps-badge" class="three-steps-badge" hidden>
-              <span class="three-steps-badge-icon" aria-hidden="true">★</span>
-              <span>Достижение: 3 шага сделано</span>
-            </p>
             <div class="share-progress-block">
               <button id="share-progress" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
                 <span class="share-arrow" aria-hidden="true">↗</span>
                 Поделиться прогрессом
               </button>
-              <p id="share-progress-hint" class="share-progress-hint">Покажи свой результат и пригласи друга. Личные задачи останутся у тебя.</p>
-            </div>
-            <div id="next-action" class="next-action" hidden>
-              <p id="next-step">Следующий шаг</p>
-              <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
-              <button id="next-action-button" class="next-action-button" type="button">Продолжить</button>
+              <p id="share-progress-hint" class="share-progress-hint">Личные задачи останутся у тебя.</p>
             </div>
           </aside>
         </div>
@@ -165,7 +160,7 @@
     <template id="task-template">
       <li class="task">
         <label class="task-label">
-          <input class="task-checkbox" type="checkbox">
+          <input class="task-checkbox" type="checkbox" aria-describedby="completion-hint">
           <span class="task-copy"><span class="task-title"></span><span class="task-clock"></span></span>
         </label>
         <button class="delete-button" type="button"><span class="trash-icon" aria-hidden="true"></span></button>
@@ -173,34 +168,30 @@
     </template>
     <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-dialog-title" aria-describedby="share-dialog-description">
       <div class="share-dialog-header">
-        <div>
-          <p class="share-dialog-kicker">Сделано · Делись победой</p>
-          <h2 id="share-dialog-title">Пусть друзья узнают, кто тут делает дела!</h2>
-        </div>
+        <h2 id="share-dialog-title">Поделиться результатом</h2>
         <button id="share-close" class="share-close" type="button" aria-label="Закрыть окно отправки">×</button>
       </div>
       <div class="share-score">
         <strong id="share-preview-percentage">0%</strong>
         <span id="share-preview-summary">Выполнено 0 из 0</span>
       </div>
-      <p id="share-dialog-description" class="share-dialog-description">Твой прогресс — вызов друзьям. Покажи результат и предложи им начать свои задачи.</p>
+      <p id="share-dialog-description" class="share-dialog-description">Отправь карточку и ссылку другу.</p>
       <div id="share-empty-action" class="share-empty-action" hidden>
-        <p>Сначала запиши хотя бы одну задачу. Её таймер стартует автоматически — появится результат, которым можно поделиться.</p>
-        <button id="share-create-task" class="share-primary" type="button">Начать первую задачу</button>
+        <p>Добавь первую задачу, чтобы поделиться прогрессом.</p>
+        <button id="share-create-task" class="share-primary" type="button">Записать задачу</button>
       </div>
       <div id="share-actions" class="share-actions">
-        <button id="share-native" class="share-primary" type="button" hidden>Поделиться через телефон</button>
-        <div class="share-providers" aria-label="Куда отправить">
-          <a id="share-telegram" href="https://t.me/" target="_blank" rel="noopener noreferrer">Telegram</a>
-          <a id="share-whatsapp" href="https://wa.me/" target="_blank" rel="noopener noreferrer">WhatsApp</a>
-        </div>
         <div class="share-photo-options">
-          <p class="share-photo-label">Личный постер с реальными цифрами. Ни названия задач, ни таймеры в него не попадут.</p>
-          <img id="share-poster-preview" class="share-personal-preview" src="assets/share-step-1-v2.jpg" width="1200" height="630" alt="ШАГ: запиши первую задачу — твой ход!">
-          <button id="share-image-native" class="share-copy-button" type="button" hidden>Отправить мою карточку через телефон</button>
-          <a id="share-image-download" class="share-photo-download" href="assets/share-step-1-v2.jpg" download="sdelano-shag-1.jpg">Скачать картинку для Telegram</a>
+          <img id="share-poster-preview" class="share-personal-preview" src="assets/share-step-1-v2.jpg" width="1200" height="630" loading="lazy" alt="ШАГ: запиши первую задачу — твой ход!">
+          <button id="share-image-native" class="share-primary" type="button" hidden>Отправить карточку и ссылку</button>
+          <a id="share-image-download" class="share-photo-download" href="assets/share-step-1-v2.jpg" download="sdelano-shag-1.jpg">Скачать общий постер</a>
         </div>
-        <button id="share-copy" class="share-copy-button" type="button">Скопировать приглашение и ссылку</button>
+        <button id="share-copy" class="share-copy-button" type="button">Скопировать текст и ссылку</button>
+        <button id="share-native" class="share-copy-button" type="button" hidden>Отправить только ссылку</button>
+        <div class="share-providers" role="group" aria-label="Отправить ссылку">
+          <a id="share-telegram" href="https://t.me/" target="_blank" rel="noopener noreferrer">Ссылка в Telegram</a>
+          <a id="share-whatsapp" href="https://wa.me/" target="_blank" rel="noopener noreferrer">Ссылка в WhatsApp</a>
+        </div>
         <details id="share-manual" class="share-manual">
           <summary>Показать текст и ссылку</summary>
           <label class="share-field-label" for="share-ready-text">Текст для отправки вручную</label>
@@ -208,8 +199,6 @@
         </details>
       </div>
       <p id="share-feedback" class="share-feedback" role="status" aria-live="polite"></p>
-      <p class="share-privacy">Только процент и количество задач. Ни названия, ни время выполнения не отправляются.</p>
     </dialog>
-    <div id="task-toast" class="task-toast" role="status" aria-live="polite"></div>
   </body>
 </html>

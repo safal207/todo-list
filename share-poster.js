@@ -81,19 +81,8 @@ window.achievementPoster = (() => {
     fillRounded(ctx, 69, 415, 1062, 23, 11, "#61536a");
     if (percent > 0) fillRounded(ctx, 69, 415, 1062 * percent / 100, 23, 11, "#ffd75e");
 
-    ctx.fillStyle = "#fff7e7";
-    ctx.font = "800 27px Arial, sans-serif";
-    ctx.fillText("МОЙ ШАГ СДЕЛАН. ТЕПЕРЬ ТВОЙ.", 70, 498);
-    ctx.fillStyle = "#a79baa";
-    ctx.font = "700 22px Arial, sans-serif";
-    ctx.fillText("Один шаг лучше сотни планов.", 70, 541);
-
-    fillRounded(ctx, 634, 475, 498, 110, 16, "#ffd75e");
-    ctx.fillStyle = "#201926";
-    ctx.font = "900 38px Arial, sans-serif";
-    ctx.fillText("ТВОЙ ХОД!", 661, 521);
-    ctx.font = "900 24px Arial, sans-serif";
-    ctx.fillText("ЗАПИШИ ПЕРВУЮ ЗАДАЧУ", 662, 558);
+    fillRounded(ctx, 69, 473, 1062, 112, 18, "#ffd75e");
+    fitText(ctx, "ЗАПИШИ ЗАДАЧУ", 104, 554, 990, 68, "#201926");
 
     return new Promise((resolve, reject) => {
       canvas.toBlob((blob) => {
