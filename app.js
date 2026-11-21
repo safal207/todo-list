@@ -83,7 +83,11 @@ const tasks = loadTasks();
 // Do not award "first victory" again to returning or legacy users. The
 // history check also covers a completed task which was reopened or deleted.
 function hadFirstWinBefore() {
-  if (tasks.some((task) => task.done)) return true;
+  if (tasks.some((task) => task.done)) {
+    try { localStorage.setItem(FIRST_WIN_KEY, "1"); }
+    catch { /* Legacy tasks remain usable without storage. */ }
+    return true;
+  }
   try {
     if (localStorage.getItem(FIRST_WIN_KEY) === "1") return true;
     const history = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
@@ -98,7 +102,11 @@ let firstWinVisible = false;
 // Count three separate completed tasks, not three toggles of one checkbox.
 // The stored award survives reopened/deleted tasks and is never replayed.
 function hadThreeStepsBefore() {
-  if (tasks.filter((task) => task.done).length >= 3) return true;
+  if (tasks.filter((task) => task.done).length >= 3) {
+    try { localStorage.setItem(THREE_STEPS_KEY, "1"); }
+    catch { /* Keep the legacy award in memory. */ }
+    return true;
+  }
   try {
     return localStorage.getItem(THREE_STEPS_KEY) === "1";
   } catch {
