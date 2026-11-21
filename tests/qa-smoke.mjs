@@ -581,6 +581,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         await award.locator('#task-form button[type="submit"]').click();
         await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
         assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: " + n);
+        if (n === 5 || n === 10) {
+          assert.equal(await award.locator("#task-toast").isVisible(), false,
+            "A toast must never cover the progress roadmap at new milestones");
+        }
         if (n === 5) {
           assert.equal(await award.locator('#milestone-track li.is-earned').count(), 3);
           assert.equal(await award.locator('#milestone-track li.is-next').getAttribute("data-goal"), "10");
