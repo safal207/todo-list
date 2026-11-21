@@ -64,6 +64,7 @@ jobs:
           node tests/qa-smoke.mjs
           node tests/first-visit.mjs
           node tests/pilot-results.mjs
+          node tests/task-edit.mjs
       - name: Upload visual snapshots
         if: always()
         uses: actions/upload-artifact@v4
