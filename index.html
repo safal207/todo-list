@@ -27,7 +27,7 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=completion-feedback">
+    <link rel="stylesheet" href="styles.css?v=mini-hero">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
@@ -52,7 +52,13 @@
         </section>
         <div class="board">
           <section class="task-panel" aria-labelledby="page-heading">
-            <h1 id="page-heading">Список задач</h1>
+            <div class="mini-hero">
+              <div>
+                <h1 id="page-heading">Список задач</h1>
+                <p>Начни с одного дела.</p>
+              </div>
+              <span class="brand-icon" aria-hidden="true"></span>
+            </div>
             <form id="task-form">
               <label for="task-title">Новая задача</label>
               <div class="form-controls">
