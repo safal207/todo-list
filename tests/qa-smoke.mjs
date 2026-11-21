@@ -280,7 +280,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await nextCheckbox.evaluate(el => document.activeElement === el), true);
     assert.equal(await nextCheckbox.isChecked(), false,
       "Upsell must never mark a task complete on the user's behalf");
-    assert.equal(await page.locator('button[data-filter="all"]').getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator('button[data-filter="active"]').getAttribute("aria-pressed"), "true");
     assert.equal(await page.locator("li.task").count(), 2);
     await page.screenshot({ path: "artifacts/next-step-" + width + ".png", fullPage: true });
     await page.locator("#share-progress").click();
@@ -580,6 +580,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         "Reopening a task must not erase an earned milestone");
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
         "Earned awards persist when a task is reopened");
+      await award.locator('button[data-filter="active"]').click();
       await third.check();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false,
         "Rechecking the same task must not trigger the award twice");
@@ -646,6 +647,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await tenth.locator(".task-checkbox").uncheck();
       assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 10",
         "Personal best survives task reopen");
+      await award.locator('button[data-filter="active"]').click();
       await tenth.locator(".delete-button").click();
       assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 10",
         "Personal best survives task deletion");
@@ -681,8 +683,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await oneTask.check();
       await award.locator("#first-win-dismiss").click();
       await oneTask.uncheck();
+      await award.locator('button[data-filter="active"]').click();
       await oneTask.check();
       await oneTask.uncheck();
+      await award.locator('button[data-filter="active"]').click();
       await oneTask.check();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
@@ -765,17 +769,30 @@ try {
   const second = page.getByRole("checkbox", { name: "Second task", exact: true });
   const third = page.getByRole("checkbox", { name: "Third task", exact: true });
   const next = page.locator("#next-action-button");
+  const active = page.locator('button[data-filter="active"]');
+  const done = page.locator('button[data-filter="done"]');
+  const hint = page.locator("#timer-hint");
 
   await first.tap();
+  assert.equal(await active.getAttribute("aria-pressed"), "true");
+  assert.equal(await first.isVisible(), false);
+  assert.equal(await page.locator("li.task:visible").count(), 2);
+  assert.equal(await second.evaluate(el => document.activeElement === el), true);
+  assert.match(await hint.textContent(), /Отличная работа! Готово 1 из 3/);
   assert.equal(await page.locator("#first-win-next").textContent(), "К следующему делу");
-  await page.locator('button[data-filter="done"]').click();
+  await done.click();
   await page.locator("#first-win-next").click();
+  assert.equal(await active.getAttribute("aria-pressed"), "true");
   assert.equal(await second.evaluate(el => document.activeElement === el), true);
   assert.equal(await second.isChecked(), false);
 
-  await page.locator('button[data-filter="active"]').click();
+  await page.locator('button[data-filter="all"]').click();
   await second.tap();
+  assert.equal(await active.getAttribute("aria-pressed"), "true");
   assert.equal(await second.isVisible(), false);
+  assert.equal(await page.locator("li.task:visible").count(), 1);
+  assert.equal(await third.evaluate(el => document.activeElement === el), true);
+  assert.match(await hint.textContent(), /Готово 2 из 3/);
   assert.equal(await page.locator("#next-step").textContent(), "Сделано!");
   assert.equal(await page.locator("#next-action[data-completion]").isVisible(), true);
   assert.equal(await next.textContent(), "К следующему делу");
@@ -792,6 +809,11 @@ try {
   assert.equal(await page.locator("#share-progress").isVisible(), true);
 
   await third.tap();
+  assert.equal(await done.getAttribute("aria-pressed"), "true");
+  assert.equal(await page.locator("li.task:visible").count(), 3);
+  assert.equal(await done.evaluate(el => document.activeElement === el), true);
+  assert.match(await hint.textContent(), /Все дела сделаны! Прогресс 100%/);
+  assert.equal(await page.locator("#progress").evaluate(el => el.value), 100);
   assert.equal(await page.locator("#three-steps-next").textContent(), "Записать ещё одно дело");
   await page.locator("#three-steps-next").click();
   assert.equal(await input.evaluate(el => document.activeElement === el), true);
@@ -800,6 +822,7 @@ try {
   await input.fill("Fourth task");
   await page.locator("#task-form button").click();
   await page.getByRole("checkbox", { name: "Fourth task", exact: true }).tap();
+  assert.equal(await done.getAttribute("aria-pressed"), "true");
   assert.equal(await page.locator("#next-step").textContent(), "Сделано!");
   assert.equal(await next.textContent(), "Записать ещё одно дело");
   await next.click();

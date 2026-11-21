@@ -522,6 +522,10 @@ button { cursor: pointer; }
   font-size: .8rem;
   line-height: 1.45;
 }
+.timer-hint[data-completion] {
+  color: #3b6d29;
+  font-weight: 750;
+}
 .task { position: relative; }
 .task-copy {
   display: flex;

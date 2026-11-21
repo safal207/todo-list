@@ -560,7 +560,7 @@ function focusNextStep() {
   }
   // Completed-only filters may hide the very task we want to suggest.
   if (activeFilter === "done") {
-    activeFilter = "all";
+    activeFilter = "active";
     updateList();
   }
   const index = tasks.indexOf(nextTask);
@@ -603,7 +603,15 @@ function updateProgress() {
   firstWinNext.textContent = rewardAction;
   threeStepsNext.textContent = rewardAction;
   if (timerHint) {
-    timerHint.textContent = pending ? "Закончишь дело — поставь галочку." : "Таймер начнётся сразу.";
+    const justCompleted = Boolean(firstWinVisible || threeStepsVisible || recentCompletion);
+    timerHint.toggleAttribute("data-completion", justCompleted);
+    if (justCompleted) {
+      timerHint.textContent = pending ?
+        `Отличная работа! Готово ${completed} из ${total}. Бери следующее дело.` :
+        "Все дела сделаны! Прогресс 100%.";
+    } else {
+      timerHint.textContent = pending ? "Закончишь дело — поставь галочку." : "Таймер начнётся сразу.";
+    }
   }
   const returning = Boolean(pending && lastTaskActivity > 0 &&
     Date.now() - lastTaskActivity >= RETURN_AFTER_MS);
@@ -707,6 +715,7 @@ function appendTask(task) {
       clock.finish(task, now);
       analytics?.taskCompleted(task.createdFromInvite === true);
       const completedNow = tasks.filter((entry) => entry.done).length;
+      activeFilter = completedNow < tasks.length ? "active" : "done";
       newThreeSteps = !threeStepsAchieved && completedNow >= 3;
       feedback.play("complete");
       row.classList.remove("task-celebrate");
@@ -743,20 +752,13 @@ function appendTask(task) {
     recordTaskActivity(task, task.done ? "done" : "reopen");
     updateProgress();
     updateList();
-    if (row.hidden) {
+    if (task.done) {
+      focusAfterRemoval(list.querySelector(".task-checkbox:not(:checked)"));
+      if (!keyboardFocus && matchMedia("(max-width: 47rem)").matches) {
+        timerHint?.scrollIntoView({ block: "nearest", behavior: "auto" });
+      }
+    } else if (row.hidden) {
       focusAfterRemoval(visibleNeighborCheckbox(row));
-    }
-    // Reveal the result after a touch without moving a keyboard user's focus.
-    if (task.done && (!keyboardFocus || newFirstWin || newThreeSteps) &&
-        matchMedia("(max-width: 47rem)").matches) {
-      const award = newThreeSteps ? threeStepsCard : newFirstWin ? firstWinCard : nextAction;
-      const completion = recentCompletion;
-      requestAnimationFrame(() => {
-        if (!award.hidden && (award !== nextAction || completion === recentCompletion)) award.scrollIntoView({
-          block: "nearest",
-          behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-        });
-      });
     }
   });
 
