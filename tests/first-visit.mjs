@@ -89,6 +89,7 @@ try {
   await legacy.goto(origin);
   assert.equal(await legacy.locator("#welcome").isVisible(), false);
   assert.equal(await legacy.locator("#percentage").innerText(), "58%");
+  await legacy.locator("#progress-toggle").click();
   await legacy.locator("#share-progress").click();
   await legacy.waitForFunction(() => document.querySelector("#share-image-download").download.endsWith("29-of-50.jpg"));
   assert.equal(await legacy.locator("#share-preview-percentage").innerText(), "58%");
@@ -173,8 +174,8 @@ try {
   const ids = await a.locator("li.task").evaluateAll(rows => rows.map(row => row.dataset.taskId));
   assert.equal(new Set(ids).size, 2);
   await Promise.all([
-    a.locator("li.task").first().locator(".task-checkbox").check(),
-    b.locator("li.task").last().locator(".delete-button").click()
+    a.locator('li[data-task-id="' + ids[0] + '"] .task-checkbox').check(),
+    b.locator('li[data-task-id="' + ids[1] + '"] .delete-button').click()
   ]);
   await Promise.all([settle(a), settle(b)]);
   await a.reload();

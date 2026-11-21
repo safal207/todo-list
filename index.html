@@ -27,12 +27,12 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=welcome-1">
+    <link rel="stylesheet" href="styles.css?v=folded-lists">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js" defer></script>
-    <script src="app.js?v=welcome-1" defer></script>
+    <script src="app.js?v=folded-lists" defer></script>
   </head>
   <body>
     <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
@@ -61,6 +61,77 @@
           <button id="shared-start" class="shared-start-button" type="button">Начать свои задачи</button>
         </section>
         <div class="board">
+          <details id="progress-panel" class="progress-panel" data-stage="first">
+            <summary id="progress-toggle" class="progress-toggle" aria-labelledby="progress-heading progress-summary">
+              <span id="progress-heading">Прогресс списка</span>
+              <span id="percentage" class="percentage" aria-hidden="true">0%</span>
+              <span class="disclosure-chevron" aria-hidden="true"></span>
+              <span class="progress-line">
+                <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
+                <span id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</span>
+              </span>
+            </summary>
+            <div class="progress-details">
+              <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
+                <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
+                <h3 id="first-step-title">Запиши одно небольшое дело</h3>
+                <p id="first-step-detail">Например, собрать рюкзак.</p>
+                <button id="first-step-cta" class="first-step-button" type="button">Записать первый шаг</button>
+              </section>
+              <section id="first-win-card" class="first-win-card" aria-labelledby="first-win-title" hidden>
+                <h3 id="first-win-title">Первый шаг сделан!</h3>
+                <p id="first-win-detail">Твоё первое дело готово.</p>
+                <div class="first-win-actions">
+                  <button id="first-win-next" class="first-win-next" type="button">Записать ещё одно дело</button>
+                  <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
+                </div>
+              </section>
+              <section id="three-steps-card" class="three-steps-card" aria-labelledby="three-steps-title" hidden>
+                <p class="three-steps-kicker">ДОСТИЖЕНИЕ ОТКРЫТО</p>
+                <div class="three-steps-number" aria-hidden="true">3</div>
+                <h3 id="three-steps-title">3 ШАГА СДЕЛАНО!</h3>
+                <p class="three-steps-description">Теперь твой рекорд — три готовых дела.</p>
+                <div class="three-steps-actions">
+                  <button id="three-steps-next" class="three-steps-next" type="button">Следующий шаг</button>
+                  <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
+                </div>
+              </section>
+              <div id="next-action" class="next-action" hidden>
+                <p id="next-step">Следующий шаг</p>
+                <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
+                <button id="next-action-button" class="next-action-button" type="button">Продолжить</button>
+              </div>
+              <section class="milestone-roadmap" aria-labelledby="milestone-heading">
+                <div class="milestone-roadmap-heading">
+                  <h3 id="milestone-heading">Достижения</h3>
+                  <span class="milestone-record" id="milestone-record">Рекорд списка — 0</span>
+                </div>
+                <ol id="milestone-track" class="milestone-track" aria-label="Этапы достижений">
+                  <li data-goal="1" aria-label="1 шаг: ещё не достигнуто">
+                    <span class="milestone-mark" aria-hidden="true">1</span><span class="milestone-label">СТАРТ</span>
+                  </li>
+                  <li data-goal="3" aria-label="3 шага: ещё не достигнуто">
+                    <span class="milestone-mark" aria-hidden="true">3</span><span class="milestone-label">РИТМ</span>
+                  </li>
+                  <li data-goal="5" aria-label="5 шагов: ещё не достигнуто">
+                    <span class="milestone-mark" aria-hidden="true">5</span><span class="milestone-label">ТЕМП</span>
+                  </li>
+                  <li data-goal="10" aria-label="10 шагов: ещё не достигнуто">
+                    <span class="milestone-mark" aria-hidden="true">10</span><span class="milestone-label">СЕРИЯ</span>
+                  </li>
+                </ol>
+                <progress id="milestone-next-progress" class="milestone-next-progress" max="1" value="0" aria-label="Прогресс к следующему достижению"></progress>
+                <p id="milestone-next-label" class="milestone-next-label" role="status">До отметки 1 — ещё 1 дело.</p>
+              </section>
+              <div class="share-progress-block">
+                <button id="share-progress" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
+                  <span class="share-arrow" aria-hidden="true">↗</span>
+                  Поделиться прогрессом
+                </button>
+                <p id="share-progress-hint" class="share-progress-hint">Личные задачи останутся у тебя.</p>
+              </div>
+            </div>
+          </details>
           <section class="task-panel" aria-labelledby="page-heading">
             <div class="mini-hero">
               <div>
@@ -88,7 +159,14 @@
                 <button type="button" data-filter="done" aria-pressed="false">Готово</button>
               </div>
               <p id="completion-hint" hidden>После галочки покажем следующее дело, а в конце — «Готово».</p>
-              <ul id="tasks" class="task-list" role="list"></ul>
+              <ul id="tasks" class="task-list" role="list" aria-label="Задачи в работе"></ul>
+              <details id="completed-group" class="completed-group" hidden>
+                <summary id="completed-toggle" class="completed-toggle">
+                  Выполненные задачи <span id="completed-count" class="completed-count">0</span>
+                  <span class="disclosure-chevron" aria-hidden="true"></span>
+                </summary>
+                <ul id="completed-tasks" class="task-list" role="list" aria-label="Выполненные задачи"></ul>
+              </details>
               <div id="empty-state" class="empty-state">
                 <span class="empty-icon brand-icon" aria-hidden="true"></span>
                 <div><p><strong>Задач пока нет</strong></p></div>
@@ -100,71 +178,6 @@
               </div>
             </div>
           </section>
-
-          <aside id="progress-panel" class="progress-panel" data-stage="first" aria-labelledby="progress-heading">
-            <h2 id="progress-heading">Прогресс списка</h2>
-            <p id="percentage" class="percentage" aria-hidden="true">0%</p>
-            <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
-            <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
-            <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
-              <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
-              <h3 id="first-step-title">Запиши одно небольшое дело</h3>
-              <p id="first-step-detail">Например, собрать рюкзак.</p>
-              <button id="first-step-cta" class="first-step-button" type="button">Записать первый шаг</button>
-            </section>
-            <section id="first-win-card" class="first-win-card" aria-labelledby="first-win-title" hidden>
-              <h3 id="first-win-title">Первый шаг сделан!</h3>
-              <p id="first-win-detail">Твоё первое дело готово.</p>
-              <div class="first-win-actions">
-                <button id="first-win-next" class="first-win-next" type="button">Записать ещё одно дело</button>
-                <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
-              </div>
-            </section>
-            <section id="three-steps-card" class="three-steps-card" aria-labelledby="three-steps-title" hidden>
-              <p class="three-steps-kicker">ДОСТИЖЕНИЕ ОТКРЫТО</p>
-              <div class="three-steps-number" aria-hidden="true">3</div>
-              <h3 id="three-steps-title">3 ШАГА СДЕЛАНО!</h3>
-              <p class="three-steps-description">Теперь твой рекорд — три готовых дела.</p>
-              <div class="three-steps-actions">
-                <button id="three-steps-next" class="three-steps-next" type="button">Следующий шаг</button>
-                <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
-              </div>
-            </section>
-            <div id="next-action" class="next-action" hidden>
-              <p id="next-step">Следующий шаг</p>
-              <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
-              <button id="next-action-button" class="next-action-button" type="button">Продолжить</button>
-            </div>
-            <section class="milestone-roadmap" aria-labelledby="milestone-heading">
-              <div class="milestone-roadmap-heading">
-                <h3 id="milestone-heading">Достижения</h3>
-                <span class="milestone-record" id="milestone-record">Рекорд списка — 0</span>
-              </div>
-              <ol id="milestone-track" class="milestone-track" aria-label="Этапы достижений">
-                <li data-goal="1" aria-label="1 шаг: ещё не достигнуто">
-                  <span class="milestone-mark" aria-hidden="true">1</span><span class="milestone-label">СТАРТ</span>
-                </li>
-                <li data-goal="3" aria-label="3 шага: ещё не достигнуто">
-                  <span class="milestone-mark" aria-hidden="true">3</span><span class="milestone-label">РИТМ</span>
-                </li>
-                <li data-goal="5" aria-label="5 шагов: ещё не достигнуто">
-                  <span class="milestone-mark" aria-hidden="true">5</span><span class="milestone-label">ТЕМП</span>
-                </li>
-                <li data-goal="10" aria-label="10 шагов: ещё не достигнуто">
-                  <span class="milestone-mark" aria-hidden="true">10</span><span class="milestone-label">СЕРИЯ</span>
-                </li>
-              </ol>
-              <progress id="milestone-next-progress" class="milestone-next-progress" max="1" value="0" aria-label="Прогресс к следующему достижению"></progress>
-              <p id="milestone-next-label" class="milestone-next-label" role="status">До отметки 1 — ещё 1 дело.</p>
-            </section>
-            <div class="share-progress-block">
-              <button id="share-progress" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
-                <span class="share-arrow" aria-hidden="true">↗</span>
-                Поделиться прогрессом
-              </button>
-              <p id="share-progress-hint" class="share-progress-hint">Личные задачи останутся у тебя.</p>
-            </div>
-          </aside>
         </div>
       </main>
     </div>

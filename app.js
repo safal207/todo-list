@@ -16,12 +16,15 @@ let needsRecovery = false;
 let unsavedTasks = false;
 let savedTaskSnapshot = null;
 let taskStorageReadable = true;
-const clockUpdates = new Map();
+const taskViews = new Map();
 const form = document.querySelector("#task-form");
 const titleInput = document.querySelector("#task-title");
 const timerHint = document.querySelector("#timer-hint");
 const completionHint = document.querySelector("#completion-hint")?.textContent.trim();
 const list = document.querySelector("#tasks");
+const completedGroup = document.querySelector("#completed-group");
+const completedList = document.querySelector("#completed-tasks");
+const completedCount = document.querySelector("#completed-count");
 const template = document.querySelector("#task-template");
 const emptyState = document.querySelector("#empty-state");
 const filteredEmpty = document.querySelector("#filtered-empty");
@@ -47,11 +50,9 @@ const firstWinCard = document.querySelector("#first-win-card");
 const firstWinDetail = document.querySelector("#first-win-detail");
 const firstWinNext = document.querySelector("#first-win-next");
 const firstWinShare = document.querySelector("#first-win-share");
-const firstWinDismiss = document.querySelector("#first-win-dismiss");
 const threeStepsCard = document.querySelector("#three-steps-card");
 const threeStepsNext = document.querySelector("#three-steps-next");
 const threeStepsShare = document.querySelector("#three-steps-share");
-const threeStepsDismiss = document.querySelector("#three-steps-dismiss");
 const shareProgressButton = document.querySelector("#share-progress");
 const nextStep = document.querySelector("#next-step");
 const nextDetail = document.querySelector("#next-detail");
@@ -234,7 +235,8 @@ function syncStoredTasks() {
   const fresh = decodeTasks(raw);
   tasks.length = 0;
   list.replaceChildren();
-  clockUpdates.clear();
+  completedList.replaceChildren();
+  taskViews.clear();
   for (const task of fresh) {
     tasks.push(task);
     appendTask(task);
@@ -250,8 +252,9 @@ function syncStoredTasks() {
   updateProgress();
   updateList();
   if (focusedId) {
-    const row = list.children[tasks.findIndex(task => task.id === focusedId)];
-    const next = row && !row.hidden ? row.querySelector(focusDelete ? ".delete-button" : ".task-checkbox") :
+    const view = taskViews.get(focusedId);
+    const visible = view && (view.task.done ? completedGroup.open : !list.hidden);
+    const next = visible ? view.row.querySelector(focusDelete ? ".delete-button" : ".task-checkbox") :
       filterButtons.find(button => tasks.length && button.dataset.filter === activeFilter) ?? titleInput;
     next.focus({ preventScroll: true });
   }
@@ -610,15 +613,19 @@ threeStepsNext.addEventListener("click", () => {
 });
 threeStepsShare.addEventListener("click", openShareDialog);
 
-for (const button of [firstWinDismiss, threeStepsDismiss, nextBreak]) {
-  button?.addEventListener("click", () => {
-    feedback.play("tap");
+nextBreak.addEventListener("click", () => {
+  if (onBreak) {
     clearCompletion();
-    setBreak(true);
     updateProgress();
-    nextActionButton.focus();
-  });
-}
+    focusNextStep();
+    return;
+  }
+  feedback.play("tap");
+  clearCompletion();
+  setBreak(true);
+  updateProgress();
+  (progressPanel.open ? nextActionButton : nextBreak).focus();
+});
 
 function renderMilestones(completed) {
   const currentBest = Math.max(completed,
@@ -667,11 +674,10 @@ function focusNextStep() {
   // Completed-only filters may hide the very task we want to suggest.
   if (activeFilter === "done") {
     activeFilter = "active";
+    completedGroup.open = false;
     updateList();
   }
-  const index = tasks.indexOf(nextTask);
-  const row = list.children[index];
-  const checkbox = row?.querySelector(".task-checkbox");
+  const checkbox = taskViews.get(nextTask.id)?.row.querySelector(".task-checkbox");
   if (!checkbox) return;
   checkbox.scrollIntoView({ block: "center", behavior: "auto" });
   checkbox.focus({ preventScroll: true });
@@ -703,17 +709,24 @@ function updateProgress() {
   nextAction.toggleAttribute("data-completion", recentCompletion !== null);
   nextAction.toggleAttribute("data-break", onBreak);
   const justCompleted = Boolean(firstWinVisible || threeStepsVisible || recentCompletion);
-  if (nextBreak) nextBreak.hidden = !justCompleted;
+  nextBreak.hidden = !justCompleted && !(onBreak && !progressPanel.open);
   shareProgressButton.parentElement.hidden = onBreak || firstWinVisible || threeStepsVisible;
   const pending = tasks.find((task) => !task.done);
+  nextBreak.textContent = onBreak ? (pending ? "Вернуться к делу" : "К списку задач") : "Передохнуть";
   const rewardAction = pending ? "К следующему делу" : "Записать ещё одно дело";
   firstWinNext.textContent = rewardAction;
   threeStepsNext.textContent = rewardAction;
   if (timerHint) {
     timerHint.toggleAttribute("data-completion", justCompleted);
-    if (justCompleted) {
+    if (onBreak) {
+      timerHint.textContent = "Передышка. Продолжай, когда захочешь.";
+    } else if (justCompleted) {
+      let praise = "Отличная работа!";
+      if (firstWinVisible) praise = "Первый шаг сделан!";
+      else if (threeStepsVisible) praise = "Три дела сделаны!";
+      else if (recentCompletion) praise = recentCompletion.heading;
       timerHint.textContent = pending ?
-        `Отличная работа! Готово ${completed} из ${total}.` :
+        `${praise} Готово ${completed} из ${total}.` :
         "Все дела сделаны! Прогресс 100%.";
     } else {
       timerHint.textContent = pending ?
@@ -761,30 +774,23 @@ function updateList() {
     button.setAttribute("aria-pressed", String(button.dataset.filter === activeFilter));
   }
 
-  let visibleCount = 0;
-  for (const row of list.children) {
-    const done = row.querySelector(".task-checkbox").checked;
-    row.hidden = activeFilter !== "all" && done !== (activeFilter === "done");
-    if (!row.hidden) {
-      visibleCount += 1;
-    }
-  }
-
-  list.hidden = visibleCount === 0;
+  const active = list.childElementCount;
+  const done = completedList.childElementCount;
+  list.hidden = activeFilter === "done" || active === 0;
+  completedGroup.hidden = done === 0;
+  completedCount.textContent = String(done);
+  if (!done) completedGroup.open = false;
   filterGroup.hidden = tasks.length === 0;
   emptyState.hidden = tasks.length > 0;
-  filteredEmpty.hidden = tasks.length === 0 || visibleCount > 0;
+  const noMatch = (activeFilter === "done" && done === 0) || (activeFilter === "active" && active === 0);
+  filteredEmpty.hidden = !tasks.length || !noMatch;
   if (!filteredEmpty.hidden) {
     filteredMessage.textContent = activeFilter === "done" ? "Выполненных задач пока нет" : "Все задачи выполнены";
   }
 }
 
 function visibleNeighborCheckbox(row) {
-  const rows = [...list.children];
-  const index = rows.indexOf(row);
-  const neighbor = rows.slice(index + 1).find((item) => !item.hidden)
-    ?? rows.slice(0, index).reverse().find((item) => !item.hidden);
-  return neighbor?.querySelector(".task-checkbox");
+  return (row.nextElementSibling ?? row.previousElementSibling)?.querySelector(".task-checkbox");
 }
 
 function focusAfterRemoval(neighbor) {
@@ -802,7 +808,7 @@ function appendTask(task) {
     const display = clock.display(task);
     if (timeLabel.textContent !== display) timeLabel.textContent = display;
   };
-  clockUpdates.set(task, updateClock);
+  taskViews.set(task.id, { task, row, updateClock });
   row.classList.toggle("task-finished", task.done);
   updateClock();
 
@@ -817,19 +823,17 @@ function appendTask(task) {
     const checked = checkbox.checked;
     const keyboardFocus = checkbox.matches(":focus-visible");
     changeTasks(() => {
-      const index = tasks.findIndex(entry => entry.id === task.id);
-      if (index < 0) return;
-      const current = tasks[index];
-      const currentRow = list.children[index];
-      currentRow.querySelector(".task-checkbox").checked = checked;
-      if (current.done !== checked) toggleTask(current, currentRow, checked, keyboardFocus);
+      const current = taskViews.get(task.id);
+      if (!current) return;
+      current.row.querySelector(".task-checkbox").checked = checked;
+      if (current.task.done !== checked) toggleTask(current.task, current.row, checked, keyboardFocus);
     });
   });
   deleteButton.addEventListener("click", () => changeTasks(() => {
-    const index = tasks.findIndex(entry => entry.id === task.id);
-    if (index >= 0) removeTask(tasks[index], list.children[index]);
+    const current = taskViews.get(task.id);
+    if (current) removeTask(current.task, current.row);
   }));
-  list.append(row);
+  (task.done ? completedList : list).append(row);
   return checkbox;
 }
 
@@ -843,6 +847,7 @@ function toggleTask(task, row, checked, keyboardFocus) {
     analytics?.taskCompleted(task.createdFromInvite === true);
     const completedNow = tasks.filter((entry) => entry.done).length;
     activeFilter = completedNow < tasks.length ? "active" : "done";
+    completedGroup.open = false;
     newThreeSteps = !threeStepsAchieved && completedNow >= 3;
     feedback.play("complete");
     row.classList.remove("task-celebrate");
@@ -870,11 +875,18 @@ function toggleTask(task, row, checked, keyboardFocus) {
     }
   } else {
     clock.reopen(task, now);
+    if (activeFilter === "done") {
+      activeFilter = "active";
+      completedGroup.open = false;
+    }
     feedback.play("reopen");
     row.classList.remove("task-celebrate");
   }
   row.classList.toggle("task-finished", task.done);
-  clockUpdates.get(task)();
+  const group = task.done ? completedList : list;
+  const following = tasks.slice(tasks.indexOf(task) + 1).find(entry => entry.done === task.done);
+  group.insertBefore(row, following ? taskViews.get(following.id).row : null);
+  taskViews.get(task.id).updateClock();
   saveTasks();
   recordTaskActivity(task.done ? "done" : "reopen");
   updateProgress();
@@ -884,8 +896,8 @@ function toggleTask(task, row, checked, keyboardFocus) {
     if (!keyboardFocus && matchMedia("(max-width: 47rem)").matches) {
       timerHint?.scrollIntoView({ block: "nearest", behavior: "auto" });
     }
-  } else if (row.hidden) {
-    focusAfterRemoval(visibleNeighborCheckbox(row));
+  } else {
+    row.querySelector(".task-checkbox").focus();
   }
 }
 
@@ -893,15 +905,14 @@ function removeTask(task, row) {
   feedback.play("remove");
   clearCompletion();
   const neighbor = visibleNeighborCheckbox(row);
-  clockUpdates.delete(task);
+  taskViews.delete(task.id);
   tasks.splice(tasks.indexOf(task), 1);
   row.remove();
   saveTasks();
   recordTaskActivity("delete");
   updateProgress();
-  if (tasks.length === 0) {
-    activeFilter = "all";
-  }
+  if (!tasks.length) activeFilter = "all";
+  else if (activeFilter === "done" && !completedList.childElementCount) activeFilter = "active";
   updateList();
   focusAfterRemoval(neighbor);
 }
@@ -930,6 +941,7 @@ for (const button of filterButtons) {
   button.addEventListener("click", () => {
     feedback.play("tap");
     activeFilter = button.dataset.filter;
+    if (activeFilter !== "all") completedGroup.open = activeFilter === "done" && completedList.childElementCount > 0;
     updateList();
   });
 }
@@ -937,6 +949,7 @@ for (const button of filterButtons) {
 clearFilterButton?.addEventListener("click", () => {
   feedback.play("tap");
   activeFilter = "all";
+  if (!list.childElementCount) completedGroup.open = true;
   updateList();
   filterButtons.find((button) => button.dataset.filter === activeFilter)?.focus();
 });
@@ -958,6 +971,26 @@ form.addEventListener("submit", (event) => {
   form.reset();
   titleInput.focus();
 });
+
+// Remember disclosure choices per tab, independently of the stored tasks.
+for (const panel of [progressPanel, completedGroup]) {
+  const key = "sdelano.view." + panel.id;
+  try { panel.open = sessionStorage.getItem(key) === "open"; } catch { /* Keep native toggling available. */ }
+  function saveChoice() {
+    try { sessionStorage.setItem(key, panel.open ? "open" : "closed"); } catch { /* Use the DOM state. */ }
+  }
+  window.addEventListener("pagehide", saveChoice);
+  panel.addEventListener("toggle", () => {
+    saveChoice();
+    if (panel === progressPanel) {
+      updateProgress();
+      return;
+    }
+    if (panel.open && activeFilter === "active") activeFilter = "all";
+    else if (!panel.open && activeFilter === "done" && list.childElementCount) activeFilter = "active";
+    updateList();
+  });
+}
 
 tasks.forEach(appendTask);
 updateProgress();
@@ -1014,8 +1047,8 @@ greetFirstVisit();
 
 function updateClocks() {
   if (document.hidden) return;
-  for (const [task, update] of clockUpdates) {
-    if (!task.done) update();
+  for (const { task, updateClock } of taskViews.values()) {
+    if (!task.done) updateClock();
   }
 }
 setInterval(updateClocks, 1000);
