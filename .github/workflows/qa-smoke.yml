@@ -9,6 +9,7 @@ on:
       - "app.js"
       - "analytics.js"
       - "pilot.js"
+      - "pilot-results.js"
       - "pilot/**"
       - "share-poster.js"
       - "clock.js"
@@ -26,6 +27,7 @@ on:
       - "app.js"
       - "analytics.js"
       - "pilot.js"
+      - "pilot-results.js"
       - "pilot/**"
       - "share-poster.js"
       - "clock.js"
@@ -61,6 +63,7 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
           node tests/qa-smoke.mjs
           node tests/first-visit.mjs
+          node tests/pilot-results.mjs
       - name: Upload visual snapshots
         if: always()
         uses: actions/upload-artifact@v4
