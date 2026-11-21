@@ -12,6 +12,11 @@ const origin = "http://127.0.0.1:8765";
 const errors = [];
 mkdirSync("artifacts", { recursive: true });
 
+async function editTask(control, action = "click") {
+  await control[action]();
+  await control.page().locator('.task-panel[aria-busy="true"]').waitFor({ state: "hidden" });
+}
+
 for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
   const context = await browser.newContext({ viewport: { width, height } });
   const page = await context.newPage();
@@ -26,7 +31,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
   });
   try {
     await page.goto(origin, { waitUntil: "networkidle" });
-    await page.evaluate(() => localStorage.clear());
+    await page.locator("#welcome-start").click();
     await page.reload({ waitUntil: "networkidle" });
     assert.equal(await page.title(), "Хватит кормить задачи «завтраками». Сделано!");
     assert.equal(await page.locator('meta[property="og:title"]').getAttribute("content"),
@@ -98,7 +103,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
 
     const label = "QA smoke " + width;
     await page.locator("#task-title").fill(label);
-    await page.locator("#task-form button[type=submit]").click();
+    await editTask(page.locator("#task-form button[type=submit]"));
     const task = page.locator("li.task").filter({ hasText: label });
     assert.equal(await task.count(), 1);
     assert.match(await page.locator("#first-step-label").textContent(), /МИССИЯ 2 ИЗ 2/);
@@ -214,7 +219,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     }, null, { timeout: 3500 });
     await page.screenshot({ path: "artifacts/tasks-populated-" + width + ".png", fullPage: true });
 
-    await task.locator(".task-checkbox").check();
+    await editTask(task.locator(".task-checkbox"), "check");
     assert.equal(await page.locator("#first-step-guide").isVisible(), false);
     assert.equal(await page.locator("#first-win-card").isVisible(), true);
     assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
@@ -271,7 +276,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
 
     // Partial progress must reflect the entire list, regardless of the filter.
     await page.locator("#task-title").fill("Private extra " + width);
-    await page.locator("#task-form button[type=submit]").click();
+    await editTask(page.locator("#task-form button[type=submit]"));
     assert.equal(await page.locator("#percentage").textContent(), "50%");
     assert.equal(await page.locator("#next-action").isVisible(), true);
     assert.equal(await page.locator("#next-action-button").textContent(), "Перейти к следующей задаче");
@@ -349,14 +354,14 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(new URL(recipient.url()).searchParams.get("utm_campaign"), "telegram_invite_v1");
     assert.equal(await recipient.locator("li.task").count(), 0, "Recipient starts with independent tasks");
     await recipient.locator("#task-title").fill("Recipient task");
-    await recipient.locator("#task-form button[type=submit]").click();
+    await editTask(recipient.locator("#task-form button[type=submit]"));
     assert.equal(await recipient.locator("li.task").count(), 1);
-    await recipient.locator(".task-checkbox").check();
+    await editTask(recipient.locator(".task-checkbox"), "check");
     await recipient.reload();
     assert.equal(await recipient.locator(".task-checkbox").isChecked(), true,
       "The invited friend's first completion persists");
-    await recipient.locator(".task-checkbox").uncheck();
-    await recipient.locator(".task-checkbox").check();
+    await editTask(recipient.locator(".task-checkbox"), "uncheck");
+    await editTask(recipient.locator(".task-checkbox"), "check");
     const funnel = await recipient.evaluate(() => window.sdelanoAnalytics.summary());
     for (const event of ["referral_opened", "referral_started", "referral_task_created",
       "referral_task_completed"]) {
@@ -370,8 +375,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.match(await recipient.locator("#friend-score").textContent(),
       /Друг поделился результатом/, "Invalid share URL cannot inject a fake result");
     await recipientContext.close();
-    await page.locator("li.task").filter({ hasText: "Private extra " + width })
-      .locator(".delete-button").click();
+    await editTask(page.locator("li.task").filter({ hasText: "Private extra " + width }).locator(".delete-button"));
     assert.equal(await page.locator("#percentage").textContent(), "100%");
     assert.equal(await page.locator("#next-action-button").textContent(), "Записать новую задачу",
       "Deleting the pending task must re-evaluate the next best action");
@@ -440,7 +444,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.evaluate(() => window.__vibrationEvents.length), mutedCount);
     await page.locator("#feedback-toggle").click();
 
-    await restored.locator(".task-checkbox").uncheck();
+    await editTask(restored.locator(".task-checkbox"), "uncheck");
     const reopened = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
     assert.equal(reopened.done, false);
     assert.ok(reopened.startedAt > completed.doneAt);
@@ -448,7 +452,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal((await page.locator("#percentage").textContent()).trim(), "0%");
     assert.equal(await page.locator("#next-action-button").textContent(), "Перейти к следующей задаче",
       "Reopening a task must re-evaluate the next action");
-    await restored.locator(".delete-button").click();
+    await editTask(restored.locator(".delete-button"));
     assert.equal(await page.locator("li.task").count(), 0);
     assert.equal(await page.locator("#next-action").isVisible(), true);
     await page.locator("#next-action-button").click();
@@ -470,7 +474,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     const legacy = page.locator("li.task").filter({ hasText: "Legacy done" });
     assert.match((await legacy.locator(".task-clock").textContent()).trim(), /время неизвестно/);
     const long = page.locator("li.task").filter({ hasText: "Long task" });
-    await long.locator(".task-checkbox").check();
+    await editTask(long.locator(".task-checkbox"), "check");
     assert.match((await long.locator(".task-clock").textContent()).trim(), /1 д 2 ч 3 мин/);
     const migrated = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1")));
     assert.ok(migrated[0].startedAt > 0 && migrated[0].elapsedMs === 0);
@@ -488,7 +492,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.reload({ waitUntil: "networkidle" });
     assert.equal(await page.locator("#first-step-guide").isVisible(), false,
       "A user who completed a task before must not see onboarding again");
-    await page.locator(".task-checkbox").check();
+    await editTask(page.locator(".task-checkbox"), "check");
     assert.equal(await page.locator("#first-win-card").isVisible(), false,
       "A historical completion must suppress the new-user first win");
     // Taking a break replaces the reward with a quiet return action.
@@ -499,7 +503,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       ]));
     });
     await page.reload({ waitUntil: "networkidle" });
-    await page.locator(".task-checkbox").check();
+    await editTask(page.locator(".task-checkbox"), "check");
     await page.locator("#next-break").click();
     assert.equal(await page.locator("#first-win-card").isVisible(), false);
     assert.equal(await page.locator("#next-step").textContent(), "Передышка");
@@ -517,8 +521,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       const awardErrors = [];
       award.on("pageerror", (error) => awardErrors.push(error.message));
       await award.goto(origin, { waitUntil: "networkidle" });
-      await award.evaluate(() => localStorage.clear());
-      await award.reload({ waitUntil: "networkidle" });
+      await award.locator("#welcome-start").click();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#progress-heading").textContent(), "Прогресс списка");
       assert.equal(await record.textContent(), "Рекорд списка — 0");
@@ -530,10 +533,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       for (let n = 1; n <= 3; n++) {
         const name = "Private QA milestone " + width + "-" + n;
         await award.locator("#task-title").fill(name);
-        await award.locator('#task-form button[type="submit"]').click();
+        await editTask(award.locator('#task-form button[type="submit"]'));
         const item = award.locator("li.task").nth(n - 1);
         assert.match(await item.textContent(), new RegExp(name));
-        await item.locator(".task-checkbox").check();
+        await editTask(item.locator(".task-checkbox"), "check");
         assert.equal(await record.textContent(), "Рекорд списка — " + n);
         if (n === 1) {
           assert.equal(await award.locator('#milestone-track li.is-earned').count(), 1);
@@ -584,7 +587,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#next-action").isVisible(), true);
 
       const third = award.locator("li.task").nth(2).locator(".task-checkbox");
-      await third.uncheck();
+      await editTask(third, "uncheck");
       assert.equal(await record.textContent(), "Рекорд списка — 3",
         "Reopening a task must not erase an earned milestone");
       assert.equal(await thirdMilestone.isVisible(), true,
@@ -593,14 +596,14 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.deepEqual(await goalProgress.evaluate(el =>
         ({ value: el.value, max: el.max })), { value: 2, max: 5 });
       await award.locator('button[data-filter="active"]').click();
-      await third.check();
+      await editTask(third, "check");
       assert.equal(await award.locator("#three-steps-card").isVisible(), false,
         "Rechecking the same task must not trigger the award twice");
       await award.reload({ waitUntil: "networkidle" });
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await thirdMilestone.isVisible(), true,
         "Earned achievement survives reload");
-      await award.locator("li.task").nth(2).locator(".delete-button").click();
+      await editTask(award.locator("li.task").nth(2).locator(".delete-button"));
       assert.equal(await record.textContent(), "Рекорд списка — 3");
       assert.equal(await thirdMilestone.isVisible(), true,
         "Deleting a completed task must not revoke an earned milestone");
@@ -625,8 +628,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       // Move from 3 -> 5 -> 10 and make sure old achievements do not replay.
       for (let n = 4; n <= 10; n++) {
         await award.locator("#task-title").fill("Roadmap QA private " + n);
-        await award.locator('#task-form button[type="submit"]').click();
-        await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
+        await editTask(award.locator('#task-form button[type="submit"]'));
+        await editTask(award.locator("li.task").nth(n - 1).locator(".task-checkbox"), "check");
         assert.equal(await record.textContent(), "Рекорд списка — " + n);
         if (n === 5 || n === 10) {
           assert.equal(await award.locator("#next-step").textContent(), n + " дел сделано!");
@@ -654,11 +657,11 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         "Milestone roadmap must not cause horizontal scrolling");
       await award.screenshot({ path: "artifacts/milestone-10-" + width + ".png", fullPage: true });
       const tenth = award.locator("li.task").nth(9);
-      await tenth.locator(".task-checkbox").uncheck();
+      await editTask(tenth.locator(".task-checkbox"), "uncheck");
       assert.equal(await record.textContent(), "Рекорд списка — 10",
         "Personal best survives task reopen");
       await award.locator('button[data-filter="active"]').click();
-      await tenth.locator(".delete-button").click();
+      await editTask(tenth.locator(".delete-button"));
       assert.equal(await record.textContent(), "Рекорд списка — 10",
         "Personal best survives task deletion");
       await award.reload({ waitUntil: "networkidle" });
@@ -676,9 +679,9 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         ]));
       });
       await award.reload({ waitUntil: "networkidle" });
-      await award.locator("li.task").nth(2).locator(".delete-button").click();
-      await award.locator("li.task").nth(1).locator(".delete-button").click();
-      await award.locator("li.task").nth(0).locator(".delete-button").click();
+      await editTask(award.locator("li.task").nth(2).locator(".delete-button"));
+      await editTask(award.locator("li.task").nth(1).locator(".delete-button"));
+      await editTask(award.locator("li.task").nth(0).locator(".delete-button"));
       await award.reload({ waitUntil: "networkidle" });
       assert.equal(await record.textContent(), "Рекорд списка — 3");
       assert.equal(await thirdMilestone.isVisible(), true);
@@ -688,17 +691,18 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       // Toggling one single task repeatedly does not count as 3 distinct tasks.
       await award.evaluate(() => localStorage.clear());
       await award.reload({ waitUntil: "networkidle" });
+      await award.locator("#welcome-start").click();
       await award.locator("#task-title").fill("Only one task");
-      await award.locator('#task-form button[type="submit"]').click();
+      await editTask(award.locator('#task-form button[type="submit"]'));
       const oneTask = award.locator("li.task .task-checkbox");
-      await oneTask.check();
+      await editTask(oneTask, "check");
       await award.locator("#next-break").click();
-      await oneTask.uncheck();
+      await editTask(oneTask, "uncheck");
       await award.locator('button[data-filter="active"]').click();
-      await oneTask.check();
-      await oneTask.uncheck();
+      await editTask(oneTask, "check");
+      await editTask(oneTask, "uncheck");
       await award.locator('button[data-filter="active"]').click();
-      await oneTask.check();
+      await editTask(oneTask, "check");
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.three-steps.v1")), null);
       assert.equal(await record.textContent(), "Рекорд списка — 1",
@@ -707,8 +711,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       // A break closes the celebration and keeps the earned mark on the roadmap.
       for (let n = 2; n <= 3; n++) {
         await award.locator("#task-title").fill("Distinct task " + n);
-        await award.locator('#task-form button[type="submit"]').click();
-        await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
+        await editTask(award.locator('#task-form button[type="submit"]'));
+        await editTask(award.locator("li.task").nth(n - 1).locator(".task-checkbox"), "check");
       }
       assert.equal(await award.locator("#three-steps-card").isVisible(), true);
       await award.locator("#next-break").click();
@@ -752,8 +756,8 @@ for (const method of ["getItem", "setItem"]) {
     }, method);
     await page.goto(origin);
     await page.locator("#task-title").fill("Session task");
-    await page.locator("#task-form button").click();
-    await page.getByRole("checkbox", { name: "Session task" }).check();
+    await editTask(page.locator("#task-form button"));
+    await editTask(page.getByRole("checkbox", { name: "Session task" }), "check");
     assert.equal(await page.locator("#storage-warning").isVisible(), true);
     assert.equal(await page.evaluate(() => JSON.parse(window.__readStoredTasks())[0].title),
       "Existing task", "Unavailable task storage must keep existing tasks untouched");
@@ -770,10 +774,11 @@ const loopContext = await browser.newContext({
 try {
   const page = await loopContext.newPage();
   await page.goto(origin);
+  await page.locator("#welcome-start").click();
   const input = page.locator("#task-title");
   for (const title of ["First task", "Second task", "Third task"]) {
     await input.fill(title);
-    await page.locator("#task-form button").click();
+    await editTask(page.locator("#task-form button"));
   }
   const first = page.getByRole("checkbox", { name: "First task", exact: true });
   const second = page.getByRole("checkbox", { name: "Second task", exact: true });
@@ -785,7 +790,7 @@ try {
 
   assert.match(await hint.textContent(), /После галочки покажем следующее дело/);
   assert.equal(await first.getAttribute("aria-describedby"), "completion-hint");
-  await first.tap();
+  await editTask(first, "tap");
   assert.equal(await active.getAttribute("aria-pressed"), "true");
   assert.equal(await first.isVisible(), false);
   assert.equal(await page.locator("li.task:visible").count(), 2);
@@ -799,7 +804,7 @@ try {
   assert.equal(await second.isChecked(), false);
 
   await page.locator('button[data-filter="all"]').click();
-  await second.tap();
+  await editTask(second, "tap");
   assert.equal(await active.getAttribute("aria-pressed"), "true");
   assert.equal(await second.isVisible(), false);
   assert.equal(await page.locator("li.task:visible").count(), 1);
@@ -820,7 +825,7 @@ try {
   assert.equal(await page.locator("#next-step").textContent(), "В работе");
   assert.equal(await page.locator("#share-progress").isVisible(), true);
 
-  await third.tap();
+  await editTask(third, "tap");
   assert.equal(await done.getAttribute("aria-pressed"), "true");
   assert.equal(await page.locator("li.task:visible").count(), 3);
   assert.equal(await done.evaluate(el => document.activeElement === el), true);
@@ -832,8 +837,8 @@ try {
   assert.equal(await page.locator("li.task").count(), 3);
 
   await input.fill("Fourth task");
-  await page.locator("#task-form button").click();
-  await page.getByRole("checkbox", { name: "Fourth task", exact: true }).tap();
+  await editTask(page.locator("#task-form button"));
+  await editTask(page.getByRole("checkbox", { name: "Fourth task", exact: true }), "tap");
   assert.equal(await done.getAttribute("aria-pressed"), "true");
   assert.equal(await page.locator("#next-step").textContent(), "Сделано!");
   assert.equal(await next.textContent(), "Записать ещё одно дело");
@@ -850,7 +855,7 @@ try {
     }))));
   });
   await page.reload();
-  await page.getByRole("checkbox", { name: "Queue task 2", exact: true }).tap();
+  await editTask(page.getByRole("checkbox", { name: "Queue task 2", exact: true }), "tap");
   assert.equal(await page.locator("#next-detail").textContent(), "Дело было открыто 2 ч.");
   assert.equal(await page.getByRole("button", { name: "Передохнуть", exact: true }).count(), 1);
   const visibleHandoff = await page.evaluate(() =>
@@ -887,7 +892,7 @@ try {
     const task = page.getByRole("checkbox", { name: "Unfinished task" });
     assert.equal(await task.evaluate(el => document.activeElement === el), true);
     assert.equal(await task.isChecked(), false);
-    await task.check();
+    await editTask(task, "check");
     assert.equal(await resume.isVisible(), false, "A completed list has no reminder");
   }
 } catch (error) {
@@ -907,6 +912,7 @@ try {
   });
   await page.route(origin + "/events", route => route.fulfill({ status: 204 }));
   await page.goto(origin + "/");
+  await page.locator("#welcome-start").click();
   await page.locator("#task-title").fill("Private task title");
   const [request] = await Promise.all([
     page.waitForRequest(request => request.url() === origin + "/events" &&

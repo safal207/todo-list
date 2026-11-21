@@ -79,7 +79,7 @@
   const total = number(result?.[2] ?? params.get("total"));
   if (Number.isInteger(total) && total > 0 && total <= 9999 &&
       Number.isInteger(done) && done >= 0 && done <= total) {
-    const percent = Math.floor(done / total * 100);
+    const percent = Math.floor(done * 100 / total);
     document.querySelector("#friend-score").textContent =
       "У друга готово " + done + " из " + total + " задач (" + percent + "%).";
   }

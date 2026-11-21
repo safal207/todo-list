@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "index.html"
+      - "assets/**"
       - "styles.css"
       - "app.js"
       - "analytics.js"
@@ -11,13 +12,14 @@ on:
       - "clock.js"
       - "effects.js"
       - "invite/index.html"
-      - "tests/qa-smoke.mjs"
+      - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
   push:
     branches:
       - ux/focus-on-tasks
     paths:
       - "index.html"
+      - "assets/**"
       - "styles.css"
       - "app.js"
       - "analytics.js"
@@ -25,7 +27,7 @@ on:
       - "clock.js"
       - "effects.js"
       - "invite/index.html"
-      - "tests/qa-smoke.mjs"
+      - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
 
 permissions:
@@ -54,6 +56,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
           node tests/qa-smoke.mjs
+          node tests/first-visit.mjs
       - name: Upload visual snapshots
         if: always()
         uses: actions/upload-artifact@v4

@@ -171,6 +171,96 @@ button { cursor: pointer; }
   animation: mascot-hello .6s ease-out;
 }
 
+/* The regular form is ready underneath the brief first-visit greeting. */
+.welcome {
+  width: min(23rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  margin: auto;
+  padding: clamp(1.25rem, 5vw, 2rem);
+  border: 2px solid var(--ink);
+  border-radius: 1.75rem;
+  box-shadow: 0 .4rem 0 var(--ink);
+  color: var(--ink);
+  background: var(--paper);
+  text-align: center;
+}
+.welcome::backdrop { background: #21162be8; }
+.welcome-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(.35rem, 2vw, .8rem);
+  margin: .25rem auto 1rem;
+}
+.welcome-fox {
+  display: grid;
+  place-items: center;
+  width: min(48%, 9rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--sun);
+}
+.welcome-fox img { display: block; width: 100%; height: auto; }
+.welcome-spark, .welcome-heart {
+  display: grid;
+  width: 2.7rem;
+  height: 2.7rem;
+  place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+}
+.welcome-spark { background: #ffe2b9; }
+.welcome-spark i {
+  position: relative;
+  width: 26px;
+  height: 30px;
+  background: var(--red);
+  clip-path: path("M14 0C15 6 13 10 17 14C19 13 20 11 20 8C24 12 26 17 25 21C24 27 20 30 13 30C6 30 1 25 1 19C1 15 3 11 7 7C6 11 7 14 9 15C11 11 15 7 14 0Z");
+}
+.welcome-spark i::after {
+  position: absolute;
+  inset: 0;
+  background: var(--sun);
+  clip-path: path("M13 16C14 20 18 21 18 24C18 27 16 29 13 29C10 29 8 27 8 24C8 22 11 20 13 16Z");
+  content: "";
+}
+.welcome-heart {
+  color: var(--red);
+  background: #ffd8d1;
+  font: 1.8rem/1 Georgia, serif;
+}
+.welcome h2 {
+  font-size: clamp(2.8rem, 10vw, 3.6rem);
+  font-weight: 900;
+  letter-spacing: -.065em;
+  line-height: 1;
+}
+.welcome p { margin: .55rem 0 1.25rem; color: var(--muted); }
+.welcome .add-button { width: 100%; background: var(--sun); color: var(--ink); }
+.progress-panel[data-stage="done"] .percentage::after {
+  margin-inline-start: .22em;
+  color: #ffb6af;
+  font: .48em/1 Georgia, serif;
+  vertical-align: middle;
+  content: "♥" / "";
+}
+@keyframes welcome-pop {
+  from { transform: translateY(.3rem) scale(.88); opacity: .55; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .welcome[open] .welcome-spark { animation: welcome-pop .3s ease-out backwards; }
+  .welcome[open] .welcome-fox { animation: welcome-pop .4s .22s ease-out backwards; }
+  .welcome[open] .welcome-heart { animation: welcome-pop .38s .6s ease-out backwards; }
+}
+@media (max-height: 26rem) {
+  .welcome { padding: .8rem 1.25rem; }
+  .welcome-art { margin: 0 auto .4rem; }
+  .welcome-fox { width: 4.5rem; }
+  .welcome h2 { font-size: 2.2rem; }
+  .welcome p { margin: .2rem 0 .65rem; }
+}
+
 #task-form > label {
   display: block;
   width: fit-content;
