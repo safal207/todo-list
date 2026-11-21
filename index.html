@@ -27,12 +27,12 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — узнал, сколько заняло. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=completion-loop">
     <script src="clock.js" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js" defer></script>
-    <script src="app.js" defer></script>
+    <script src="app.js?v=completion-loop" defer></script>
   </head>
   <body>
     <div class="workspace">
@@ -99,7 +99,7 @@
                 <button id="first-win-next" class="first-win-next" type="button">Записать ещё одно дело</button>
                 <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
               </div>
-              <button id="first-win-dismiss" class="first-win-dismiss" type="button">Не сейчас</button>
+              <button id="first-win-dismiss" class="first-win-dismiss" type="button">Передохнуть</button>
             </section>
             <section id="three-steps-card" class="three-steps-card" aria-labelledby="three-steps-title" hidden>
               <p class="three-steps-kicker">ДОСТИЖЕНИЕ ОТКРЫТО</p>
@@ -110,7 +110,7 @@
                 <button id="three-steps-next" class="three-steps-next" type="button">Следующий шаг</button>
                 <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
               </div>
-              <button id="three-steps-dismiss" class="three-steps-dismiss" type="button">Не сейчас</button>
+              <button id="three-steps-dismiss" class="three-steps-dismiss" type="button">Передохнуть</button>
             </section>
             <p id="three-steps-badge" class="three-steps-badge" hidden>
               <span class="three-steps-badge-icon" aria-hidden="true">★</span>
@@ -120,6 +120,7 @@
               <p id="next-step">Следующий шаг</p>
               <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
               <button id="next-action-button" class="next-action-button" type="button">Продолжить</button>
+              <button id="next-break" class="first-win-dismiss" type="button" hidden>Передохнуть</button>
             </div>
             <section class="milestone-roadmap" aria-labelledby="milestone-heading">
               <div class="milestone-roadmap-heading">
@@ -198,6 +199,5 @@
       </div>
       <p id="share-feedback" class="share-feedback" role="status" aria-live="polite"></p>
     </dialog>
-    <div id="task-toast" class="task-toast" role="status" aria-live="polite"></div>
   </body>
 </html>

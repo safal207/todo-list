@@ -211,8 +211,6 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await task.locator(".task-checkbox").check();
     assert.equal(await page.locator("#first-step-guide").isVisible(), false);
     assert.equal(await page.locator("#first-win-card").isVisible(), true);
-    assert.equal(await page.locator("#task-toast").isVisible(), false,
-      "First-win card must not be obscured by a duplicate toast");
     assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
     assert.match(await page.locator("#first-win-detail").textContent(), /Твоё первое дело готово за/);
     assert.equal(await page.locator("#next-action").isVisible(), false,
@@ -487,7 +485,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator(".task-checkbox").check();
     assert.equal(await page.locator("#first-win-card").isVisible(), false,
       "A historical completion must suppress the new-user first win");
-    // Dismissal should preserve normal navigation and remove the card from tab order.
+    // Taking a break replaces the reward with a quiet return action.
     await page.evaluate(() => {
       localStorage.clear();
       localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
@@ -498,7 +496,9 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator(".task-checkbox").check();
     await page.locator("#first-win-dismiss").click();
     assert.equal(await page.locator("#first-win-card").isVisible(), false);
-    assert.equal(await page.locator("#share-progress").evaluate(el => document.activeElement === el), true);
+    assert.equal(await page.locator("#next-step").textContent(), "Передышка");
+    assert.equal(await page.locator("#next-action-button").evaluate(el => document.activeElement === el), true);
+    assert.equal(await page.locator("#share-progress").isVisible(), false);
 
     // Achievement #3: three different completed tasks (not one task checked thrice).
     const awardContext = await browser.newContext({ viewport: { width, height } });
@@ -551,11 +551,6 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         "Do not stack three competing CTAs");
       assert.equal(await award.locator("#three-steps-badge").isVisible(), false,
         "Compact award is shown after the celebration");
-      assert.equal(await award.locator("#task-toast").evaluate(el =>
-        el.classList.contains("is-visible")), false,
-        "A prior completion toast must not cover the milestone award");
-      assert.equal(await award.locator("#task-toast").isVisible(), false,
-        "An outgoing toast must disappear immediately, not fade over the big number");
       assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.three-steps.v1")), "1");
       assert.equal(await award.locator("li.task").count(), 3);
       const awardLayout = await award.evaluate(() => ({
@@ -621,8 +616,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
         assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: " + n);
         if (n === 5 || n === 10) {
-          assert.equal(await award.locator("#task-toast").isVisible(), false,
-            "A toast must never cover the progress roadmap at new milestones");
+          assert.equal(await award.locator("#next-step").textContent(), n + " дел сделано!");
+          assert.equal(await award.locator("#next-action[data-completion]").isVisible(), true);
         }
         if (n === 5) {
           assert.equal(await award.locator('#milestone-track li.is-earned').count(), 3);
@@ -695,7 +690,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 1",
         "Re-checking a single task cannot advance the record toward 3");
       assert.equal(await award.locator('#milestone-track li.is-earned').count(), 1);
-      // New third distinct task: dismiss should leave a usable next-step button.
+      // After the third award, a break leaves the badge and one return action.
       for (let n = 2; n <= 3; n++) {
         await award.locator("#task-title").fill("Distinct task " + n);
         await award.locator('#task-form button[type="submit"]').click();
@@ -705,6 +700,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await award.locator("#three-steps-dismiss").click();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
+      assert.equal(await award.locator("#next-step").textContent(), "Передышка");
       assert.equal(await award.locator("#next-action-button").evaluate(el => document.activeElement === el), true);
       assert.equal(awardErrors.length, 0, "Milestone JS errors: " + awardErrors.join("; "));
     } finally {
@@ -752,6 +748,67 @@ for (const method of ["getItem", "setItem"]) {
   } finally {
     await context.close();
   }
+}
+
+const loopContext = await browser.newContext({
+  viewport: { width: 390, height: 844 }, hasTouch: true, reducedMotion: "reduce"
+});
+try {
+  const page = await loopContext.newPage();
+  await page.goto(origin);
+  const input = page.locator("#task-title");
+  for (const title of ["First task", "Second task", "Third task"]) {
+    await input.fill(title);
+    await page.locator("#task-form button").click();
+  }
+  const first = page.getByRole("checkbox", { name: "First task", exact: true });
+  const second = page.getByRole("checkbox", { name: "Second task", exact: true });
+  const third = page.getByRole("checkbox", { name: "Third task", exact: true });
+  const next = page.locator("#next-action-button");
+
+  await first.tap();
+  assert.equal(await page.locator("#first-win-next").textContent(), "К следующему делу");
+  await page.locator('button[data-filter="done"]').click();
+  await page.locator("#first-win-next").click();
+  assert.equal(await second.evaluate(el => document.activeElement === el), true);
+  assert.equal(await second.isChecked(), false);
+
+  await page.locator('button[data-filter="active"]').click();
+  await second.tap();
+  assert.equal(await second.isVisible(), false);
+  assert.equal(await page.locator("#next-step").textContent(), "Сделано!");
+  assert.equal(await page.locator("#next-action[data-completion]").isVisible(), true);
+  assert.equal(await next.textContent(), "К следующему делу");
+  await page.getByRole("button", { name: "Передохнуть", exact: true }).click();
+  assert.equal(await page.locator("#next-step").textContent(), "Передышка");
+  assert.match(await page.locator("#next-detail").textContent(), /Что помогло тебе закончить дело/);
+  assert.equal(await next.textContent(), "Вернуться к делу");
+  await page.reload();
+  assert.equal(await page.locator("#next-action[data-break]").isVisible(), true);
+  await next.click();
+  assert.equal(await third.evaluate(el => document.activeElement === el), true);
+  assert.equal(await third.isChecked(), false);
+  assert.equal(await page.locator("#next-step").textContent(), "В работе");
+  assert.equal(await page.locator("#share-progress").isVisible(), true);
+
+  await third.tap();
+  assert.equal(await page.locator("#three-steps-next").textContent(), "Записать ещё одно дело");
+  await page.locator("#three-steps-next").click();
+  assert.equal(await input.evaluate(el => document.activeElement === el), true);
+  assert.equal(await page.locator("li.task").count(), 3);
+
+  await input.fill("Fourth task");
+  await page.locator("#task-form button").click();
+  await page.getByRole("checkbox", { name: "Fourth task", exact: true }).tap();
+  assert.equal(await page.locator("#next-step").textContent(), "Сделано!");
+  assert.equal(await next.textContent(), "Записать ещё одно дело");
+  await next.click();
+  assert.equal(await input.evaluate(el => document.activeElement === el), true);
+  assert.equal(await page.locator("li.task").count(), 4);
+} catch (error) {
+  errors.push("task loop: " + (error.stack || error.message));
+} finally {
+  await loopContext.close();
 }
 
 const returnContext = await browser.newContext({ viewport: { width: 390, height: 844 } });

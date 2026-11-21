@@ -5,6 +5,7 @@ const TASK_HISTORY_KEY = "sdelano.tasks.history.v1";
 const FIRST_WIN_KEY = "sdelano.first-win.v1";
 const THREE_STEPS_KEY = "sdelano.three-steps.v1";
 const MILESTONE_RECORD_KEY = "sdelano.milestone.record.v1";
+const BREAK_KEY = "sdelano.break.v1";
 const MILESTONE_GOALS = [1, 3, 5, 10];
 const RETURN_AFTER_MS = 24 * 60 * 60 * 1000;
 const clock = window.taskClock;
@@ -53,11 +54,10 @@ const nextStep = document.querySelector("#next-step");
 const nextDetail = document.querySelector("#next-detail");
 const nextAction = document.querySelector("#next-action");
 const nextActionButton = document.querySelector("#next-action-button");
+const nextBreak = document.querySelector("#next-break");
 const storageNote = document.querySelector("#storage-note");
 const storageWarning = document.querySelector("#storage-warning");
 const feedbackToggle = document.querySelector("#feedback-toggle");
-const toast = document.querySelector("#task-toast");
-let toastTimeout;
 let activeFilter = "all";
 
 function setStorageWarning(visible) {
@@ -147,6 +147,11 @@ function hadThreeStepsBefore() {
 }
 let threeStepsAchieved = hadThreeStepsBefore();
 let threeStepsVisible = false;
+let recentCompletion = null;
+let onBreak = false;
+try {
+  onBreak = firstWinAchieved && sessionStorage.getItem(BREAK_KEY) === "1";
+} catch { /* The break can still be used in memory. */ }
 
 // Keep a personal best: reopening or deleting a task should not take away
 // achievements. Count distinct currently finished rows, never toggle events.
@@ -183,22 +188,19 @@ feedbackToggle.addEventListener("click", () => {
   renderFeedbackToggle();
 });
 
-function showToast(message) {
-  clearTimeout(toastTimeout);
-  toast.textContent = message;
-  toast.hidden = false;
-  toast.classList.add("is-visible");
-  toastTimeout = setTimeout(() => toast.classList.remove("is-visible"), 2800);
+function clearCompletion() {
+  firstWinVisible = false;
+  threeStepsVisible = false;
+  recentCompletion = null;
+  if (onBreak) setBreak(false);
 }
 
-function announceDone(task) {
-  showToast("Отлично! " + clock.display(task) + " ✦");
-}
-
-function clearTaskToast() {
-  clearTimeout(toastTimeout);
-  toast.classList.remove("is-visible");
-  toast.hidden = true;
+function setBreak(active) {
+  onBreak = active;
+  try {
+    if (active) sessionStorage.setItem(BREAK_KEY, "1");
+    else sessionStorage.removeItem(BREAK_KEY);
+  } catch { /* Keep the current state in memory. */ }
 }
 
 // Viral referral: share aggregate counts only, with a recipient-facing CTA.
@@ -482,18 +484,11 @@ firstStepCta.addEventListener("click", () => {
   list.querySelector(".task-checkbox:not(:checked)")?.focus();
 });
 firstWinNext.addEventListener("click", () => {
-  feedback.play("tap");
   firstWinVisible = false;
   updateProgress();
-  titleInput.focus();
+  focusNextStep();
 });
 firstWinShare.addEventListener("click", openShareDialog);
-firstWinDismiss.addEventListener("click", () => {
-  feedback.play("tap");
-  firstWinVisible = false;
-  updateProgress();
-  shareProgressButton.focus();
-});
 
 threeStepsNext.addEventListener("click", () => {
   threeStepsVisible = false;
@@ -501,12 +496,16 @@ threeStepsNext.addEventListener("click", () => {
   focusNextStep();
 });
 threeStepsShare.addEventListener("click", openShareDialog);
-threeStepsDismiss.addEventListener("click", () => {
-  feedback.play("tap");
-  threeStepsVisible = false;
-  updateProgress();
-  nextActionButton.focus();
-});
+
+for (const button of [firstWinDismiss, threeStepsDismiss, nextBreak]) {
+  button?.addEventListener("click", () => {
+    feedback.play("tap");
+    clearCompletion();
+    setBreak(true);
+    updateProgress();
+    nextActionButton.focus();
+  });
+}
 
 function renderThreeSteps() {
   threeStepsCard.hidden = !threeStepsVisible;
@@ -571,7 +570,13 @@ function focusNextStep() {
   checkbox.scrollIntoView({ block: "center", behavior: "auto" });
   checkbox.focus({ preventScroll: true });
 }
-nextActionButton.addEventListener("click", focusNextStep);
+nextActionButton.addEventListener("click", () => {
+  if (recentCompletion || onBreak) {
+    clearCompletion();
+    updateProgress();
+  }
+  focusNextStep();
+});
 
 function updateProgress() {
   const total = tasks.length;
@@ -587,18 +592,34 @@ function updateProgress() {
     progressPanel.dataset.stage = "working";
   }
 
-  // The first-win achievement is already its own next-step offer.
-  // Do not stack two competing CTAs or distract a new user from the mission.
+  // Show one completion card with the action that matches the remaining list.
   nextAction.hidden = !firstWinAchieved || firstWinVisible || threeStepsVisible;
+  nextAction.toggleAttribute("data-completion", recentCompletion !== null);
+  nextAction.toggleAttribute("data-break", onBreak);
+  if (nextBreak) nextBreak.hidden = recentCompletion === null;
+  shareProgressButton.parentElement.hidden = onBreak;
   const pending = tasks.find((task) => !task.done);
+  const rewardAction = pending ? "К следующему делу" : "Записать ещё одно дело";
+  firstWinNext.textContent = rewardAction;
+  threeStepsNext.textContent = rewardAction;
   if (timerHint) {
     timerHint.textContent = pending ? "Закончишь дело — поставь галочку." : "Таймер начнётся сразу.";
   }
   const returning = Boolean(pending && lastTaskActivity > 0 &&
     Date.now() - lastTaskActivity >= RETURN_AFTER_MS);
-  if (pending) {
-    nextStep.textContent = returning ? "Продолжи своё дело" : "Ещё один шаг?";
-    nextDetail.textContent = "Следующее дело: «" + pending.title + "».";
+  if (onBreak) {
+    nextStep.textContent = "Передышка";
+    nextDetail.textContent = "Что помогло тебе закончить дело?";
+    nextActionButton.textContent = pending ? "Вернуться к делу" : "К списку задач";
+  } else if (recentCompletion) {
+    nextStep.textContent = recentCompletion.heading;
+    nextDetail.textContent = recentCompletion.elapsedMs >= 1000 ?
+      "На дело ушло " + clock.humanText(recentCompletion.elapsedMs) + "." :
+      "Ещё одно дело готово.";
+    nextActionButton.textContent = rewardAction;
+  } else if (pending) {
+    nextStep.textContent = returning ? "Продолжи своё дело" : "В работе";
+    nextDetail.textContent = "Следующее дело — «" + pending.title + "».";
     nextActionButton.textContent = returning ? "К задаче" : "Перейти к следующей задаче";
   } else {
     nextStep.textContent = total > 0 ? "Все дела закрыты!" : "Новый день — новый шаг";
@@ -678,17 +699,15 @@ function appendTask(task) {
 
   checkbox.addEventListener("change", () => {
     const now = Date.now();
+    const keyboardFocus = checkbox.matches(":focus-visible");
     const newFirstWin = checkbox.checked && !firstWinAchieved;
     let newThreeSteps = false;
+    clearCompletion();
     if (checkbox.checked) {
       clock.finish(task, now);
       analytics?.taskCompleted(task.createdFromInvite === true);
       const completedNow = tasks.filter((entry) => entry.done).length;
       newThreeSteps = !threeStepsAchieved && completedNow >= 3;
-      // Milestones at 5 and 10 are conveyed by the roadmap itself,
-      // not a toast that hides the exact next-goal information.
-      const newRoadmapMilestone = [5, 10].some((goal) =>
-        milestoneRecord < goal && completedNow === goal);
       feedback.play("complete");
       row.classList.remove("task-celebrate");
       void row.offsetWidth;
@@ -696,10 +715,7 @@ function appendTask(task) {
       if (newThreeSteps) {
         threeStepsAchieved = true;
         threeStepsVisible = true;
-        firstWinVisible = false;
         saveAchievement(THREE_STEPS_KEY, "1");
-        // Do not cover the award with a previous completion toast.
-        clearTaskToast();
       } else if (newFirstWin) {
         firstWinAchieved = true;
         firstWinVisible = true;
@@ -709,19 +725,17 @@ function appendTask(task) {
             "Твоё первое дело готово.";
         }
         saveAchievement(FIRST_WIN_KEY, "1");
-        // First-win card is already the confirmation; do not obscure its CTA.
-        clearTaskToast();
-      } else if (newRoadmapMilestone) {
-        threeStepsVisible = false;
-        clearTaskToast();
       } else {
-        announceDone(task);
+        const milestone = MILESTONE_GOALS.includes(completedNow) && completedNow > milestoneRecord;
+        recentCompletion = {
+          heading: milestone ? completedNow + " дел сделано!" : "Сделано!",
+          elapsedMs: task.elapsedMs
+        };
       }
     } else {
       clock.reopen(task, now);
       feedback.play("reopen");
       row.classList.remove("task-celebrate");
-      threeStepsVisible = false;
     }
     row.classList.toggle("task-finished", task.done);
     updateClock();
@@ -732,11 +746,13 @@ function appendTask(task) {
     if (row.hidden) {
       focusAfterRemoval(visibleNeighborCheckbox(row));
     }
-    // On small screens the progress card is below the task list.
-    if ((newFirstWin || newThreeSteps) && matchMedia("(max-width: 47rem)").matches) {
+    // Reveal the result after a touch without moving a keyboard user's focus.
+    if (task.done && (!keyboardFocus || newFirstWin || newThreeSteps) &&
+        matchMedia("(max-width: 47rem)").matches) {
+      const award = newThreeSteps ? threeStepsCard : newFirstWin ? firstWinCard : nextAction;
+      const completion = recentCompletion;
       requestAnimationFrame(() => {
-        const award = newThreeSteps ? threeStepsCard : firstWinCard;
-        if (!award.hidden) award.scrollIntoView({
+        if (!award.hidden && (award !== nextAction || completion === recentCompletion)) award.scrollIntoView({
           block: "nearest",
           behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
         });
@@ -746,6 +762,7 @@ function appendTask(task) {
 
   deleteButton.addEventListener("click", () => {
     feedback.play("remove");
+    clearCompletion();
     const neighbor = visibleNeighborCheckbox(row);
     clockUpdates.delete(task);
     tasks.splice(tasks.indexOf(task), 1);
@@ -768,6 +785,7 @@ function addTask(title) {
   const task = clock.create(title);
   if (analytics?.taskCreated()) task.createdFromInvite = true;
   feedback.play("add");
+  clearCompletion();
   tasks.push(task);
   const checkbox = appendTask(task);
   if (activeFilter === "done") {
