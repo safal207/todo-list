@@ -391,7 +391,9 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await showProgress(recipient);
     assert.equal(await recipient.locator(".task-checkbox").isChecked(), true,
       "The invited friend's first completion persists");
+    await recipient.locator('button[data-filter="done"]').click();
     await editTask(recipient.locator(".task-checkbox"), "uncheck");
+    await recipient.locator('button[data-filter="active"]').click();
     await editTask(recipient.locator(".task-checkbox"), "check");
     const funnel = await recipient.evaluate(() => window.sdelanoAnalytics.summary());
     for (const event of ["referral_opened", "referral_started", "referral_task_created",
