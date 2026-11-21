@@ -212,7 +212,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#first-step-guide").isVisible(), false);
     assert.equal(await page.locator("#first-win-card").isVisible(), true);
     assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
-    assert.match(await page.locator("#first-win-detail").textContent(), /Твоё первое дело готово за/);
+    assert.match(await page.locator("#first-win-detail").textContent(), /Дело было открыто/);
     assert.equal(await page.locator("#next-action").isVisible(), false,
       "A visible first victory must not compete with the next-step upsell");
     assert.equal(await page.evaluate(() => localStorage.getItem("sdelano.first-win.v1")), "1");
@@ -243,7 +243,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(completed.done, true);
     assert.equal(completed.startedAt, null);
     assert.ok(completed.elapsedMs >= 1000, "Elapsed time saved on completion");
-    assert.match((await task.locator(".task-clock").textContent()).trim(), /^Готово за /);
+    assert.match((await task.locator(".task-clock").textContent()).trim(), /^Готово · было открыто /);
     await page.locator("#share-progress").click();
     assert.equal(await page.locator("#share-preview-percentage").textContent(), "100%");
     await page.waitForFunction(() =>
@@ -494,7 +494,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     });
     await page.reload({ waitUntil: "networkidle" });
     await page.locator(".task-checkbox").check();
-    await page.locator("#first-win-dismiss").click();
+    await page.locator("#next-break").click();
     assert.equal(await page.locator("#first-win-card").isVisible(), false);
     assert.equal(await page.locator("#next-step").textContent(), "Передышка");
     assert.equal(await page.locator("#next-action-button").evaluate(el => document.activeElement === el), true);
@@ -681,7 +681,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await award.locator('#task-form button[type="submit"]').click();
       const oneTask = award.locator("li.task .task-checkbox");
       await oneTask.check();
-      await award.locator("#first-win-dismiss").click();
+      await award.locator("#next-break").click();
       await oneTask.uncheck();
       await award.locator('button[data-filter="active"]').click();
       await oneTask.check();
@@ -701,7 +701,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
       }
       assert.equal(await award.locator("#three-steps-card").isVisible(), true);
-      await award.locator("#three-steps-dismiss").click();
+      await award.locator("#next-break").click();
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
       assert.equal(await award.locator("#next-step").textContent(), "Передышка");
@@ -773,6 +773,8 @@ try {
   const done = page.locator('button[data-filter="done"]');
   const hint = page.locator("#timer-hint");
 
+  assert.match(await hint.textContent(), /После галочки покажем следующее дело/);
+  assert.equal(await first.getAttribute("aria-describedby"), "completion-hint");
   await first.tap();
   assert.equal(await active.getAttribute("aria-pressed"), "true");
   assert.equal(await first.isVisible(), false);
@@ -828,6 +830,26 @@ try {
   await next.click();
   assert.equal(await input.evaluate(el => document.activeElement === el), true);
   assert.equal(await page.locator("li.task").count(), 4);
+
+  // Feedback, break and the next task fit together even with a long mobile list.
+  await page.evaluate(() => {
+    const startedAt = Date.now() - 2 * 60 * 60 * 1000;
+    localStorage.setItem("todo-list.tasks.v1", JSON.stringify(Array.from({ length: 8 }, (_, i) => ({
+      title: "Queue task " + (i + 1), done: i === 0, elapsedMs: 0,
+      startedAt: i === 0 ? null : startedAt
+    }))));
+  });
+  await page.reload();
+  await page.getByRole("checkbox", { name: "Queue task 2", exact: true }).tap();
+  assert.equal(await page.locator("#next-detail").textContent(), "Дело было открыто 2 ч.");
+  assert.equal(await page.getByRole("button", { name: "Передохнуть", exact: true }).count(), 1);
+  const visibleHandoff = await page.evaluate(() =>
+    ["#timer-hint", "#next-break", "#tasks li:not([hidden])"].every(selector => {
+      const bounds = document.querySelector(selector).getBoundingClientRect();
+      return bounds.top >= -1 && bounds.bottom <= innerHeight + 1 && bounds.height > 0;
+    })
+  );
+  assert.equal(visibleHandoff, true, "Progress, break and the next task must fit in the mobile viewport");
 } catch (error) {
   errors.push("task loop: " + (error.stack || error.message));
 } finally {

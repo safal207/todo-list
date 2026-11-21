@@ -68,7 +68,7 @@
     if (task.done) {
       return task.elapsedMs === null
         ? "Готово · время неизвестно"
-        : "Готово за " + humanText(task.elapsedMs);
+        : "Готово · было открыто " + humanText(task.elapsedMs);
     }
     return "Время идёт · " + clockText(elapsed(task, now));
   }

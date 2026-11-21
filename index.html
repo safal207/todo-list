@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — узнал, сколько заняло. Меньше «потом». Больше «готово». Жми и делай!">
+    <meta name="description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
     <meta name="theme-color" content="#fff7e7">
     <title>Хватит кормить задачи «завтраками». Сделано!</title>
     <link rel="canonical" href="https://safal207.github.io/todo-list/">
@@ -14,7 +14,7 @@
     <meta property="og:site_name" content="Сделано">
     <meta property="og:url" content="https://safal207.github.io/todo-list/">
     <meta property="og:title" content="Хватит кормить задачи «завтраками». Сделано!">
-    <meta property="og:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — узнал, сколько заняло. Меньше «потом». Больше «готово». Жми и делай!">
+    <meta property="og:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
     <!-- Stable, publicly accessible PNG used in Telegram/WhatsApp and social link cards. -->
     <meta property="og:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
     <meta property="og:image:secure_url" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
@@ -26,13 +26,13 @@
     <meta name="twitter:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
-    <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — узнал, сколько заняло. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=completion-queue">
-    <script src="clock.js" defer></script>
+    <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
+    <link rel="stylesheet" href="styles.css?v=completion-feedback">
+    <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js" defer></script>
-    <script src="app.js?v=completion-queue" defer></script>
+    <script src="app.js?v=completion-feedback" defer></script>
   </head>
   <body>
     <div class="workspace">
@@ -59,7 +59,10 @@
                 <input id="task-title" name="title" type="text" placeholder="Например, собрать рюкзак" maxlength="200" autocomplete="off" aria-describedby="timer-hint" required>
                 <button class="add-button" type="submit">Добавить задачу</button>
               </div>
-              <p id="timer-hint" class="timer-hint">Таймер начнётся сразу.</p>
+              <div class="task-feedback">
+                <p id="timer-hint" class="timer-hint">Таймер начнётся сразу.</p>
+                <button id="next-break" class="task-break" type="button" hidden>Передохнуть</button>
+              </div>
             </form>
 
             <div class="task-section">
@@ -68,6 +71,7 @@
                 <button type="button" data-filter="active" aria-pressed="false">В работе</button>
                 <button type="button" data-filter="done" aria-pressed="false">Готово</button>
               </div>
+              <p id="completion-hint" hidden>После галочки покажем следующее дело, а в конце — «Готово».</p>
               <ul id="tasks" class="task-list" role="list"></ul>
               <div id="empty-state" class="empty-state">
                 <span class="empty-icon brand-icon" aria-hidden="true"></span>
@@ -99,7 +103,6 @@
                 <button id="first-win-next" class="first-win-next" type="button">Записать ещё одно дело</button>
                 <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
               </div>
-              <button id="first-win-dismiss" class="first-win-dismiss" type="button">Передохнуть</button>
             </section>
             <section id="three-steps-card" class="three-steps-card" aria-labelledby="three-steps-title" hidden>
               <p class="three-steps-kicker">ДОСТИЖЕНИЕ ОТКРЫТО</p>
@@ -110,7 +113,6 @@
                 <button id="three-steps-next" class="three-steps-next" type="button">Следующий шаг</button>
                 <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
               </div>
-              <button id="three-steps-dismiss" class="three-steps-dismiss" type="button">Передохнуть</button>
             </section>
             <p id="three-steps-badge" class="three-steps-badge" hidden>
               <span class="three-steps-badge-icon" aria-hidden="true">★</span>
@@ -120,7 +122,6 @@
               <p id="next-step">Следующий шаг</p>
               <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
               <button id="next-action-button" class="next-action-button" type="button">Продолжить</button>
-              <button id="next-break" class="first-win-dismiss" type="button" hidden>Передохнуть</button>
             </div>
             <section class="milestone-roadmap" aria-labelledby="milestone-heading">
               <div class="milestone-roadmap-heading">
@@ -159,7 +160,7 @@
     <template id="task-template">
       <li class="task">
         <label class="task-label">
-          <input class="task-checkbox" type="checkbox">
+          <input class="task-checkbox" type="checkbox" aria-describedby="completion-hint">
           <span class="task-copy"><span class="task-title"></span><span class="task-clock"></span></span>
         </label>
         <button class="delete-button" type="button"><span class="trash-icon" aria-hidden="true"></span></button>

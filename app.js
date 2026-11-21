@@ -17,6 +17,7 @@ const clockUpdates = new Map();
 const form = document.querySelector("#task-form");
 const titleInput = document.querySelector("#task-title");
 const timerHint = document.querySelector("#timer-hint");
+const completionHint = document.querySelector("#completion-hint")?.textContent.trim();
 const list = document.querySelector("#tasks");
 const template = document.querySelector("#task-template");
 const emptyState = document.querySelector("#empty-state");
@@ -596,21 +597,22 @@ function updateProgress() {
   nextAction.hidden = !firstWinAchieved || firstWinVisible || threeStepsVisible;
   nextAction.toggleAttribute("data-completion", recentCompletion !== null);
   nextAction.toggleAttribute("data-break", onBreak);
-  if (nextBreak) nextBreak.hidden = recentCompletion === null;
+  const justCompleted = Boolean(firstWinVisible || threeStepsVisible || recentCompletion);
+  if (nextBreak) nextBreak.hidden = !justCompleted;
   shareProgressButton.parentElement.hidden = onBreak;
   const pending = tasks.find((task) => !task.done);
   const rewardAction = pending ? "К следующему делу" : "Записать ещё одно дело";
   firstWinNext.textContent = rewardAction;
   threeStepsNext.textContent = rewardAction;
   if (timerHint) {
-    const justCompleted = Boolean(firstWinVisible || threeStepsVisible || recentCompletion);
     timerHint.toggleAttribute("data-completion", justCompleted);
     if (justCompleted) {
       timerHint.textContent = pending ?
-        `Отличная работа! Готово ${completed} из ${total}. Бери следующее дело.` :
+        `Отличная работа! Готово ${completed} из ${total}.` :
         "Все дела сделаны! Прогресс 100%.";
     } else {
-      timerHint.textContent = pending ? "Закончишь дело — поставь галочку." : "Таймер начнётся сразу.";
+      timerHint.textContent = pending ?
+        (completionHint ?? "После галочки покажем следующее дело.") : "Таймер начнётся сразу.";
     }
   }
   const returning = Boolean(pending && lastTaskActivity > 0 &&
@@ -622,7 +624,7 @@ function updateProgress() {
   } else if (recentCompletion) {
     nextStep.textContent = recentCompletion.heading;
     nextDetail.textContent = recentCompletion.elapsedMs >= 1000 ?
-      "На дело ушло " + clock.humanText(recentCompletion.elapsedMs) + "." :
+      "Дело было открыто " + clock.humanText(recentCompletion.elapsedMs) + "." :
       "Ещё одно дело готово.";
     nextActionButton.textContent = rewardAction;
   } else if (pending) {
@@ -730,7 +732,7 @@ function appendTask(task) {
         firstWinVisible = true;
         if (firstWinDetail) {
           firstWinDetail.textContent = task.elapsedMs >= 1000 ?
-            "Твоё первое дело готово за " + clock.humanText(task.elapsedMs) + "." :
+            "Дело было открыто " + clock.humanText(task.elapsedMs) + "." :
             "Твоё первое дело готово.";
         }
         saveAchievement(FIRST_WIN_KEY, "1");
