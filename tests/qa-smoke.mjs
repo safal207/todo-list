@@ -1,8 +1,13 @@
 import assert from "node:assert/strict";
 import { mkdirSync } from "node:fs";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 
-const browser = await chromium.launch({ headless: true });
+const engine = process.env.SDELANO_QA_ENGINE || "chromium";
+const browserType = { chromium, firefox, webkit }[engine];
+const browser = await browserType.launch({
+  headless: true,
+  executablePath: process.env.SDELANO_QA_EXECUTABLE
+});
 const origin = "http://127.0.0.1:8765";
 const errors = [];
 mkdirSync("artifacts", { recursive: true });
@@ -193,6 +198,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#task-toast").isVisible(), false,
       "First-win card must not be obscured by a duplicate toast");
     assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
+    assert.match(await page.locator("#first-win-detail").textContent(), /Твоё первое дело готово за/);
     assert.equal(await page.locator("#next-action").isVisible(), false,
       "A visible first victory must not compete with the next-step upsell");
     assert.equal(await page.evaluate(() => localStorage.getItem("sdelano.first-win.v1")), "1");
@@ -283,7 +289,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     });
     const recipient = await recipientContext.newPage();
     await recipient.goto(origin + "/invite/" + new URL(receiverUrl).search, { waitUntil: "networkidle" });
-    assert.equal(await recipient.locator("h1").textContent(), "Твой ход. Начни с одной задачи!");
+    assert.equal(await recipient.locator("h1").textContent(), "Твой ход. Запиши одну задачу!");
     assert.equal(await recipient.locator('meta[property="og:url"]').getAttribute("content"),
       "https://safal207.github.io/todo-list/invite/");
     assert.equal(await recipient.locator('link[rel="canonical"]').getAttribute("href"),
@@ -319,12 +325,24 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await recipient.screenshot({ path: "artifacts/referral-" + width + ".png", fullPage: true });
     assert.ok(!(await recipient.locator("body").textContent()).includes(label),
       "Recipient must not see the sender's task titles");
-    assert.match(await recipient.locator("#start-own").getAttribute("href"), /\/todo-list\/\?utm_source=progress_share/);
-    await recipient.goto(origin + "/", { waitUntil: "networkidle" });
+    await recipient.locator("#start-own").click();
+    assert.equal(new URL(recipient.url()).searchParams.get("utm_source"), "progress_share");
     assert.equal(await recipient.locator("li.task").count(), 0, "Recipient starts with independent tasks");
     await recipient.locator("#task-title").fill("Recipient task");
     await recipient.locator("#task-form button[type=submit]").click();
     assert.equal(await recipient.locator("li.task").count(), 1);
+    await recipient.locator(".task-checkbox").check();
+    await recipient.reload();
+    assert.equal(await recipient.locator(".task-checkbox").isChecked(), true,
+      "The invited friend's first completion persists");
+    await recipient.locator(".task-checkbox").uncheck();
+    await recipient.locator(".task-checkbox").check();
+    const funnel = await recipient.evaluate(() => window.sdelanoAnalytics.summary());
+    for (const event of ["referral_opened", "referral_started", "referral_task_created",
+      "referral_task_completed"]) {
+      assert.equal(funnel.events[event], 1, "The funnel counts each step once");
+    }
+    assert.equal(funnel.referralConversion, 1);
     await recipient.goto(origin + "/invite/?done=9999&total=2", { waitUntil: "networkidle" });
     assert.match(await recipient.locator("#friend-score").textContent(),
       /Друг поделился результатом/, "Invalid share URL cannot inject a fake result");
@@ -677,7 +695,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     const oldPage = await page.goto(origin + "/goals/", { waitUntil: "domcontentloaded" });
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
     assert.equal(pageErrors.length, 0, "JS errors: " + pageErrors.join("; "));
-    console.log("PASS " + width + "x" + height +
+    console.log("PASS " + engine + " " + width + "x" + height +
       " : milestone roadmap 1-3-5-10, three-step achievement, contextual upsell, tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
   } catch (error) {
     errors.push(width + "x" + height + ": " + (error.stack || error.message));
@@ -687,6 +705,91 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await context.close();
   }
 }
+
+for (const method of ["getItem", "setItem"]) {
+  const context = await browser.newContext();
+  try {
+    const page = await context.newPage();
+    await page.addInitScript((method) => {
+      const key = "todo-list.tasks.v1";
+      const original = Storage.prototype[method];
+      const originalGet = Storage.prototype.getItem;
+      localStorage.setItem(key, JSON.stringify([{ title: "Existing task", done: false }]));
+      window.__readStoredTasks = () => originalGet.call(localStorage, key);
+      Storage.prototype[method] = function (name, ...args) {
+        if (name === key) throw new DOMException("Storage unavailable", "SecurityError");
+        return original.call(this, name, ...args);
+      };
+    }, method);
+    await page.goto(origin);
+    await page.locator("#task-title").fill("Session task");
+    await page.locator("#task-form button").click();
+    await page.getByRole("checkbox", { name: "Session task" }).check();
+    assert.equal(await page.locator("#storage-warning").isVisible(), true);
+    assert.equal(await page.evaluate(() => JSON.parse(window.__readStoredTasks())[0].title),
+      "Existing task", "Unavailable task storage must keep existing tasks untouched");
+  } catch (error) {
+    errors.push(method + ": " + (error.stack || error.message));
+  } finally {
+    await context.close();
+  }
+}
+
+const returnContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+try {
+  const page = await returnContext.newPage();
+  await page.goto(origin);
+  for (const hasCompletedBefore of [false, true]) {
+    await page.evaluate((hasCompletedBefore) => {
+      localStorage.clear();
+      const startedAt = Date.now() - 48 * 60 * 60 * 1000;
+      localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
+        { title: "Unfinished task", done: false, elapsedMs: 0, startedAt, doneAt: null }
+      ]));
+      if (hasCompletedBefore) localStorage.setItem("sdelano.first-win.v1", "1");
+    }, hasCompletedBefore);
+    await page.reload();
+    const resume = page.getByRole("button", { name: "К задаче", exact: true });
+    assert.equal(await resume.count(), 1, "Exactly one action resumes an unfinished task");
+    await page.locator('button[data-filter="done"]').click();
+    await resume.click();
+    const task = page.getByRole("checkbox", { name: "Unfinished task" });
+    assert.equal(await task.evaluate(el => document.activeElement === el), true);
+    assert.equal(await task.isChecked(), false);
+    await task.check();
+    assert.equal(await resume.isVisible(), false, "A completed list has no reminder");
+  }
+} catch (error) {
+  errors.push("retention: " + (error.stack || error.message));
+} finally {
+  await returnContext.close();
+}
+
+const metricsContext = await browser.newContext();
+try {
+  const page = await metricsContext.newPage();
+  await page.route(origin + "/", async route => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace("</head>",
+      '<meta name="sdelano-metrics-endpoint" content="/events"></head>');
+    await route.fulfill({ response, body });
+  });
+  await page.route(origin + "/events", route => route.fulfill({ status: 204 }));
+  await page.goto(origin + "/");
+  await page.locator("#task-title").fill("Private task title");
+  const [request] = await Promise.all([
+    page.waitForRequest(request => request.url() === origin + "/events" &&
+      request.postDataJSON().event === "task_created"),
+    page.locator("#task-form button").click()
+  ]);
+  assert.equal(request.method(), "POST");
+  assert.deepEqual(request.postDataJSON(), { event: "task_created" });
+} catch (error) {
+  errors.push("metrics delivery: " + (error.stack || error.message));
+} finally {
+  await metricsContext.close();
+}
+
 await browser.close();
 if (errors.length) {
   console.error(errors.join("\n\n"));

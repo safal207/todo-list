@@ -6,6 +6,7 @@ on:
       - "index.html"
       - "styles.css"
       - "app.js"
+      - "analytics.js"
       - "share-poster.js"
       - "clock.js"
       - "effects.js"
@@ -19,6 +20,7 @@ on:
       - "index.html"
       - "styles.css"
       - "app.js"
+      - "analytics.js"
       - "share-poster.js"
       - "clock.js"
       - "effects.js"
@@ -33,15 +35,21 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    env:
+      SDELANO_QA_ENGINE: ${{ matrix.browser }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Install headless Chromium
+      - name: Install Playwright browser
         run: |
-          npm install --no-save --no-package-lock playwright
-          npx playwright install --with-deps chromium
+          npm install --no-save --no-package-lock playwright@1.62.1
+          npx playwright install --with-deps "$SDELANO_QA_ENGINE"
       - name: Serve and test mobile + desktop
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
@@ -50,6 +58,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: tasks-ui-screenshots
+          name: tasks-ui-screenshots-${{ matrix.browser }}
           path: artifacts/
           if-no-files-found: ignore

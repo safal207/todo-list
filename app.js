@@ -6,12 +6,16 @@ const FIRST_WIN_KEY = "sdelano.first-win.v1";
 const THREE_STEPS_KEY = "sdelano.three-steps.v1";
 const MILESTONE_RECORD_KEY = "sdelano.milestone.record.v1";
 const MILESTONE_GOALS = [1, 3, 5, 10];
+const RETURN_AFTER_MS = 24 * 60 * 60 * 1000;
 const clock = window.taskClock;
 const feedback = window.taskFeedback;
+const analytics = window.sdelanoAnalytics;
 let needsClockMigration = false;
+let taskStorageReadable = true;
 const clockUpdates = new Map();
 const form = document.querySelector("#task-form");
 const titleInput = document.querySelector("#task-title");
+const timerHint = document.querySelector("#timer-hint");
 const list = document.querySelector("#tasks");
 const template = document.querySelector("#task-template");
 const emptyState = document.querySelector("#empty-state");
@@ -35,6 +39,7 @@ const firstStepTitle = document.querySelector("#first-step-title");
 const firstStepDetail = document.querySelector("#first-step-detail");
 const firstStepCta = document.querySelector("#first-step-cta");
 const firstWinCard = document.querySelector("#first-win-card");
+const firstWinDetail = document.querySelector("#first-win-detail");
 const firstWinNext = document.querySelector("#first-win-next");
 const firstWinShare = document.querySelector("#first-win-share");
 const firstWinDismiss = document.querySelector("#first-win-dismiss");
@@ -61,16 +66,26 @@ function setStorageWarning(visible) {
 }
 
 function loadTasks() {
+  let saved;
   try {
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    saved = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    taskStorageReadable = false;
+    setStorageWarning(true);
+    return [];
+  }
+  try {
+    const stored = JSON.parse(saved);
     if (!Array.isArray(stored)) return [];
     return stored
       .filter((task) => typeof task?.title === "string" && typeof task.done === "boolean")
       .map((task) => {
-        if (!("elapsedMs" in task) || (!task.done && !Number.isFinite(task.startedAt))) {
+        const normalized = clock.normalize(task);
+        if (normalized.elapsedMs !== task.elapsedMs || normalized.startedAt !== task.startedAt ||
+            normalized.doneAt !== task.doneAt) {
           needsClockMigration = true;
         }
-        return clock.normalize(task);
+        return normalized;
       });
   } catch {
     setStorageWarning(true);
@@ -80,12 +95,30 @@ function loadTasks() {
 
 const tasks = loadTasks();
 
+function loadLastTaskActivity() {
+  const lastTaskTime = tasks.reduce((latest, task) =>
+    Math.max(latest, task.startedAt ?? 0, task.doneAt ?? 0), 0);
+  try {
+    const history = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
+    const lastAction = Array.isArray(history) ? history.at(-1)?.at : null;
+    return Number.isFinite(lastAction) ? Math.max(lastTaskTime, lastAction) : lastTaskTime;
+  } catch {
+    return lastTaskTime;
+  }
+}
+let lastTaskActivity = loadLastTaskActivity();
+
+function saveAchievement(key, value) {
+  if (!taskStorageReadable) return;
+  try { localStorage.setItem(key, value); }
+  catch { /* Keep the achievement in memory for this session. */ }
+}
+
 // Do not award "first victory" again to returning or legacy users. The
 // history check also covers a completed task which was reopened or deleted.
 function hadFirstWinBefore() {
   if (tasks.some((task) => task.done)) {
-    try { localStorage.setItem(FIRST_WIN_KEY, "1"); }
-    catch { /* Legacy tasks remain usable without storage. */ }
+    saveAchievement(FIRST_WIN_KEY, "1");
     return true;
   }
   try {
@@ -103,8 +136,7 @@ let firstWinVisible = false;
 // The stored award survives reopened/deleted tasks and is never replayed.
 function hadThreeStepsBefore() {
   if (tasks.filter((task) => task.done).length >= 3) {
-    try { localStorage.setItem(THREE_STEPS_KEY, "1"); }
-    catch { /* Keep the legacy award in memory. */ }
+    saveAchievement(THREE_STEPS_KEY, "1");
     return true;
   }
   try {
@@ -129,6 +161,7 @@ function loadMilestoneRecord() {
 let milestoneRecord = loadMilestoneRecord();
 
 function saveTasks() {
+  if (!taskStorageReadable) return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
     setStorageWarning(false);
@@ -215,7 +248,7 @@ function resetPosterPreview() {
   sharePosterPreview.alt = "ШАГ: запиши первую задачу — твой ход!";
   shareImageDownload.href = "assets/share-step-1-v2.jpg";
   shareImageDownload.download = "sdelano-shag-1.jpg";
-  shareImageDownload.textContent = "Скачать картинку для Telegram";
+  shareImageDownload.textContent = "Скачать общий постер";
   syncImageShareButton();
 }
 
@@ -228,7 +261,7 @@ function usePersonalPoster(file, data) {
     " задач, " + data.percent + "%. Твой ход — запиши первую задачу.";
   shareImageDownload.href = posterPreviewURL;
   shareImageDownload.download = file.name;
-  shareImageDownload.textContent = "Скачать мою карточку JPG";
+  shareImageDownload.textContent = "Скачать карточку JPG";
   syncImageShareButton();
 }
 
@@ -278,6 +311,7 @@ function closeShareDialog() {
 }
 
 function openShareDialog() {
+  analytics?.track("share_opened");
   feedback.play("tap");
   shareFeedback.textContent = "";
   shareManual.open = false;
@@ -320,12 +354,13 @@ shareDialog.addEventListener("click", (event) => {
 });
 shareNative.addEventListener("click", async () => {
   if (!preparedShare || typeof navigator.share !== "function") return;
+  analytics?.track("share_action");
   feedback.play("tap");
   try {
     await navigator.share({
       title: preparedShare.title, text: preparedShare.text, url: preparedShare.url
     });
-    shareFeedback.textContent = "Системная отправка завершена.";
+    shareFeedback.textContent = "Ссылка передана в меню отправки.";
   } catch (error) {
     shareFeedback.textContent = error?.name === "AbortError" ? "Отправка отменена." :
       "Системная отправка недоступна. Выбери Telegram, WhatsApp или скопируй текст.";
@@ -333,6 +368,7 @@ shareNative.addEventListener("click", async () => {
 });
 shareImageNative.addEventListener("click", async () => {
   if (!preparedShare || !preparedPosterFile || typeof navigator.share !== "function") return;
+  analytics?.track("share_action");
   feedback.play("tap");
   // Include the URL in text for services which drop the separate 'url' field
   // when sharing a media file as a Telegram photo/caption.
@@ -352,6 +388,7 @@ shareImageNative.addEventListener("click", async () => {
 
 shareCopy.addEventListener("click", async () => {
   if (!preparedShare) return;
+  analytics?.track("share_action");
   feedback.play("tap");
   const text = shareReadyText.value;
   try {
@@ -373,8 +410,12 @@ shareCopy.addEventListener("click", async () => {
   shareFeedback.textContent = "Текст выделен. Выбери «Копировать» в меню телефона.";
 });
 for (const provider of [shareTelegram, shareWhatsApp]) {
-  provider.addEventListener("click", () => feedback.play("tap"));
+  provider.addEventListener("click", () => {
+    analytics?.track("share_action");
+    feedback.play("tap");
+  });
 }
+shareImageDownload.addEventListener("click", () => analytics?.track("share_action"));
 
 // Links contain a snapshot, never the sender's task names or private storage.
 function initSharedAchievement() {
@@ -388,33 +429,48 @@ function initSharedAchievement() {
   sharedHeading.textContent = `У друга уже ${percent}% дел закрыто. Твой ход!`;
   sharedDetail.textContent = `${done} из ${total} задач выполнено. Запиши свою первую задачу — отсчёт начнётся сразу. Сделаешь дело — увидишь результат.`;
   sharedAchievement.hidden = false;
+  analytics?.openReferral();
 }
 sharedStart.addEventListener("click", () => {
+  analytics?.startReferral();
   feedback.play("tap");
   titleInput.scrollIntoView({ block: "center", behavior: "smooth" });
   titleInput.focus({ preventScroll: true });
 });
+analytics?.track("task_list_viewed");
+if (new URLSearchParams(location.search).get("utm_source") === "progress_share") {
+  analytics?.startReferral();
+}
 initSharedAchievement();
 
 function recordTaskActivity(task, action) {
+  lastTaskActivity = Date.now();
+  if (!taskStorageReadable) return;
   try {
     const saved = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
     const history = Array.isArray(saved) ? saved : [];
-    history.push({ title: task.title, action, at: Date.now() });
+    history.push({ title: task.title, action, at: lastTaskActivity });
     localStorage.setItem(TASK_HISTORY_KEY, JSON.stringify(history.slice(-300)));
   } catch { /* The list is usable with unavailable history. */ }
 }
 
-function renderFirstStep() {
+function renderFirstStep(returning) {
   firstStepGuide.hidden = firstWinAchieved;
   firstWinCard.hidden = !firstWinVisible;
   if (firstWinAchieved) return;
+  if (returning) {
+    firstStepLabel.textContent = "ТВОЯ ЗАДАЧА";
+    firstStepTitle.textContent = "Продолжи своё дело";
+    firstStepDetail.textContent = "Поставь галочку, когда закончишь.";
+    firstStepCta.textContent = "К задаче";
+    return;
+  }
   const hasTask = tasks.length > 0;
   firstStepLabel.textContent = hasTask ? "МИССИЯ 2 ИЗ 2" : "МИССИЯ 1 ИЗ 2";
   firstStepTitle.textContent = hasTask ? "Закрой первую задачу" : "Запиши одно небольшое дело";
   firstStepDetail.textContent = hasTask ?
-    "Сделал дело? Поставь галочку — первый шаг будет засчитан." :
-    "Не нужно составлять большой план. Начни с одной задачи.";
+    "Поставь галочку, когда закончишь." :
+    "Например, собрать рюкзак.";
   firstStepCta.textContent = hasTask ? "Перейти к задаче" : "Записать первый шаг";
 }
 
@@ -469,9 +525,7 @@ function renderMilestones(completed) {
     threeStepsAchieved ? 3 : 0);
   if (currentBest > milestoneRecord) {
     milestoneRecord = currentBest;
-    try {
-      localStorage.setItem(MILESTONE_RECORD_KEY, String(milestoneRecord));
-    } catch { /* Keep the personal best for this session. */ }
+    saveAchievement(MILESTONE_RECORD_KEY, String(milestoneRecord));
   }
 
   const nextGoal = MILESTONE_GOALS.find((goal) => milestoneRecord < goal);
@@ -543,10 +597,15 @@ function updateProgress() {
   // Do not stack two competing CTAs or distract a new user from the mission.
   nextAction.hidden = !firstWinAchieved || firstWinVisible || threeStepsVisible;
   const pending = tasks.find((task) => !task.done);
+  if (timerHint) {
+    timerHint.textContent = pending ? "Закончишь дело — поставь галочку." : "Таймер начнётся сразу.";
+  }
+  const returning = Boolean(pending && lastTaskActivity > 0 &&
+    Date.now() - lastTaskActivity >= RETURN_AFTER_MS);
   if (pending) {
-    nextStep.textContent = "Ещё один шаг?";
+    nextStep.textContent = returning ? "Продолжи своё дело" : "Ещё один шаг?";
     nextDetail.textContent = "Следующее дело: «" + pending.title + "».";
-    nextActionButton.textContent = "Перейти к следующей задаче";
+    nextActionButton.textContent = returning ? "К задаче" : "Перейти к следующей задаче";
   } else {
     nextStep.textContent = total > 0 ? "Все дела закрыты!" : "Новый день — новый шаг";
     nextDetail.textContent = total > 0 ?
@@ -562,7 +621,7 @@ function updateProgress() {
   if (summary.textContent !== status) {
     summary.textContent = status;
   }
-  renderFirstStep();
+  renderFirstStep(returning);
   renderThreeSteps();
   renderMilestones(completed);
 }
@@ -609,12 +668,16 @@ function appendTask(task) {
   const checkbox = row.querySelector(".task-checkbox");
   const deleteButton = row.querySelector(".delete-button");
   const timeLabel = row.querySelector(".task-clock");
-  const updateClock = () => { timeLabel.textContent = clock.display(task); };
+  const updateClock = () => {
+    const display = clock.display(task);
+    if (timeLabel.textContent !== display) timeLabel.textContent = display;
+  };
   clockUpdates.set(task, updateClock);
   row.classList.toggle("task-finished", task.done);
   updateClock();
 
   row.querySelector(".task-title").textContent = task.title;
+  checkbox.setAttribute("aria-label", task.title);
   checkbox.checked = task.done;
   deleteButton.setAttribute("aria-label", `Удалить задачу «${task.title}»`);
   deleteButton.title = "Удалить задачу";
@@ -625,6 +688,7 @@ function appendTask(task) {
     let newThreeSteps = false;
     if (checkbox.checked) {
       clock.finish(task, now);
+      analytics?.taskCompleted(task.createdFromInvite === true);
       const completedNow = tasks.filter((entry) => entry.done).length;
       newThreeSteps = !threeStepsAchieved && completedNow >= 3;
       // Milestones at 5 and 10 are conveyed by the roadmap itself,
@@ -639,17 +703,18 @@ function appendTask(task) {
         threeStepsAchieved = true;
         threeStepsVisible = true;
         firstWinVisible = false;
-        try {
-          localStorage.setItem(THREE_STEPS_KEY, "1");
-        } catch { /* Keep the award in memory if storage is blocked. */ }
+        saveAchievement(THREE_STEPS_KEY, "1");
         // Do not cover the award with a previous completion toast.
         clearTaskToast();
       } else if (newFirstWin) {
         firstWinAchieved = true;
         firstWinVisible = true;
-        try {
-          localStorage.setItem(FIRST_WIN_KEY, "1");
-        } catch { /* Keep the milestone in memory for this session. */ }
+        if (firstWinDetail) {
+          firstWinDetail.textContent = task.elapsedMs >= 1000 ?
+            "Твоё первое дело готово за " + clock.humanText(task.elapsedMs) + "." :
+            "Твоё первое дело готово.";
+        }
+        saveAchievement(FIRST_WIN_KEY, "1");
         // First-win card is already the confirmation; do not obscure its CTA.
         clearTaskToast();
       } else if (newRoadmapMilestone) {
@@ -707,6 +772,7 @@ function appendTask(task) {
 
 function addTask(title) {
   const task = clock.create(title);
+  if (analytics?.taskCreated()) task.createdFromInvite = true;
   feedback.play("add");
   tasks.push(task);
   const checkbox = appendTask(task);
@@ -764,5 +830,8 @@ function updateClocks() {
 }
 setInterval(updateClocks, 250);
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) updateClocks();
+  if (!document.hidden) {
+    updateClocks();
+    updateProgress();
+  }
 });
