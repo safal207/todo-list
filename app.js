@@ -4,6 +4,8 @@ const STORAGE_KEY = "todo-list.tasks.v1";
 const TASK_HISTORY_KEY = "sdelano.tasks.history.v1";
 const FIRST_WIN_KEY = "sdelano.first-win.v1";
 const THREE_STEPS_KEY = "sdelano.three-steps.v1";
+const MILESTONE_RECORD_KEY = "sdelano.milestone.record.v1";
+const MILESTONE_GOALS = [1, 3, 5, 10];
 const clock = window.taskClock;
 const feedback = window.taskFeedback;
 let needsClockMigration = false;
@@ -23,6 +25,10 @@ const progressPanel = document.querySelector("#progress-panel");
 const progress = document.querySelector("#progress");
 const percentage = document.querySelector("#percentage");
 const summary = document.querySelector("#progress-summary");
+const milestoneRecordLabel = document.querySelector("#milestone-record");
+const milestoneSteps = [...document.querySelectorAll("#milestone-track li[data-goal]")];
+const milestoneNextProgress = document.querySelector("#milestone-next-progress");
+const milestoneNextLabel = document.querySelector("#milestone-next-label");
 const firstStepGuide = document.querySelector("#first-step-guide");
 const firstStepLabel = document.querySelector("#first-step-label");
 const firstStepTitle = document.querySelector("#first-step-title");
@@ -101,6 +107,20 @@ function hadThreeStepsBefore() {
 }
 let threeStepsAchieved = hadThreeStepsBefore();
 let threeStepsVisible = false;
+
+// Keep a personal best: reopening or deleting a task should not take away
+// achievements. Count distinct currently finished rows, never toggle events.
+function loadMilestoneRecord() {
+  try {
+    const value = Number(localStorage.getItem(MILESTONE_RECORD_KEY));
+    return Number.isSafeInteger(value) && value >= 0 && value <= 1000000 ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+let milestoneRecord = Math.max(loadMilestoneRecord(),
+  tasks.filter((task) => task.done).length,
+  firstWinAchieved ? 1 : 0, threeStepsAchieved ? 3 : 0);
 
 function saveTasks() {
   try {
@@ -431,6 +451,44 @@ function renderThreeSteps() {
   threeStepsBadge.hidden = !threeStepsAchieved || threeStepsVisible;
 }
 
+function renderMilestones(completed) {
+  const currentBest = Math.max(completed,
+    firstWinAchieved ? 1 : 0,
+    threeStepsAchieved ? 3 : 0);
+  if (currentBest > milestoneRecord) {
+    milestoneRecord = currentBest;
+    try {
+      localStorage.setItem(MILESTONE_RECORD_KEY, String(milestoneRecord));
+    } catch { /* Keep the personal best for this session. */ }
+  }
+
+  const nextGoal = MILESTONE_GOALS.find((goal) => milestoneRecord < goal);
+  for (const item of milestoneSteps) {
+    const goal = Number(item.dataset.goal);
+    const earned = milestoneRecord >= goal;
+    item.classList.toggle("is-earned", earned);
+    item.classList.toggle("is-next", nextGoal === goal);
+    item.setAttribute("aria-label", goal + " шагов: " +
+      (earned ? "достигнуто" : nextGoal === goal ? "следующая цель" : "впереди"));
+    if (goal === nextGoal) item.setAttribute("aria-current", "step");
+    else item.removeAttribute("aria-current");
+  }
+
+  milestoneRecordLabel.textContent = "Рекорд: " + milestoneRecord;
+  milestoneNextProgress.max = nextGoal ?? 10;
+  milestoneNextProgress.value = Math.min(milestoneRecord, nextGoal ?? 10);
+  if (!nextGoal) {
+    milestoneNextLabel.textContent = "Все 4 этапа открыты! Продолжай в своём темпе.";
+    return;
+  }
+  const remaining = nextGoal - milestoneRecord;
+  const units = remaining % 10 === 1 && remaining % 100 !== 11 ? "шаг" :
+    remaining % 10 >= 2 && remaining % 10 <= 4 &&
+      (remaining % 100 < 12 || remaining % 100 > 14) ? "шага" : "шагов";
+  milestoneNextLabel.textContent = "До цели " + nextGoal + " — ещё " +
+    remaining + " " + units + ".";
+}
+
 // Context-aware continuation: never create or complete a task without a click.
 function focusNextStep() {
   feedback.play("tap");
@@ -493,6 +551,7 @@ function updateProgress() {
   }
   renderFirstStep();
   renderThreeSteps();
+  renderMilestones(completed);
 }
 
 function updateList() {
