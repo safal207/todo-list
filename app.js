@@ -1102,6 +1102,145 @@ form.addEventListener("submit", (event) => {
   titleInput.focus();
 });
 
+// Private, opt-in backups: JSON is downloaded or read locally, never uploaded.
+const backup = window.sdelanoBackup;
+const backupDownload = document.querySelector("#backup-download");
+const backupFile = document.querySelector("#backup-file");
+const backupPreview = document.querySelector("#backup-preview");
+const backupPreviewSummary = document.querySelector("#backup-preview-summary");
+const backupImport = document.querySelector("#backup-import");
+const backupCancel = document.querySelector("#backup-cancel");
+const backupStatus = document.querySelector("#backup-status");
+let stagedBackup = null;
+let backupSelection = 0;
+
+function reportBackup(message, error = false) {
+  backupStatus.textContent = message;
+  backupStatus.dataset.error = String(error);
+}
+
+function clearBackupSelection() {
+  backupSelection += 1;
+  stagedBackup = null;
+  backupPreview.hidden = true;
+  backupFile.value = "";
+}
+
+backupDownload.addEventListener("click", () => {
+  try {
+    if (pendingChanges.size) {
+      reportBackup("Сохранение задачи ещё выполняется. Попробуй скачать копию снова.", true);
+      return;
+    }
+    syncStoredTasks();
+    const json = backup.create(tasks, {
+      firstWin: firstWinAchieved,
+      threeSteps: threeStepsAchieved,
+      record: milestoneRecord
+    });
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date();
+    const stamp = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")].join("-");
+    link.href = url;
+    link.download = "sdelano-backup-" + stamp + ".json";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    reportBackup("Копия подготовлена. Файл содержит названия твоих задач — не публикуй его.");
+  } catch (error) {
+    reportBackup(error.message || "Не удалось создать копию.", true);
+  }
+});
+
+backupFile.addEventListener("change", async () => {
+  const selection = ++backupSelection;
+  backupPreview.hidden = true;
+  stagedBackup = null;
+  const file = backupFile.files?.[0];
+  if (!file) {
+    reportBackup("");
+    return;
+  }
+  if (file.size > backup.maxBytes) {
+    reportBackup("Файл слишком большой: максимум 2 МБ.", true);
+    return;
+  }
+  try {
+    const parsed = backup.parse(await file.text());
+    if (selection !== backupSelection) return;
+    stagedBackup = parsed;
+    syncStoredTasks();
+    const plan = backup.plan(tasks, parsed.tasks);
+    backupPreviewSummary.textContent = "В копии: " + parsed.tasks.length +
+      " задач. Новых для добавления: " + plan.added.length +
+      ". Уже есть в списке: " + plan.skipped +
+      ". Действующие задачи не будут удалены.";
+    backupPreview.hidden = false;
+    reportBackup("Файл проверен. Нажми «Добавить задачи из копии», чтобы восстановить список.");
+  } catch (error) {
+    if (selection === backupSelection) reportBackup(error.message || "Не удалось прочитать файл.", true);
+  }
+});
+
+backupCancel.addEventListener("click", () => {
+  clearBackupSelection();
+  reportBackup("Восстановление отменено. Текущий список не изменён.");
+});
+
+backupImport.addEventListener("click", () => {
+  if (!stagedBackup) return;
+  const selected = stagedBackup;
+  backupImport.disabled = true;
+  changeTasks(() => {
+    backupImport.disabled = false;
+    if (!taskStorageReadable || needsRecovery || unsavedTasks) {
+      reportBackup("Сохранение в браузере недоступно. Копия не применена, текущие данные не изменены.", true);
+      return;
+    }
+    const plan = backup.plan(tasks, selected.tasks);
+    if (plan.added.length) {
+      const combined = [...tasks, ...plan.added];
+      let raw;
+      try {
+        raw = JSON.stringify(combined);
+        // Write first, update in-memory list only after the whole write succeeds.
+        localStorage.setItem(STORAGE_KEY, raw);
+      } catch {
+        reportBackup("Не хватает места для восстановления. Текущий список сохранён без изменений.", true);
+        return;
+      }
+      savedTaskSnapshot = raw;
+      needsTaskMigration = false;
+      unsavedTasks = false;
+      tasks.push(...plan.added);
+      plan.added.forEach(appendTask);
+    }
+    const importedRecord = selected.achievements.record;
+    milestoneRecord = Math.max(milestoneRecord, importedRecord);
+    threeStepsAchieved ||= selected.achievements.threeSteps || importedRecord >= 3;
+    firstWinAchieved ||= selected.achievements.firstWin || threeStepsAchieved ||
+      importedRecord >= 1 || tasks.some(task => task.done);
+    saveAchievement(MILESTONE_RECORD_KEY, String(milestoneRecord));
+    if (firstWinAchieved) saveAchievement(FIRST_WIN_KEY, "1");
+    if (threeStepsAchieved) saveAchievement(THREE_STEPS_KEY, "1");
+    firstWinVisible = false;
+    threeStepsVisible = false;
+    recentCompletion = null;
+    if (activeFilter === "done" && plan.added.some(task => !task.done)) activeFilter = "all";
+    lastTaskActivity = loadLastTaskActivity();
+    updateProgress();
+    updateList();
+    clearBackupSelection();
+    reportBackup("Восстановлено: " + plan.added.length +
+      " задач. Уже существующих: " + plan.skipped + ". Прогресс и таймеры сохранены.");
+    backupDownload.focus({ preventScroll: true });
+  });
+});
+
 tasks.forEach(appendTask);
 updateProgress();
 updateList();
