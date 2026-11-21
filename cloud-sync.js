@@ -33,6 +33,19 @@
     status.dataset.error = String(isError);
   }
   function baselineKey(id) { return "sdelano.cloud.baseline.v1." + id; }
+  const ownerKey = "sdelano.cloud.owner.v1";
+  function enabled() {
+    try {
+      return Boolean(user && localStorage.getItem(ownerKey) === user.id &&
+        localStorage.getItem("sdelano.cloud.enabled." + user.id) === "1");
+    } catch { return false; }
+  }
+  function canUseAccount() {
+    try {
+      const owner = localStorage.getItem(ownerKey);
+      return !owner || owner === user?.id;
+    } catch { return false; }
+  }
 
   function getLocal() {
     let tasks;
@@ -71,7 +84,8 @@
     authActions.hidden = active;
     signedIn.hidden = !active;
     if (active) document.querySelector("#cloud-account").textContent = getCurrentSessionName();
-    syncNow.disabled = !active || running;
+    syncNow.disabled = !active || running || !canUseAccount();
+    syncNow.textContent = enabled() ? "Синхронизировать сейчас" : "Включить синхронизацию";
     signOut.disabled = !active || running;
   }
 
@@ -121,6 +135,7 @@
       return;
     }
     await withTaskLock(async () => {
+      if (!enabled()) return;
       const session = await client.auth.getUser();
       if (session.error || session.data.user?.id !== user.id) {
         throw new Error("Сеанс входа истёк. Войди снова.");
@@ -133,6 +148,11 @@
           .select("revision,snapshot").eq("user_id", user.id).maybeSingle();
         if (read.error) throw new Error("Не удалось прочитать облако: " + read.error.message);
         const record = read.data;
+        if (!record && base) {
+          // A previously synced server row vanished: never interpret this as
+          // an instruction to delete every local task.
+          throw new Error("Облачная копия исчезла. Скачай JSON-копию и проверь аккаунт перед повторной настройкой.");
+        }
         const remote = record ? validateCloud(record.snapshot) : snap([], {
           firstWin: false, threeSteps: false, record: 0
         });
@@ -175,7 +195,7 @@
   }
 
   async function sync() {
-    if (!user || running || pausedConflict) {
+    if (!user || !enabled() || running || pausedConflict) {
       if (running) rerun = true;
       return;
     }
@@ -193,7 +213,7 @@
     }
   }
   function scheduleSync(delay = 1500) {
-    if (!user || pausedConflict) return;
+    if (!user || !enabled() || pausedConflict) return;
     clearTimeout(timer);
     timer = setTimeout(() => { void sync(); }, delay);
   }
@@ -231,8 +251,14 @@
     pausedConflict = false;
     renderAuth();
     if (user) {
-      message("Выполнен вход. Проверяем обновления...");
-      scheduleSync(0);
+      if (!canUseAccount()) {
+        message("На этом устройстве уже подключён другой облачный аккаунт. Не смешиваем личные задачи. Сохрани JSON-копию и используй отдельный профиль браузера для другого аккаунта.", true);
+      } else if (enabled()) {
+        message("Выполнен вход. Проверяем обновления...");
+        scheduleSync(0);
+      } else {
+        message("Вход выполнен. Нажми «Включить синхронизацию», чтобы отправить текущие задачи в свой облачный аккаунт.");
+      }
     } else {
       message("Войди по ссылке из письма, чтобы синхронизировать задачи.");
     }
@@ -267,6 +293,21 @@
     }
   });
   syncNow.addEventListener("click", () => {
+    if (!user || !canUseAccount()) return;
+    if (!enabled()) {
+      const accepted = window.confirm(
+        "Включить облако? Названия задач, состояния и таймеры будут храниться на сервере Supabase в аккаунте, связанном с этой почтой. Рекомендуется сначала скачать JSON-копию. Продолжить?"
+      );
+      if (!accepted) return;
+      try {
+        localStorage.setItem(ownerKey, user.id);
+        localStorage.setItem("sdelano.cloud.enabled." + user.id, "1");
+      } catch {
+        message("Браузер не смог сохранить разрешение на синхронизацию.", true);
+        return;
+      }
+      renderAuth();
+    }
     pausedConflict = false;
     void sync();
   });
