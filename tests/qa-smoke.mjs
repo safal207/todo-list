@@ -995,6 +995,91 @@ try {
   await metricsContext.close();
 }
 
+// Product validation pilot: anonymous activation, first completion and D1 return.
+// Reporting is explicitly shared by the participant; no task titles leave localStorage.
+const pilotContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+try {
+  const participant = await pilotContext.newPage();
+  await participant.goto(origin + "/?pilot=T01");
+  assert.equal(await participant.locator("#pilot-note").isVisible(), true,
+    "Valid pilot invitation exposes a quiet report link");
+  await participant.locator("#welcome-start").click();
+  const started = await participant.evaluate(() => sdelanoAnalytics.pilotSummary());
+  assert.equal(started.code, "T01");
+  assert.equal(started.newUser, true);
+  assert.equal(started.created, false);
+  assert.equal(started.completed, false);
+  assert.equal(started.returnedD1, false);
+
+  await participant.locator("#task-title").fill("PRIVATE DO NOT EXPORT TITLE");
+  await editTask(participant.locator("#task-form button"));
+  assert.equal(await participant.evaluate(() => sdelanoAnalytics.pilotSummary().created), true);
+  await editTask(participant.getByRole("checkbox", { name: "PRIVATE DO NOT EXPORT TITLE" }), "check");
+  assert.equal(await participant.evaluate(() => sdelanoAnalytics.pilotSummary().completed), true);
+  await participant.goto(origin + "/pilot/");
+  assert.equal(await participant.locator("#pilot-content").isVisible(), true);
+  assert.equal(await participant.locator("#pilot-code").textContent(), "T01");
+  assert.match(await participant.locator("#pilot-returned").innerText(), /проверим завтра/);
+  await participant.locator("#pilot-comment").fill("Было легко.");
+  await participant.locator("#pilot-copy").click();
+  const report = await participant.locator("#pilot-export").inputValue();
+  assert.match(report, /Код: T01/);
+  assert.match(report, /Новый пользователь: да/);
+  assert.match(report, /Создал задачу: да/);
+  assert.match(report, /Завершил задачу: да/);
+  assert.match(report, /Комментарий.*Было легко/);
+  assert.equal(report.includes("PRIVATE DO NOT EXPORT TITLE"), false,
+    "Anonymous report must never include the task title");
+
+  // Simulate a user returning on their next local calendar day.
+  await participant.evaluate(() => {
+    const key = "sdelano.pilot.v1";
+    const p = JSON.parse(localStorage.getItem(key));
+    const now = new Date();
+    const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+    p.startedOn = [yesterday.getFullYear(), String(yesterday.getMonth() + 1).padStart(2, "0"),
+      String(yesterday.getDate()).padStart(2, "0")].join("-");
+    localStorage.setItem(key, JSON.stringify(p));
+  });
+  await participant.goto(origin + "/");
+  const returned = await participant.evaluate(() => sdelanoAnalytics.pilotSummary());
+  assert.equal(returned.returnedD1, true);
+  assert.equal(returned.code, "T01");
+  assert.equal(await participant.locator("#pilot-note").isVisible(), true,
+    "Pilot note persists even when returning without a code");
+  await participant.goto(origin + "/?pilot=T02");
+  assert.equal(await participant.evaluate(() => sdelanoAnalytics.pilotSummary().code), "T01",
+    "Second code must not replace the original participant's cohort");
+  await participant.goto(origin + "/pilot/");
+  assert.match(await participant.locator("#pilot-returned").innerText(), /да/);
+} catch (error) {
+  errors.push("product pilot: " + (error.stack || error.message));
+} finally {
+  await pilotContext.close();
+}
+
+const noPilotContext = await browser.newContext();
+try {
+  const page = await noPilotContext.newPage();
+  await page.goto(origin + "/?pilot=T11");
+  assert.equal(await page.locator("#pilot-note").isVisible(), false,
+    "Only the ten assigned codes opt into pilot measurements");
+  assert.equal(await page.evaluate(() => sdelanoAnalytics.pilotSummary()), null);
+  await page.goto(origin + "/pilot/");
+  assert.equal(await page.locator("#pilot-absent").isVisible(), true);
+  await page.goto(origin + "/invite/");
+  await page.evaluate(() => localStorage.setItem("todo-list.tasks.v1",
+    JSON.stringify([{ title: "Existing task", done: false }])));
+  await page.goto(origin + "/?pilot=T02");
+  const existing = await page.evaluate(() => sdelanoAnalytics.pilotSummary());
+  assert.equal(existing.code, "T02");
+  assert.equal(existing.newUser, false, "Existing users must not inflate new-user conversion");
+} catch (error) {
+  errors.push("pilot exclusions: " + (error.stack || error.message));
+} finally {
+  await noPilotContext.close();
+}
+
 await browser.close();
 if (errors.length) {
   console.error(errors.join("\n\n"));

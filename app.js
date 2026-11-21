@@ -567,6 +567,12 @@ sharedStart.addEventListener("click", () => {
   titleInput.scrollIntoView({ block: "center", behavior: "smooth" });
   titleInput.focus({ preventScroll: true });
 });
+// Ten-person research mode is opt-in by invitation; it never changes task data.
+const pilotInvite = new URLSearchParams(location.search).get("pilot");
+const pilotNewUser = savedTaskSnapshot === null && !tasks.length && !firstWinAchieved && !lastTaskActivity;
+analytics?.startPilot(pilotInvite, pilotNewUser);
+const pilotNote = document.querySelector("#pilot-note");
+if (pilotNote) pilotNote.hidden = !analytics?.pilotSummary();
 analytics?.track("task_list_viewed");
 initSharedAchievement();
 if (sharedAchievement.hidden && new URLSearchParams(location.search).get("utm_source") === "progress_share") {
