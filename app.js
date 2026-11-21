@@ -254,6 +254,13 @@ function syncStoredTasks() {
   const focused = document.activeElement;
   const focusedId = focused?.closest("li.task")?.dataset.taskId;
   const focusDelete = focused?.classList.contains("delete-button");
+  const focusEditButton = focused?.classList.contains("edit-button");
+  const focusEditInput = focused?.classList.contains("task-edit-input");
+  // Preserve an unsaved draft when another tab changes the task list.
+  const editingRow = list.querySelector('li.task[data-editing="true"]');
+  const editingId = editingRow?.dataset.taskId;
+  const editingDraft = editingRow?.querySelector(".task-edit-input").value;
+  const editingOriginalTitle = editingRow?.querySelector(".task-edit-form").dataset.originalTitle;
   const fresh = decodeTasks(raw);
   tasks.length = 0;
   list.replaceChildren();
@@ -272,9 +279,21 @@ function syncStoredTasks() {
   lastTaskActivity = loadLastTaskActivity();
   updateProgress();
   updateList();
-  if (focusedId) {
-    const row = list.children[tasks.findIndex(task => task.id === focusedId)];
-    const next = row && !row.hidden ? row.querySelector(focusDelete ? ".delete-button" : ".task-checkbox") :
+  let editorRestored = false;
+  if (editingId) {
+    const editingIndex = tasks.findIndex(task => task.id === editingId);
+    const newRow = editingIndex >= 0 ? list.children[editingIndex] : null;
+    if (newRow && !newRow.hidden) {
+      openTaskEditor(newRow, editingDraft, editingOriginalTitle);
+      editorRestored = true;
+    }
+  }
+  if (focusedId && !(focusedId === editingId && focusEditInput && editorRestored)) {
+    const index = tasks.findIndex(task => task.id === focusedId);
+    const row = index >= 0 ? list.children[index] : null;
+    const next = row && !row.hidden ?
+      row.querySelector(focusDelete ? ".delete-button" :
+        focusEditButton ? ".edit-button" : ".task-checkbox") :
       filterButtons.find(button => tasks.length && button.dataset.filter === activeFilter) ?? titleInput;
     next.focus({ preventScroll: true });
   }
@@ -827,9 +846,44 @@ function focusAfterRemoval(neighbor) {
   (neighbor ?? fallback ?? titleInput).focus();
 }
 
+function openTaskEditor(row, draft, originalTitle) {
+  const other = list.querySelector('li.task[data-editing="true"]');
+  if (other && other !== row) closeTaskEditor(other, false);
+  const form = row.querySelector(".task-edit-form");
+  const input = form.querySelector(".task-edit-input");
+  const title = row.querySelector(".task-title").textContent;
+  form.dataset.originalTitle = originalTitle ?? title;
+  input.value = draft ?? title;
+  input.setCustomValidity("");
+  row.querySelector(".task-label").hidden = true;
+  row.querySelector(".edit-button").hidden = true;
+  row.querySelector(".delete-button").hidden = true;
+  form.hidden = false;
+  row.dataset.editing = "true";
+  input.focus({ preventScroll: true });
+  if (draft === undefined) input.select();
+}
+
+function closeTaskEditor(row, restoreFocus = true) {
+  if (!row?.isConnected) return;
+  row.querySelector(".task-label").hidden = false;
+  row.querySelector(".edit-button").hidden = false;
+  row.querySelector(".delete-button").hidden = false;
+  const form = row.querySelector(".task-edit-form");
+  form.hidden = true;
+  delete form.dataset.originalTitle;
+  delete row.dataset.editing;
+  form.querySelector(".task-edit-input").setCustomValidity("");
+  if (restoreFocus) row.querySelector(".edit-button").focus({ preventScroll: true });
+}
+
 function appendTask(task) {
   const row = template.content.firstElementChild.cloneNode(true);
   const checkbox = row.querySelector(".task-checkbox");
+  const editButton = row.querySelector(".edit-button");
+  const editForm = row.querySelector(".task-edit-form");
+  const editInput = row.querySelector(".task-edit-input");
+  const cancelButton = row.querySelector(".task-edit-cancel");
   const deleteButton = row.querySelector(".delete-button");
   const timeLabel = row.querySelector(".task-clock");
   const updateClock = () => {
@@ -843,10 +897,62 @@ function appendTask(task) {
   row.querySelector(".task-title").textContent = task.title;
   checkbox.setAttribute("aria-label", task.title);
   checkbox.checked = task.done;
+  editButton.setAttribute("aria-label", `Изменить название задачи «${task.title}»`);
+  editButton.title = "Изменить название";
   deleteButton.setAttribute("aria-label", `Удалить задачу «${task.title}»`);
   deleteButton.title = "Удалить задачу";
 
   row.dataset.taskId = task.id;
+  editButton.addEventListener("click", () => {
+    feedback.play("tap");
+    openTaskEditor(row);
+  });
+  cancelButton.addEventListener("click", () => {
+    feedback.play("tap");
+    closeTaskEditor(row);
+  });
+  editInput.addEventListener("input", () => editInput.setCustomValidity(""));
+  editInput.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeTaskEditor(row);
+  });
+  editForm.addEventListener("submit", event => {
+    event.preventDefault();
+    const nextTitle = editInput.value.trim();
+    if (!nextTitle || nextTitle.length > 200) {
+      editInput.setCustomValidity("Название должно содержать от 1 до 200 символов.");
+      editInput.reportValidity();
+      return;
+    }
+    const expectedTitle = editForm.dataset.originalTitle;
+    changeTasks(() => {
+      const index = tasks.findIndex(entry => entry.id === task.id);
+      if (index < 0) return; // Deleted in another tab: never resurrect a task.
+      const current = tasks[index];
+      const currentRow = list.children[index];
+      if (current.title !== expectedTitle) {
+        const currentForm = currentRow.querySelector(".task-edit-form");
+        const currentInput = currentForm.querySelector(".task-edit-input");
+        currentForm.dataset.originalTitle = current.title;
+        currentInput.setCustomValidity("Задача изменена в другой вкладке. Проверь название и введи его снова.");
+        currentInput.reportValidity();
+        return;
+      }
+      if (current.title !== nextTitle) {
+        current.title = nextTitle; // Preserve ID, completion, timestamps and timer.
+        currentRow.querySelector(".task-title").textContent = nextTitle;
+        currentRow.querySelector(".task-checkbox").setAttribute("aria-label", nextTitle);
+        const currentEdit = currentRow.querySelector(".edit-button");
+        currentEdit.setAttribute("aria-label", `Изменить название задачи «${nextTitle}»`);
+        currentRow.querySelector(".delete-button").setAttribute("aria-label", `Удалить задачу «${nextTitle}»`);
+        saveTasks();
+        recordTaskActivity("edited");
+        updateProgress();
+      }
+      closeTaskEditor(currentRow);
+    });
+  });
   checkbox.addEventListener("change", () => {
     const checked = checkbox.checked;
     const keyboardFocus = checkbox.matches(":focus-visible");

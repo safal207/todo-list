@@ -1314,3 +1314,73 @@ button { cursor: pointer; }
   background: #fbf6ff;
 }
 .pilot-note a { color: inherit; font-weight: 800; text-underline-offset: .18em; }
+
+/* Edit a task in place without touching the checkbox, clock or task identity. */
+.edit-button {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: .55rem;
+  color: var(--plum);
+  background: transparent;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.edit-button:hover { background: var(--lilac); }
+.task[data-editing="true"] {
+  flex-wrap: wrap;
+  padding: .65rem;
+}
+.task-edit-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: .55rem;
+  width: 100%;
+  min-width: 0;
+}
+.task-edit-label {
+  display: flex;
+  flex-direction: column;
+  gap: .3rem;
+  min-width: 0;
+  font-size: .8rem;
+  font-weight: 750;
+  color: var(--plum);
+}
+.task-edit-input {
+  width: 100%;
+  min-width: 0;
+  height: 2.75rem;
+  border: 1px solid #947c9f;
+  border-radius: .55rem;
+  padding: .45rem .7rem;
+  color: var(--ink);
+  background: #fff;
+  font-size: 1rem;
+}
+.task-edit-actions {
+  display: flex;
+  gap: .4rem;
+}
+.task-edit-actions button {
+  min-height: 2.75rem;
+  border: 1px solid var(--plum);
+  border-radius: .55rem;
+  padding: .4rem .65rem;
+  font-size: .86rem;
+  font-weight: 800;
+}
+.task-edit-save { color: var(--ink); background: var(--sun); }
+.task-edit-cancel { color: var(--plum); background: #fff; }
+.task-edit-save:hover { background: #fbe49a; }
+.task-edit-cancel:hover { background: var(--lilac); }
+@media (max-width: 35rem) {
+  .task-edit-form { grid-template-columns: minmax(0, 1fr); }
+  .task-edit-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .task-edit-actions button { min-width: 0; }
+}
