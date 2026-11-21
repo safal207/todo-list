@@ -166,7 +166,11 @@ let lastTaskActivity = loadLastTaskActivity();
 
 function saveAchievement(key, value) {
   if (!taskStorageReadable) return;
-  try { localStorage.setItem(key, value); }
+  try {
+    if (localStorage.getItem(key) === value) return;
+    localStorage.setItem(key, value);
+    window.dispatchEvent(new Event("sdelano:achievements-changed"));
+  }
   catch { /* Keep the achievement in memory for this session. */ }
 }
 
@@ -235,6 +239,7 @@ function saveTasks() {
     needsTaskMigration = false;
     unsavedTasks = false;
     setStorageWarning(false);
+    window.dispatchEvent(new Event("sdelano:tasks-changed"));
   } catch {
     unsavedTasks = true;
     setStorageWarning(true);
@@ -1237,6 +1242,7 @@ backupImport.addEventListener("click", () => {
     clearBackupSelection();
     reportBackup("Восстановлено: " + plan.added.length +
       " задач. Уже существующих: " + plan.skipped + ". Прогресс и таймеры сохранены.");
+    window.dispatchEvent(new Event("sdelano:tasks-changed"));
     backupDownload.focus({ preventScroll: true });
   });
 });
@@ -1249,6 +1255,9 @@ if (needsTaskMigration && !needsRecovery) {
 }
 window.addEventListener("storage", event => {
   if (event.key === STORAGE_KEY || event.key === null) syncStoredTasks();
+});
+window.addEventListener("sdelano:cloud-applied", () => {
+  syncStoredTasks(); // The writing tab does not receive a storage event.
 });
 
 function greetFirstVisit() {
