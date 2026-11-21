@@ -70,6 +70,7 @@ await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.1/+es
 
 try {
   await page.goto(origin, {waitUntil:"domcontentloaded"});
+  await page.locator("#welcome-start").click();
   await page.locator("#cloud-sync summary").waitFor({state:"visible",timeout:8000});
   await page.locator("#cloud-sync summary").click();
   await page.locator("#cloud-account").getByText("tester@example.com").waitFor({state:"visible",timeout:8000});
@@ -77,7 +78,6 @@ try {
   assert.equal(await page.evaluate(() => window.__cloudMock.row), null,
     "Email login alone must never upload personal tasks");
 
-  await page.locator("#welcome-start").click();
   await page.locator("#task-title").fill("Приватная задача");
   await page.locator("#task-form button[type='submit']").click();
   await page.locator('.task-panel[aria-busy="true"]').waitFor({state:"hidden"});
