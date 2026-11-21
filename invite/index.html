@@ -73,9 +73,10 @@
   analytics?.openReferral();
   document.querySelector("#start-own").addEventListener("click", () => analytics?.startReferral());
   const params = new URLSearchParams(location.search);
+  const result = /^(\d{1,4})-(\d{1,4})$/.exec(params.get("r") ?? "");
   const number = (value) => /^\d{1,4}$/.test(value ?? "") ? Number(value) : NaN;
-  const done = number(params.get("done"));
-  const total = number(params.get("total"));
+  const done = number(result?.[1] ?? params.get("done"));
+  const total = number(result?.[2] ?? params.get("total"));
   if (Number.isInteger(total) && total > 0 && total <= 9999 &&
       Number.isInteger(done) && done >= 0 && done <= total) {
     const percent = Math.floor(done / total * 100);

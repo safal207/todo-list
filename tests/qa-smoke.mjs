@@ -105,16 +105,14 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await task.locator(".task-checkbox").evaluate(el => document.activeElement === el), true);
     await page.locator("#share-progress").click();
     const shareZeroText = await page.locator("#share-ready-text").inputValue();
-    assert.match(shareZeroText, /0% — 0 из 1 задач выполнено/);
+    assert.match(shareZeroText, /0 из 1 дел \(0%\)/);
     assert.ok(!shareZeroText.includes(label), "Private task title must not be shared");
     assert.equal(await page.locator("#share-preview-percentage").textContent(), "0%");
+    assert.equal(await page.getByRole("link", { name: "Ссылка в Telegram" }).isVisible(), true);
     const telegram = new URL(await page.locator("#share-telegram").getAttribute("href"));
     const whatsApp = new URL(await page.locator("#share-whatsapp").getAttribute("href"));
     const referralURL = new URL(telegram.searchParams.get("url"));
-    assert.equal(referralURL.searchParams.get("share"), "1");
-    assert.equal(referralURL.searchParams.get("done"), "0");
-    assert.equal(referralURL.searchParams.get("total"), "1");
-    assert.equal(referralURL.searchParams.get("utm_campaign"), "telegram_invite_v1");
+    assert.equal(referralURL.search, "?r=0-1");
     assert.equal(referralURL.pathname, "/todo-list/invite/",
       "Telegram shares must use a new canonical OG page, not the cached homepage");
     assert.match(whatsApp.searchParams.get("text"), /Твой ход!/);
@@ -132,8 +130,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#share-native").isVisible(), true);
     await page.locator("#share-native").click();
     const shareZero = await page.evaluate(() => window.__shares[0]);
-    assert.match(shareZero.text, /0% — 0 из 1 задач выполнено/);
-    assert.match(shareZero.url, /\/invite\/\?share=1/);
+    assert.match(shareZero.text, /0 из 1 дел \(0%\)/);
+    assert.equal(shareZero.url, referralURL.href);
     assert.ok(!JSON.stringify(shareZero).includes(label), "Native share must hide task name");
     await page.locator("#share-close").click();
 
@@ -165,6 +163,24 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(posterZero.first, 0xff);
     assert.equal(posterZero.second, 0xd8);
     assert.match(posterZero.alt, /0 из 1/);
+    const ctaRight = await page.evaluate(async () => {
+      const prototype = CanvasRenderingContext2D.prototype;
+      const fillText = prototype.fillText;
+      let right;
+      prototype.fillText = function (text, x, ...args) {
+        if (text === "ЗАПИШИ ЗАДАЧУ") {
+          right = (x + this.measureText(text).actualBoundingBoxRight) / this.canvas.width;
+        }
+        return fillText.call(this, text, x, ...args);
+      };
+      try {
+        await window.achievementPoster.create({ done: 1, total: 1 });
+        return right;
+      } finally {
+        prototype.fillText = fillText;
+      }
+    });
+    assert.ok(ctaRight < 0.75, "Poster CTA clears Telegram's bottom-right timestamp");
     assert.ok(!(await page.evaluate(async () => {
       try { await window.achievementPoster.create({ done: 2, total: 1 }); return true; }
       catch { return false; }
@@ -180,7 +196,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(photoPayload.type, "image/jpeg");
     assert.ok(photoPayload.fileSize > 5000);
     assert.equal(photoPayload.fileName, "sdelano-progress-0-of-1.jpg");
-    assert.match(photoPayload.text, /\/invite\/\?share=1/);
+    assert.ok(photoPayload.text.endsWith(referralURL.href), "Photo caption contains the short link");
     assert.ok(!photoPayload.text.includes(label), "Photo caption must hide private task names");
     await page.locator("#share-close").click();
     const started = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
@@ -245,8 +261,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "Achievement JPG must change with real completion data");
     assert.match(posterFull.alt, /1 из 1.*100%/);
     const shareFull = await page.locator("#share-ready-text").inputValue();
-    assert.match(shareFull, /100% — 1 из 1 задач выполнено/);
-    assert.match(shareFull, /Все задачи закрыты/);
+    assert.match(shareFull, /1 из 1 дел \(100%\)\. Твой ход! Запиши задачу\./);
     assert.ok(!shareFull.includes(label), "Do not share private task title");
     await page.locator("#share-close").click();
 
@@ -275,7 +290,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       document.querySelector("#share-image-download")?.download === "sdelano-progress-1-of-2.jpg");
     assert.match(await page.locator("#share-poster-preview").getAttribute("alt"), /1 из 2.*50%/);
     const shareHalf = await page.locator("#share-ready-text").inputValue();
-    assert.match(shareHalf, /50% — 1 из 2 задач выполнено/);
+    assert.match(shareHalf, /1 из 2 дел \(50%\)/);
     assert.ok(!shareHalf.includes("Private extra"));
     const shareLink = new URL((await page.locator("#share-telegram").getAttribute("href")));
     const receiverUrl = shareLink.searchParams.get("url");
@@ -327,6 +342,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "Recipient must not see the sender's task titles");
     await recipient.locator("#start-own").click();
     assert.equal(new URL(recipient.url()).searchParams.get("utm_source"), "progress_share");
+    assert.equal(new URL(recipient.url()).searchParams.get("utm_campaign"), "telegram_invite_v1");
     assert.equal(await recipient.locator("li.task").count(), 0, "Recipient starts with independent tasks");
     await recipient.locator("#task-title").fill("Recipient task");
     await recipient.locator("#task-form button[type=submit]").click();
@@ -343,7 +359,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(funnel.events[event], 1, "The funnel counts each step once");
     }
     assert.equal(funnel.referralConversion, 1);
-    await recipient.goto(origin + "/invite/?done=9999&total=2", { waitUntil: "networkidle" });
+    await recipient.goto(origin + "/invite/?share=1&done=1&total=2", { waitUntil: "networkidle" });
+    assert.match(await recipient.locator("#friend-score").textContent(), /1 из 2 задач \(50%\)/,
+      "Older shared links still display the result");
+    await recipient.goto(origin + "/invite/?r=9999-2", { waitUntil: "networkidle" });
     assert.match(await recipient.locator("#friend-score").textContent(),
       /Друг поделился результатом/, "Invalid share URL cannot inject a fake result");
     await recipientContext.close();
@@ -367,8 +386,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#share-copy").click();
     await page.waitForFunction(() => window.__copiedText.includes("https://safal207.github.io/todo-list/"));
     const copiedText = await page.evaluate(() => window.__copiedText);
-    assert.match(copiedText, /100% — 1 из 1 задач выполнено/);
-    assert.match(copiedText, /share=1/);
+    assert.match(copiedText, /1 из 1 дел \(100%\)/);
+    assert.match(copiedText, /\/invite\/\?r=1-1$/);
     assert.ok(!copiedText.includes(label), "Copied text must not contain private task name");
     assert.match(await page.locator("#share-feedback").textContent(), /скопированы/);
     assert.equal(await page.locator("#share-manual").evaluate(el => el.open), false,
@@ -548,7 +567,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await award.locator("#three-steps-share").click();
       assert.equal(await award.locator("#share-dialog").isVisible(), true);
       const awardShare = await award.locator("#share-ready-text").inputValue();
-      assert.match(awardShare, /3 из 3 задач выполнено/);
+      assert.match(awardShare, /3 из 3 дел \(100%\)/);
       assert.ok(!awardShare.includes("Private QA milestone"),
         "Sharing the milestone must not disclose task names");
       await award.locator("#share-close").click();

@@ -293,15 +293,9 @@ function progressShareData() {
   const total = tasks.length;
   const done = tasks.reduce((sum, task) => sum + Number(task.done), 0);
   const percent = total ? Math.floor((done / total) * 100) : 0;
-  const headline = done === total ? "Все задачи закрыты. Сделано!" :
-    done === 0 ? "Хватит кормить задачи «завтраками»!" : "Меньше «потом». Больше «готово»!";
-  const text = `${headline}\n\nМой результат в «Сделано»: ${percent}% — ${done} из ${total} задач выполнено.\n\nТвой ход! Запиши первую задачу — таймер пойдёт сразу.`;
+  const text = `В «Сделано» готово ${done} из ${total} дел (${percent}%). Твой ход! Запиши задачу.`;
   const link = new URL(SHARE_URL);
-  link.searchParams.set("share", "1");
-  link.searchParams.set("done", String(done));
-  link.searchParams.set("total", String(total));
-  link.searchParams.set("utm_source", "progress_share");
-  link.searchParams.set("utm_campaign", "telegram_invite_v1");
+  link.searchParams.set("r", `${done}-${total}`);
   return { title: "Мой результат — Сделано", text, url: link.toString(), percent, done, total };
 }
 
