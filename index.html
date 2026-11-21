@@ -92,6 +92,28 @@
             <p id="percentage" class="percentage" aria-hidden="true">0%</p>
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
             <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <section class="milestone-roadmap" aria-labelledby="milestone-heading">
+              <div class="milestone-roadmap-heading">
+                <h3 id="milestone-heading">Дорожка достижений</h3>
+                <span class="milestone-record" id="milestone-record">Рекорд: 0</span>
+              </div>
+              <ol id="milestone-track" class="milestone-track" aria-label="Этапы достижений">
+                <li data-goal="1" aria-label="1 шаг: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">1</span><span class="milestone-label">СТАРТ</span>
+                </li>
+                <li data-goal="3" aria-label="3 шага: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">3</span><span class="milestone-label">РИТМ</span>
+                </li>
+                <li data-goal="5" aria-label="5 шагов: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">5</span><span class="milestone-label">ТЕМП</span>
+                </li>
+                <li data-goal="10" aria-label="10 шагов: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">10</span><span class="milestone-label">СЕРИЯ</span>
+                </li>
+              </ol>
+              <progress id="milestone-next-progress" class="milestone-next-progress" max="1" value="0" aria-label="Прогресс к следующему достижению"></progress>
+              <p id="milestone-next-label" class="milestone-next-label" role="status">Первый шаг — самая близкая цель.</p>
+            </section>
             <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
               <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
               <h3 id="first-step-title">Запиши одно небольшое дело</h3>
