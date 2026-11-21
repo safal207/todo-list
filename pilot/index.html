@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#fff7e7">
+  <title>Мой результат теста — Сделано</title>
+  <link rel="stylesheet" href="../styles.css?v=pilot-1">
+  <script src="../analytics.js?v=pilot-1" defer></script>
+  <script src="../pilot.js?v=pilot-1" defer></script>
+  <style>
+    body { background: #fff7e7; }
+    .pilot-shell { max-width: 40rem; margin: 2rem auto; padding: 1.1rem; }
+    .pilot-box { padding: clamp(1.1rem, 4vw, 2rem); border: 2px solid #372343; border-radius: 1.3rem; background: #fff; box-shadow: 5px 5px 0 #edd8fa; }
+    .pilot-box h1 { margin: .4rem 0; font-size: clamp(1.65rem, 5vw, 2.5rem); line-height: 1.15; }
+    .pilot-box p { line-height: 1.5; }
+    .pilot-kicker { color: #6e3c8f; font-size: .8rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+    .pilot-status { margin: 1.1rem 0; padding: 1rem; background: #faf3ff; border-radius: .85rem; }
+    .pilot-status ul { margin: 0; padding-left: 1.35rem; line-height: 1.9; }
+    .pilot-box label { display: block; font-weight: 750; margin: 1rem 0 .4rem; }
+    .pilot-box textarea { display: block; width: 100%; min-height: 6rem; padding: .75rem; border: 1px solid #8c7798; border-radius: .65rem; font: inherit; resize: vertical; }
+    .pilot-box .pilot-actions { display: flex; align-items: stretch; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
+    .pilot-box button, .pilot-box .pilot-link { display: inline-flex; justify-content: center; align-items: center; padding: .85rem 1rem; min-height: 3rem; border: 2px solid #372343; border-radius: .7rem; font: inherit; font-weight: 800; cursor: pointer; }
+    .pilot-box button { color: #22142a; background: #f7d86a; }
+    .pilot-box .pilot-link { color: #372343; background: #fff; text-decoration: none; }
+    .pilot-box .pilot-info { color: #685a6e; font-size: .87rem; }
+    .pilot-box .pilot-feedback { min-height: 1.6rem; font-weight: 750; }
+    .pilot-box [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<main class="pilot-shell">
+  <section class="pilot-box" aria-labelledby="pilot-title">
+    <p class="pilot-kicker">Исследование 10 пользователей</p>
+    <h1 id="pilot-title">Твой маленький прогресс</h1>
+    <p>Здесь можно поделиться только итогами тестирования. Сами задачи и их названия никуда не отправляются.</p>
+    <div id="pilot-absent" class="pilot-status" hidden>
+      Тест пока не начат в этом браузере. Открой персональную ссылку приглашения T01–T10, чтобы принять участие.
+    </div>
+    <div id="pilot-content" hidden>
+      <div class="pilot-status">
+        <p><strong>Участник <span id="pilot-code">—</span></strong></p>
+        <ul>
+          <li id="pilot-created">Создал первое дело: —</li>
+          <li id="pilot-completed">Выполнил первое дело: —</li>
+          <li id="pilot-returned">Вернулся на следующий день: —</li>
+        </ul>
+        <p id="pilot-eligibility" class="pilot-info"></p>
+      </div>
+      <p>Если сегодня первый день, выполни одно дело и вернись по своей ссылке завтра. После возвращения отправь отчёт исследователю.</p>
+      <label for="pilot-comment">Что было неудобно? (необязательно)</label>
+      <textarea id="pilot-comment" maxlength="500" placeholder="Например: не сразу заметил, где добавить дело. Не пиши имена или названия задач."></textarea>
+      <div class="pilot-actions">
+        <button type="button" id="pilot-copy">Скопировать обезличенный отчёт</button>
+        <a class="pilot-link" href="../">К моим делам</a>
+      </div>
+      <p id="pilot-feedback" class="pilot-feedback" role="status" aria-live="polite"></p>
+      <label id="pilot-fallback-label" for="pilot-export" hidden>Текст для копирования вручную</label>
+      <textarea id="pilot-export" readonly hidden></textarea>
+      <p class="pilot-info">Данные хранятся только в этом браузере. Отправка отчёта — только по твоему действию, скопированный текст можно отправить исследователю любым способом.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>
