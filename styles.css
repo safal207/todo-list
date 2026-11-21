@@ -1274,3 +1274,30 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .progress-chevron, .completed-chevron { transition: none; }
 }
+
+/* Share remains available in the compact progress header, even when details fold. */
+.progress-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .3rem .65rem;
+  margin-block-start: .25rem;
+}
+.progress-meta .progress-summary { margin-block-start: 0; }
+.progress-meta .share-progress-block {
+  margin-block-start: 0;
+  flex: 0 0 auto;
+}
+.progress-meta .share-progress-button {
+  width: auto;
+  min-height: 2.45rem;
+  padding: .4rem .75rem;
+  box-shadow: none;
+  font-size: .875rem;
+}
+.progress-meta .share-progress-hint { display: none; }
+@media (max-width: 24rem) {
+  .progress-meta { align-items: flex-start; }
+  .progress-meta .share-progress-button { min-height: 2.6rem; }
+}
