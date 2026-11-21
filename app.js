@@ -565,7 +565,9 @@ function appendTask(task) {
         try {
           localStorage.setItem(THREE_STEPS_KEY, "1");
         } catch { /* Keep the award in memory if storage is blocked. */ }
-        // The award card itself is the feedback; no toast covering its headline.
+        // Clear an earlier task's toast too: it could obscure the big "3".
+        clearTimeout(toastTimeout);
+        toast.classList.remove("is-visible");
       } else if (newFirstWin) {
         firstWinAchieved = true;
         firstWinVisible = true;
