@@ -162,6 +162,12 @@ function announceDone(task) {
   showToast("Отлично! " + clock.display(task) + " ✦");
 }
 
+function clearTaskToast() {
+  clearTimeout(toastTimeout);
+  toast.classList.remove("is-visible");
+  toast.hidden = true;
+}
+
 // Viral referral: share aggregate counts only, with a recipient-facing CTA.
 const SHARE_URL = "https://safal207.github.io/todo-list/invite/";
 const shareDialog = document.querySelector("#share-dialog");
@@ -619,8 +625,12 @@ function appendTask(task) {
     let newThreeSteps = false;
     if (checkbox.checked) {
       clock.finish(task, now);
-      newThreeSteps = !threeStepsAchieved &&
-        tasks.filter((entry) => entry.done).length >= 3;
+      const completedNow = tasks.filter((entry) => entry.done).length;
+      newThreeSteps = !threeStepsAchieved && completedNow >= 3;
+      // Milestones at 5 and 10 are conveyed by the roadmap itself,
+      // not a toast that hides the exact next-goal information.
+      const newRoadmapMilestone = [5, 10].some((goal) =>
+        milestoneRecord < goal && completedNow === goal);
       feedback.play("complete");
       row.classList.remove("task-celebrate");
       void row.offsetWidth;
@@ -632,10 +642,8 @@ function appendTask(task) {
         try {
           localStorage.setItem(THREE_STEPS_KEY, "1");
         } catch { /* Keep the award in memory if storage is blocked. */ }
-        // Clear an earlier task's toast too: it could obscure the big "3".
-        clearTimeout(toastTimeout);
-        toast.classList.remove("is-visible");
-        toast.hidden = true;
+        // Do not cover the award with a previous completion toast.
+        clearTaskToast();
       } else if (newFirstWin) {
         firstWinAchieved = true;
         firstWinVisible = true;
@@ -643,6 +651,9 @@ function appendTask(task) {
           localStorage.setItem(FIRST_WIN_KEY, "1");
         } catch { /* Keep the milestone in memory for this session. */ }
         showToast("Первая победа! Один шаг уже сделан.");
+      } else if (newRoadmapMilestone) {
+        threeStepsVisible = false;
+        clearTaskToast();
       } else {
         announceDone(task);
       }
