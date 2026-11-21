@@ -565,7 +565,7 @@ function appendTask(task) {
         try {
           localStorage.setItem(THREE_STEPS_KEY, "1");
         } catch { /* Keep the award in memory if storage is blocked. */ }
-        showToast("3 шага сделано! Достижение открыто.");
+        // The award card itself is the feedback; no toast covering its headline.
       } else if (newFirstWin) {
         firstWinAchieved = true;
         firstWinVisible = true;
