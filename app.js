@@ -118,9 +118,7 @@ function loadMilestoneRecord() {
     return 0;
   }
 }
-let milestoneRecord = Math.max(loadMilestoneRecord(),
-  tasks.filter((task) => task.done).length,
-  firstWinAchieved ? 1 : 0, threeStepsAchieved ? 3 : 0);
+let milestoneRecord = loadMilestoneRecord();
 
 function saveTasks() {
   try {
@@ -468,7 +466,8 @@ function renderMilestones(completed) {
     const earned = milestoneRecord >= goal;
     item.classList.toggle("is-earned", earned);
     item.classList.toggle("is-next", nextGoal === goal);
-    item.setAttribute("aria-label", goal + " шагов: " +
+    const goalWord = goal === 1 ? "шаг" : goal === 3 ? "шага" : "шагов";
+    item.setAttribute("aria-label", goal + " " + goalWord + ": " +
       (earned ? "достигнуто" : nextGoal === goal ? "следующая цель" : "впереди"));
     if (goal === nextGoal) item.setAttribute("aria-current", "step");
     else item.removeAttribute("aria-current");
