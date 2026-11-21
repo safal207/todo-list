@@ -644,6 +644,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await thirdMilestone.isVisible(), true,
         "Earned achievement survives reload");
+      await award.locator('button[data-filter="done"]').click();
       await editTask(award.locator("li.task").nth(2).locator(".delete-button"));
       assert.equal(await record.textContent(), "Рекорд списка — 3");
       assert.equal(await thirdMilestone.isVisible(), true,
@@ -723,6 +724,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       });
       await award.reload({ waitUntil: "networkidle" });
       await showProgress(award);
+      await award.locator('button[data-filter="done"]').click();
       await editTask(award.locator("li.task").nth(2).locator(".delete-button"));
       await editTask(award.locator("li.task").nth(1).locator(".delete-button"));
       await editTask(award.locator("li.task").nth(0).locator(".delete-button"));
