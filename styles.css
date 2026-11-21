@@ -919,3 +919,28 @@ h1 {
 @media (prefers-reduced-motion: reduce) {
   .first-win-card { animation: none; }
 }
+
+/* Contextual next-step offer reuses the original progress panel. */
+.next-action-button {
+  display: block;
+  width: 100%;
+  min-height: 2.8rem;
+  margin-block-start: .7rem;
+  padding: .6rem .8rem;
+  border: 2px solid #fff8e9;
+  border-radius: .75rem;
+  color: #2c1922;
+  background: #ffd45f;
+  font-weight: 850;
+  line-height: 1.25;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.next-action-button:hover { background: #ffe18a; }
+.next-action #next-detail { overflow-wrap: anywhere; }
+.progress-panel[data-stage="done"] .next-action-button {
+  border-color: #34441f;
+  color: #fff8e9;
+  background: #34441f;
+}
+.progress-panel[data-stage="done"] .next-action-button:hover { background: #425b29; }

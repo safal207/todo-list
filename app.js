@@ -34,6 +34,8 @@ const firstWinDismiss = document.querySelector("#first-win-dismiss");
 const shareProgressButton = document.querySelector("#share-progress");
 const nextStep = document.querySelector("#next-step");
 const nextDetail = document.querySelector("#next-detail");
+const nextAction = document.querySelector("#next-action");
+const nextActionButton = document.querySelector("#next-action-button");
 const storageNote = document.querySelector("#storage-note");
 const storageWarning = document.querySelector("#storage-warning");
 const feedbackToggle = document.querySelector("#feedback-toggle");
@@ -380,16 +382,39 @@ firstStepCta.addEventListener("click", () => {
 firstWinNext.addEventListener("click", () => {
   feedback.play("tap");
   firstWinVisible = false;
-  renderFirstStep();
+  updateProgress();
   titleInput.focus();
 });
 firstWinShare.addEventListener("click", openShareDialog);
 firstWinDismiss.addEventListener("click", () => {
   feedback.play("tap");
   firstWinVisible = false;
-  renderFirstStep();
+  updateProgress();
   shareProgressButton.focus();
 });
+
+// Context-aware continuation: never create or complete a task without a click.
+function focusNextStep() {
+  feedback.play("tap");
+  const nextTask = tasks.find((task) => !task.done);
+  if (!nextTask) {
+    titleInput.scrollIntoView({ block: "center", behavior: "auto" });
+    titleInput.focus({ preventScroll: true });
+    return;
+  }
+  // Completed-only filters may hide the very task we want to suggest.
+  if (activeFilter === "done") {
+    activeFilter = "all";
+    updateList();
+  }
+  const index = tasks.indexOf(nextTask);
+  const row = list.children[index];
+  const checkbox = row?.querySelector(".task-checkbox");
+  if (!checkbox) return;
+  checkbox.scrollIntoView({ block: "center", behavior: "auto" });
+  checkbox.focus({ preventScroll: true });
+}
+nextActionButton.addEventListener("click", focusNextStep);
 
 function updateProgress() {
   const total = tasks.length;
@@ -399,16 +424,26 @@ function updateProgress() {
 
   if (total === 0) {
     progressPanel.dataset.stage = "first";
-    nextStep.textContent = "Добавьте первую задачу";
-    nextDetail.textContent = "Запишите одно дело, с которого хотите начать.";
   } else if (completed === total) {
     progressPanel.dataset.stage = "done";
-    nextStep.textContent = "Всё сделано!";
-    nextDetail.textContent = "Появится новое дело — добавьте его в список.";
   } else {
     progressPanel.dataset.stage = "working";
-    nextStep.textContent = completed === 0 ? "Выполните первую задачу" : "Возьмитесь за следующее дело";
-    nextDetail.textContent = "Когда закончите, поставьте галочку рядом с задачей.";
+  }
+
+  // The first-win achievement is already its own next-step offer.
+  // Do not stack two competing CTAs or distract a new user from the mission.
+  nextAction.hidden = !firstWinAchieved || firstWinVisible;
+  const pending = tasks.find((task) => !task.done);
+  if (pending) {
+    nextStep.textContent = "Ещё один шаг?";
+    nextDetail.textContent = "Следующее дело: «" + pending.title + "».";
+    nextActionButton.textContent = "Перейти к следующей задаче";
+  } else {
+    nextStep.textContent = total > 0 ? "Все дела закрыты!" : "Новый день — новый шаг";
+    nextDetail.textContent = total > 0 ?
+      "Если есть ещё дело, запиши его. Никакой спешки." :
+      "Готов к следующему делу? Запиши его, когда захочешь.";
+    nextActionButton.textContent = "Записать новую задачу";
   }
 
   shareProgressButton.title = total === 0 ? "Открой и начни первую задачу" :
