@@ -63,6 +63,30 @@ try {
     await page.close();
   }
 
+  // An existing user gets the fox again in a new tab, but not on refresh.
+  const visitContext = await browser.newContext();
+  const returning = await visitContext.newPage();
+  await returning.goto(origin + "/invite/");
+  await returning.evaluate(key => localStorage.setItem(key, JSON.stringify([
+    { title: "Вернуться к делу", done: false }
+  ])), tasksKey);
+  await returning.goto(origin);
+  await returning.locator("#welcome").waitFor({ state: "visible" });
+  assert.equal(await returning.locator("#welcome-title").innerText(), "С возвращением!");
+  assert.equal(await returning.locator("#welcome-start").innerText(), "К моим делам");
+  await returning.locator("#welcome-start").click();
+  assert.equal(await returning.getByRole("checkbox", { name: "Вернуться к делу" })
+    .evaluate(el => document.activeElement === el), true);
+  await returning.reload();
+  assert.equal(await returning.locator("#welcome").isVisible(), false,
+    "Refreshing a working tab should not restart the greeting");
+  const newVisit = await visitContext.newPage();
+  await newVisit.goto(origin);
+  await newVisit.locator("#welcome").waitFor({ state: "visible" });
+  assert.equal(await newVisit.locator("#welcome-title").textContent(), "С возвращением!");
+  await newVisit.locator("#welcome-start").click();
+  await visitContext.close();
+
   // The first arrival through a friend's invitation should go straight to the form.
   const friend = await browser.newPage();
   await friend.goto(origin + "/invite/?r=29-50");
@@ -87,6 +111,9 @@ try {
       ({ title: "Личное дело " + n, done: n < 29 }))));
   }, tasksKey);
   await legacy.goto(origin);
+  await legacy.locator("#welcome").waitFor({ state: "visible" });
+  assert.equal(await legacy.locator("#welcome-title").textContent(), "С возвращением!");
+  await legacy.locator("#welcome-start").click();
   assert.equal(await legacy.locator("#welcome").isVisible(), false);
   assert.equal(await legacy.locator("#percentage").innerText(), "58%");
   assert.equal(await legacy.locator("#progress-details").isVisible(), false);
@@ -170,6 +197,7 @@ try {
   await a.locator("#welcome-start").click();
   const b = await context.newPage();
   await b.goto(origin);
+  await b.locator("#welcome-start").click();
   await Promise.all([add(a, "Одинаковое имя"), add(b, "Одинаковое имя")]);
   for (const page of [a, b]) await page.locator("li.task").nth(1).waitFor();
   const ids = await a.locator("li.task").evaluateAll(rows => rows.map(row => row.dataset.taskId));
