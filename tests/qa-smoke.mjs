@@ -499,6 +499,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#task-toast").evaluate(el =>
         el.classList.contains("is-visible")), false,
         "A prior completion toast must not cover the milestone award");
+      assert.equal(await award.locator("#task-toast").isVisible(), false,
+        "An outgoing toast must disappear immediately, not fade over the big number");
       assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.three-steps.v1")), "1");
       assert.equal(await award.locator("li.task").count(), 3);
       const awardLayout = await award.evaluate(() => ({
