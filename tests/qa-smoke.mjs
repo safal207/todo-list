@@ -63,6 +63,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#first-step-guide").isVisible(), true);
     assert.match(await page.locator("#first-step-label").textContent(), /МИССИЯ 1 ИЗ 2/);
     assert.equal(await page.locator("#first-win-card").isVisible(), false);
+    assert.equal(await page.locator("#next-action").isVisible(), false,
+      "New users should see only the first mission, not competing upsells");
     await page.locator("#first-step-cta").click();
     assert.equal(await page.locator("#task-title").evaluate(el => document.activeElement === el), true);
     await page.locator("#share-progress").click();
@@ -90,6 +92,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await task.count(), 1);
     assert.match(await page.locator("#first-step-label").textContent(), /МИССИЯ 2 ИЗ 2/);
     assert.match(await page.locator("#first-step-title").textContent(), /Закрой первую задачу/);
+    assert.equal(await page.locator("#next-action").isVisible(), false);
     // Even if the active task is hidden by the Done filter, CTA must reveal and focus it.
     await page.locator('button[data-filter="done"]').click();
     await page.locator("#first-step-cta").click();
@@ -188,6 +191,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#first-step-guide").isVisible(), false);
     assert.equal(await page.locator("#first-win-card").isVisible(), true);
     assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
+    assert.equal(await page.locator("#next-action").isVisible(), false,
+      "A visible first victory must not compete with the next-step upsell");
     assert.equal(await page.evaluate(() => localStorage.getItem("sdelano.first-win.v1")), "1");
     const firstWinLayout = await page.evaluate(() => ({
       viewport: window.innerWidth, full: document.documentElement.scrollWidth
@@ -205,6 +210,12 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "Next step CTA must focus the input instead of adding a fake task");
     assert.equal(await page.locator("li.task").count(), 1,
       "Next step CTA must not create tasks automatically");
+    assert.equal(await page.locator("#next-action").isVisible(), true);
+    assert.equal(await page.locator("#next-action-button").textContent(), "Записать новую задачу");
+    await page.locator("#next-action-button").click();
+    assert.equal(await page.locator("#task-title").evaluate(el => document.activeElement === el), true);
+    assert.equal(await page.locator("li.task").count(), 1,
+      "Upsell CTA must not add a task without user's action");
     assert.equal((await page.locator("#percentage").textContent()).trim(), "100%");
     const completed = await page.evaluate(() => JSON.parse(localStorage.getItem("todo-list.tasks.v1"))[0]);
     assert.equal(completed.done, true);
@@ -235,6 +246,22 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("#task-title").fill("Private extra " + width);
     await page.locator("#task-form button[type=submit]").click();
     assert.equal(await page.locator("#percentage").textContent(), "50%");
+    assert.equal(await page.locator("#next-action").isVisible(), true);
+    assert.equal(await page.locator("#next-action-button").textContent(), "Перейти к следующей задаче");
+    assert.match(await page.locator("#next-detail").textContent(), /Private extra/);
+    await page.locator('button[data-filter="done"]').click();
+    assert.equal(await page.locator("li.task").filter({ hasText: "Private extra " + width }).isVisible(), false);
+    await page.locator("#next-action-button").click();
+    const nextCheckbox = page.locator("li.task").filter({ hasText: "Private extra " + width })
+      .locator(".task-checkbox");
+    assert.equal(await nextCheckbox.isVisible(), true,
+      "CTA must reveal a task hidden by the completed-only filter");
+    assert.equal(await nextCheckbox.evaluate(el => document.activeElement === el), true);
+    assert.equal(await nextCheckbox.isChecked(), false,
+      "Upsell must never mark a task complete on the user's behalf");
+    assert.equal(await page.locator('button[data-filter="all"]').getAttribute("aria-pressed"), "true");
+    assert.equal(await page.locator("li.task").count(), 2);
+    await page.screenshot({ path: "artifacts/next-step-" + width + ".png", fullPage: true });
     await page.locator("#share-progress").click();
     await page.waitForFunction(() =>
       document.querySelector("#share-image-download")?.download === "sdelano-progress-1-of-2.jpg");
@@ -303,6 +330,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await page.locator("li.task").filter({ hasText: "Private extra " + width })
       .locator(".delete-button").click();
     assert.equal(await page.locator("#percentage").textContent(), "100%");
+    assert.equal(await page.locator("#next-action-button").textContent(), "Записать новую задачу",
+      "Deleting the pending task must re-evaluate the next best action");
 
     // Explicit copy button with working clipboard, no native share dependency.
     await page.evaluate(() => {
@@ -355,6 +384,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "Mission must not restart for a returning user");
     assert.equal(await page.locator("#first-win-card").isVisible(), false,
       "One-time victory must not pop up again on reload");
+    assert.equal(await page.locator("#next-action").isVisible(), true,
+      "Returning users keep a gentle next-step action after reload");
     const frozen = (await restored.locator(".task-clock").textContent()).trim();
     await page.waitForTimeout(1250);
     assert.equal((await restored.locator(".task-clock").textContent()).trim(), frozen);
@@ -372,8 +403,14 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.ok(reopened.startedAt > completed.doneAt);
     assert.equal(reopened.elapsedMs, completed.elapsedMs);
     assert.equal((await page.locator("#percentage").textContent()).trim(), "0%");
+    assert.equal(await page.locator("#next-action-button").textContent(), "Перейти к следующей задаче",
+      "Reopening a task must re-evaluate the next action");
     await restored.locator(".delete-button").click();
     assert.equal(await page.locator("li.task").count(), 0);
+    assert.equal(await page.locator("#next-action").isVisible(), true);
+    await page.locator("#next-action-button").click();
+    assert.equal(await page.locator("#task-title").evaluate(el => document.activeElement === el), true,
+      "After deleting every task, returning users can still start again");
     assert.equal(await page.locator("#share-progress").isEnabled(), true,
       "Empty state remains an actionable entry point");
 
@@ -428,7 +465,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
     assert.equal(pageErrors.length, 0, "JS errors: " + pageErrors.join("; "));
     console.log("PASS " + width + "x" + height +
-      ": tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
+      ": contextual upsell, tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
   } catch (error) {
     errors.push(width + "x" + height + ": " + (error.stack || error.message));
     console.error("FAIL " + width + "x" + height + ": " + error.message);
