@@ -77,6 +77,7 @@ jobs:
           node tests/task-edit.mjs
           node tests/backup-restore.mjs
           node tests/cloud-sync.mjs
+          node tests/cloud-integration.mjs
       - name: Upload visual snapshots
         if: always()
         uses: actions/upload-artifact@v4
