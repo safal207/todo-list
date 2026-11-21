@@ -27,12 +27,13 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=inline-edit-1">
+    <link rel="stylesheet" href="styles.css?v=backup-1">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js?v=pilot-1" defer></script>
-    <script src="app.js?v=inline-edit-1" defer></script>
+    <script src="backup.js?v=1" defer></script>
+    <script src="app.js?v=backup-1" defer></script>
   </head>
   <body>
     <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
@@ -178,6 +179,23 @@
                 <p id="filtered-message"></p>
                 <button id="clear-filter" class="outline-button" type="button">Показать все</button>
               </div>
+
+              <details id="backup-tools" class="backup-tools">
+                <summary>Резервная копия задач</summary>
+                <div class="backup-content">
+                  <p>Сохрани свои дела на телефон или компьютер, чтобы восстановить их в другом браузере. Файл содержит названия задач — храни его у себя.</p>
+                  <button id="backup-download" class="backup-button" type="button">Скачать копию (.json)</button>
+                  <label for="backup-file">Восстановить из файла</label>
+                  <input id="backup-file" type="file" accept=".json,application/json" aria-describedby="backup-file-hint">
+                  <p id="backup-file-hint" class="backup-hint">При восстановлении новые дела добавятся к текущим. Совпадающие задачи не перезаписываются.</p>
+                  <div id="backup-preview" class="backup-preview" hidden>
+                    <p id="backup-preview-summary"></p>
+                    <button id="backup-import" class="backup-button" type="button">Добавить задачи из копии</button>
+                    <button id="backup-cancel" class="backup-cancel" type="button">Отмена</button>
+                  </div>
+                  <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
+                </div>
+              </details>
             </div>
           </section>
 
