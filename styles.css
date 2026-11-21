@@ -29,7 +29,7 @@ button { cursor: pointer; }
 }
 
 .workspace {
-  width: min(100% - 3rem, 69rem);
+  width: min(100% - 3rem, 48rem);
   margin-inline: auto;
   padding-block: 1.5rem 3rem;
 }
@@ -123,20 +123,18 @@ button { cursor: pointer; }
 
 .board {
   display: grid;
-  grid-template-columns: minmax(0, 1.82fr) minmax(16rem, 1fr);
-  align-items: start;
-  gap: clamp(.9rem, 2.5vw, 1.5rem);
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(.65rem, 2vw, 1rem);
 }
 
 .task-panel, .progress-panel {
   min-width: 0;
-  padding: clamp(1rem, 3vw, 1.75rem);
   border: 1.5px solid var(--ink);
   border-radius: 1.35rem;
   box-shadow: 0 .2rem 0 #2c192233;
 }
 
-.task-panel { background: var(--card); }
+.task-panel { padding: clamp(1rem, 3vw, 1.75rem); background: var(--card); }
 
 .mini-hero {
   display: flex;
@@ -239,7 +237,7 @@ button { cursor: pointer; }
 .welcome .add-button { width: 100%; background: var(--sun); color: var(--ink); }
 .progress-panel[data-stage="done"] .percentage::after {
   margin-inline-start: .22em;
-  color: #ffb6af;
+  color: var(--red);
   font: .48em/1 Georgia, serif;
   vertical-align: middle;
   content: "♥" / "";
@@ -301,6 +299,29 @@ button { cursor: pointer; }
   border-block-start: 1px solid var(--line);
 }
 
+.completed-group {
+  margin-block-start: .7rem;
+  border-block-start: 1px solid var(--line);
+}
+.completed-toggle {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .5rem .2rem;
+  color: var(--muted);
+  font-weight: 650;
+}
+.completed-count {
+  min-width: 1.55rem;
+  padding-inline: .35rem;
+  border-radius: 1rem;
+  color: var(--plum);
+  background: var(--lilac);
+  font-size: .82rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.completed-toggle .disclosure-chevron { margin-inline-start: auto; }
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -468,25 +489,68 @@ button { cursor: pointer; }
   background: var(--lime);
 }
 
-.progress-panel h2 {
-  color: var(--progress-muted);
-  font-size: 1.05rem;
+.progress-toggle, .completed-toggle {
+  min-height: 44px;
+  cursor: pointer;
+  list-style: none;
+}
+.progress-toggle::-webkit-details-marker, .completed-toggle::-webkit-details-marker { display: none; }
+.progress-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: "title percent arrow" "line line line";
+  align-items: center;
+  gap: .28rem .65rem;
+  padding: .7rem clamp(.9rem, 3vw, 1.35rem);
+  border-radius: inherit;
+}
+.progress-toggle:focus-visible, .completed-toggle:focus-visible {
+  outline-offset: 3px;
+}
+#progress-heading {
+  grid-area: title;
+  font-size: 1rem;
   font-weight: 750;
 }
-
+.disclosure-chevron {
+  width: .62rem;
+  height: .62rem;
+  justify-self: center;
+  margin: -.2rem .22rem 0;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.progress-toggle .disclosure-chevron { grid-area: arrow; }
+details[open] > summary > .disclosure-chevron {
+  margin-block-start: .32rem;
+  transform: rotate(225deg);
+}
+.progress-details {
+  padding: 0 clamp(.9rem, 3vw, 1.35rem) 1rem;
+  border-block-start: 1px solid var(--progress-track);
+}
 .percentage {
-  margin-block: .2rem .65rem;
-  font-size: clamp(2.6rem, 6vw, 4.35rem);
+  grid-area: percent;
+  font-size: clamp(1.25rem, 4.6vw, 1.6rem);
   font-weight: 830;
   line-height: 1;
   letter-spacing: -.07em;
   font-variant-numeric: tabular-nums;
 }
 
+.progress-line {
+  grid-area: line;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+}
 #progress {
+  flex: 1 1 0;
+  min-width: 2rem;
   display: block;
   width: 100%;
-  height: .625rem;
+  height: .36rem;
   overflow: hidden;
   appearance: none;
   border: 0;
@@ -501,7 +565,8 @@ button { cursor: pointer; }
 #progress::-moz-progress-bar { border-radius: 1rem; background: var(--progress-fill); }
 
 .progress-summary {
-  margin-block-start: .6rem;
+  text-align: end;
+  font-size: .8rem;
   color: var(--progress-muted);
   font-weight: 650;
 }
@@ -586,14 +651,10 @@ button { cursor: pointer; }
 .next-action:is([data-completion], [data-break]) #next-step { color: #34441f; font-size: 1.2rem; }
 .next-action:is([data-completion], [data-break]) #next-detail { color: #495339; }
 
-@media (max-width: 47rem) {
-  .board { grid-template-columns: minmax(0, 1fr); }
-}
-
 @media (max-width: 35rem) {
   .workspace { width: calc(100% - 1.5rem); padding-block-start: 1rem; }
   .brand-icon { width: min(2.25rem, 10vw); margin-inline-end: min(.55rem, 2.75vw); }
-  .task-panel, .progress-panel { padding: min(1.25rem, 5vw); }
+  .task-panel { padding: min(1.25rem, 5vw); }
   .task-label { gap: .6rem; padding-inline: min(.7rem, 3vw); }
   .delete-button { width: 44px; height: 44px; }
 }
