@@ -1218,3 +1218,59 @@ button { cursor: pointer; }
   color: #fff8e9;
 }
 .progress-panel[data-stage="done"] .milestone-track > li.is-earned:not(:first-child)::before { background: #34441f; }
+
+/* Focus mode: the compact progress strip lives immediately above the task list. */
+.board { display: block; }
+.board > .task-panel { width: min(100%, 49rem); margin-inline: auto; }
+.task-panel .progress-panel {
+  margin-block: 1.1rem .25rem;
+  padding: .85rem 1rem;
+  border-radius: .9rem;
+  box-shadow: none;
+}
+.progress-toggle {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  min-height: 2.25rem;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: none;
+  text-align: left;
+}
+.progress-label { color: var(--progress-muted); font-size: .95rem; font-weight: 800; }
+.progress-toggle .percentage { margin: 0 0 0 auto; font-size: 1.5rem; line-height: 1; }
+.progress-chevron, .completed-chevron { font-size: 1.4rem; line-height: 1; transition: transform .18s ease; }
+.progress-toggle[aria-expanded="true"] .progress-chevron,
+.completed-toggle[aria-expanded="true"] .completed-chevron { transform: rotate(180deg); }
+.task-panel #progress { height: .45rem; margin-block-start: .45rem; }
+.task-panel .progress-summary { margin-block-start: .35rem; font-size: .8rem; }
+#progress-details {
+  margin-block-start: .9rem;
+  padding-block-start: .85rem;
+  border-block-start: 1px solid var(--progress-track);
+}
+.completed-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  width: 100%;
+  min-height: 2.9rem;
+  margin-block-start: .7rem;
+  padding: .65rem .85rem;
+  border: 1px solid #c5b0d3;
+  border-radius: .75rem;
+  color: var(--plum);
+  background: #f5eeff;
+  font-size: .9rem;
+  font-weight: 750;
+  text-align: left;
+}
+.completed-toggle:hover { background: var(--lilac); }
+.task-list > .task-finished { order: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .progress-chevron, .completed-chevron { transition: none; }
+}
