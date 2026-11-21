@@ -190,6 +190,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     await task.locator(".task-checkbox").check();
     assert.equal(await page.locator("#first-step-guide").isVisible(), false);
     assert.equal(await page.locator("#first-win-card").isVisible(), true);
+    assert.equal(await page.locator("#task-toast").isVisible(), false,
+      "First-win card must not be obscured by a duplicate toast");
     assert.match(await page.locator("#first-win-title").textContent(), /Первый шаг сделан!/);
     assert.equal(await page.locator("#next-action").isVisible(), false,
       "A visible first victory must not compete with the next-step upsell");
