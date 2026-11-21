@@ -472,6 +472,12 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       await award.reload({ waitUntil: "networkidle" });
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 0");
+      assert.equal(await award.locator('#milestone-track li.is-earned').count(), 0);
+      assert.equal(await award.locator('#milestone-track li.is-next').getAttribute("data-goal"), "1");
+      assert.match(await award.locator("#milestone-next-label").textContent(), /1 шаг/);
+      assert.deepEqual(await award.locator("#milestone-next-progress").evaluate(el =>
+        ({ value: el.value, max: el.max })), { value: 0, max: 1 });
       for (let n = 1; n <= 3; n++) {
         const name = "Private QA milestone " + width + "-" + n;
         await award.locator("#task-title").fill(name);
@@ -479,16 +485,26 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
         const item = award.locator("li.task").nth(n - 1);
         assert.match(await item.textContent(), new RegExp(name));
         await item.locator(".task-checkbox").check();
+        assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: " + n);
         if (n === 1) {
+          assert.equal(await award.locator('#milestone-track li.is-earned').count(), 1);
+          assert.equal(await award.locator('#milestone-track li.is-next').getAttribute("data-goal"), "3");
+          assert.deepEqual(await award.locator("#milestone-next-progress").evaluate(el =>
+            ({ value: el.value, max: el.max })), { value: 1, max: 3 });
           assert.equal(await award.locator("#first-win-card").isVisible(), true,
             "First victory still works independently");
         } else if (n === 2) {
+          assert.equal(await award.locator('#milestone-track li.is-earned').count(), 1);
+          assert.match(await award.locator("#milestone-next-label").textContent(), /ещё 1 шаг/);
           assert.equal(await award.locator("#three-steps-card").isVisible(), false,
             "Two steps must not unlock the award");
           assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
         }
       }
       assert.equal(await award.locator("#three-steps-card").isVisible(), true);
+      assert.equal(await award.locator('#milestone-track li.is-earned').count(), 2);
+      assert.equal(await award.locator('#milestone-track li.is-next').getAttribute("data-goal"), "5");
+      assert.match(await award.locator("#milestone-next-label").textContent(), /ещё 2 шага/);
       assert.match(await award.locator("#three-steps-title").textContent(), /3 ШАГА СДЕЛАНО/);
       assert.equal(await award.locator("#first-win-card").isVisible(), false,
         "The third-step card replaces first-win rather than stacking celebrations");
@@ -526,6 +542,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
 
       const third = award.locator("li.task").nth(2).locator(".task-checkbox");
       await third.uncheck();
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 3",
+        "Reopening a task must not erase an earned milestone");
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
         "Earned awards persist when a task is reopened");
       await third.check();
@@ -536,6 +554,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
         "Earned achievement survives reload");
       await award.locator("li.task").nth(2).locator(".delete-button").click();
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 3");
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
         "Deleting a completed task must not revoke an earned milestone");
 
@@ -553,6 +572,67 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#three-steps-card").isVisible(), false,
         "Old achievements should not replay on page load");
       assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
+      assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.milestone.record.v1")), "3",
+        "Legacy completed tasks must seed the durable milestone record");
+
+      // Move from 3 -> 5 -> 10 and make sure old achievements do not replay.
+      for (let n = 4; n <= 10; n++) {
+        await award.locator("#task-title").fill("Roadmap QA private " + n);
+        await award.locator('#task-form button[type="submit"]').click();
+        await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
+        assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: " + n);
+        if (n === 5) {
+          assert.equal(await award.locator('#milestone-track li.is-earned').count(), 3);
+          assert.equal(await award.locator('#milestone-track li.is-next').getAttribute("data-goal"), "10");
+          assert.deepEqual(await award.locator("#milestone-next-progress").evaluate(el =>
+            ({ value: el.value, max: el.max })), { value: 5, max: 10 });
+          await award.screenshot({ path: "artifacts/milestone-5-" + width + ".png", fullPage: true });
+        }
+      }
+      assert.equal(await award.locator('#milestone-track li.is-earned').count(), 4);
+      assert.equal(await award.locator('#milestone-track li.is-next').count(), 0);
+      assert.match(await award.locator("#milestone-next-label").textContent(),
+        /Все 4 этапа открыты/);
+      assert.deepEqual(await award.locator("#milestone-next-progress").evaluate(el =>
+        ({ value: el.value, max: el.max })), { value: 10, max: 10 });
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false,
+        "Five- and ten-step milestones should not replay a three-step popup");
+      assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.milestone.record.v1")), "10");
+      const roadmapWidth = await award.evaluate(() => ({
+        viewport: innerWidth, actual: document.documentElement.scrollWidth
+      }));
+      assert.ok(roadmapWidth.actual <= roadmapWidth.viewport + 1,
+        "Milestone roadmap must not cause horizontal scrolling");
+      await award.screenshot({ path: "artifacts/milestone-10-" + width + ".png", fullPage: true });
+      const tenth = award.locator("li.task").nth(9);
+      await tenth.locator(".task-checkbox").uncheck();
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 10",
+        "Personal best survives task reopen");
+      await tenth.locator(".delete-button").click();
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 10",
+        "Personal best survives task deletion");
+      await award.reload({ waitUntil: "networkidle" });
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 10",
+        "Milestones must survive reload");
+      assert.equal(await award.locator('#milestone-track li.is-earned').count(), 4);
+
+      // A migrated legacy first/third win stays earned even if old tasks are removed.
+      await award.evaluate(() => {
+        localStorage.clear();
+        localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
+          { title: "Old success one", done: true },
+          { title: "Old success two", done: true },
+          { title: "Old success three", done: true }
+        ]));
+      });
+      await award.reload({ waitUntil: "networkidle" });
+      await award.locator("li.task").nth(2).locator(".delete-button").click();
+      await award.locator("li.task").nth(1).locator(".delete-button").click();
+      await award.locator("li.task").nth(0).locator(".delete-button").click();
+      await award.reload({ waitUntil: "networkidle" });
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 3");
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
+      assert.equal(await award.locator("#first-step-guide").isVisible(), false);
 
       // Toggling one single task repeatedly does not count as 3 distinct tasks.
       await award.evaluate(() => localStorage.clear());
@@ -569,6 +649,9 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#three-steps-card").isVisible(), false);
       assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
       assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.three-steps.v1")), null);
+      assert.equal(await award.locator("#milestone-record").textContent(), "Рекорд: 1",
+        "Re-checking a single task cannot advance the record toward 3");
+      assert.equal(await award.locator('#milestone-track li.is-earned').count(), 1);
       // New third distinct task: dismiss should leave a usable next-step button.
       for (let n = 2; n <= 3; n++) {
         await award.locator("#task-title").fill("Distinct task " + n);
@@ -589,7 +672,7 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
     assert.equal(pageErrors.length, 0, "JS errors: " + pageErrors.join("; "));
     console.log("PASS " + width + "x" + height +
-      ": three-step achievement, contextual upsell, tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
+      " : milestone roadmap 1-3-5-10, three-step achievement, contextual upsell, tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
   } catch (error) {
     errors.push(width + "x" + height + ": " + (error.stack || error.message));
     console.error("FAIL " + width + "x" + height + ": " + error.message);
