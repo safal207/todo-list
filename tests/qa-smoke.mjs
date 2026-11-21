@@ -742,7 +742,10 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       assert.equal(await award.locator("#first-step-guide").isVisible(), false);
 
       // Toggling one single task repeatedly does not count as 3 distinct tasks.
-      await award.evaluate(() => localStorage.clear());
+      await award.evaluate(() => {
+        localStorage.clear();
+        sessionStorage.removeItem("sdelano.welcome.session.v2");
+      });
       await award.reload({ waitUntil: "networkidle" });
       await showProgress(award);
       await award.locator("#welcome-start").click();
@@ -811,6 +814,9 @@ for (const method of ["getItem", "setItem"]) {
     }, method);
     await page.goto(origin);
     await showProgress(page);
+    if (await page.locator("#welcome").isVisible()) {
+      await page.locator("#welcome-start").click();
+    }
     await page.locator("#task-title").fill("Session task");
     await editTask(page.locator("#task-form button"));
     await editTask(page.getByRole("checkbox", { name: "Session task" }), "check");
