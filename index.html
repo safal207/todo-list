@@ -27,12 +27,12 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=pilot-1">
+    <link rel="stylesheet" href="styles.css?v=inline-edit-1">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js?v=pilot-1" defer></script>
-    <script src="app.js?v=pilot-1" defer></script>
+    <script src="app.js?v=inline-edit-1" defer></script>
   </head>
   <body>
     <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
@@ -192,7 +192,17 @@
           <input class="task-checkbox" type="checkbox" aria-describedby="completion-hint">
           <span class="task-copy"><span class="task-title"></span><span class="task-clock"></span></span>
         </label>
+        <button class="edit-button" type="button"><span aria-hidden="true">✎</span></button>
         <button class="delete-button" type="button"><span class="trash-icon" aria-hidden="true"></span></button>
+        <form class="task-edit-form" hidden>
+          <label class="task-edit-label">Название задачи
+            <input class="task-edit-input" type="text" maxlength="200" autocomplete="off" required>
+          </label>
+          <div class="task-edit-actions">
+            <button class="task-edit-save" type="submit">Сохранить</button>
+            <button class="task-edit-cancel" type="button">Отмена</button>
+          </div>
+        </form>
       </li>
     </template>
     <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-dialog-title" aria-describedby="share-dialog-description">
