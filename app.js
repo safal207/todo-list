@@ -46,7 +46,6 @@ const firstWinNext = document.querySelector("#first-win-next");
 const firstWinShare = document.querySelector("#first-win-share");
 const firstWinDismiss = document.querySelector("#first-win-dismiss");
 const threeStepsCard = document.querySelector("#three-steps-card");
-const threeStepsBadge = document.querySelector("#three-steps-badge");
 const threeStepsNext = document.querySelector("#three-steps-next");
 const threeStepsShare = document.querySelector("#three-steps-share");
 const threeStepsDismiss = document.querySelector("#three-steps-dismiss");
@@ -508,11 +507,6 @@ for (const button of [firstWinDismiss, threeStepsDismiss, nextBreak]) {
   });
 }
 
-function renderThreeSteps() {
-  threeStepsCard.hidden = !threeStepsVisible;
-  threeStepsBadge.hidden = !threeStepsAchieved || threeStepsVisible;
-}
-
 function renderMilestones(completed) {
   const currentBest = Math.max(completed,
     firstWinAchieved ? 1 : 0,
@@ -535,19 +529,17 @@ function renderMilestones(completed) {
     else item.removeAttribute("aria-current");
   }
 
-  milestoneRecordLabel.textContent = "Рекорд: " + milestoneRecord;
-  milestoneNextProgress.max = nextGoal ?? 10;
-  milestoneNextProgress.value = Math.min(milestoneRecord, nextGoal ?? 10);
-  if (!nextGoal) {
-    milestoneNextLabel.textContent = "Все 4 этапа открыты! Продолжай в своём темпе.";
+  milestoneRecordLabel.textContent = `Рекорд списка — ${milestoneRecord}`;
+  milestoneNextProgress.hidden = nextGoal === undefined;
+  if (nextGoal === undefined) {
+    milestoneNextLabel.textContent = "Все 4 этапа открыты.";
     return;
   }
-  const remaining = nextGoal - milestoneRecord;
-  const units = remaining % 10 === 1 && remaining % 100 !== 11 ? "шаг" :
-    remaining % 10 >= 2 && remaining % 10 <= 4 &&
-      (remaining % 100 < 12 || remaining % 100 > 14) ? "шага" : "шагов";
-  milestoneNextLabel.textContent = "До цели " + nextGoal + " — ещё " +
-    remaining + " " + units + ".";
+  milestoneNextProgress.max = nextGoal;
+  milestoneNextProgress.value = completed;
+  const remaining = nextGoal - completed;
+  const units = remaining === 1 ? "дело" : remaining <= 4 ? "дела" : "дел";
+  milestoneNextLabel.textContent = `До отметки ${nextGoal} — ещё ${remaining} ${units}.`;
 }
 
 // Context-aware continuation: never create or complete a task without a click.
@@ -647,7 +639,7 @@ function updateProgress() {
     summary.textContent = status;
   }
   renderFirstStep(returning);
-  renderThreeSteps();
+  threeStepsCard.hidden = !threeStepsVisible;
   renderMilestones(completed);
 }
 

@@ -27,12 +27,12 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=fox-mascot">
+    <link rel="stylesheet" href="styles.css?v=clear-progress">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js" defer></script>
-    <script src="app.js?v=completion-feedback" defer></script>
+    <script src="app.js?v=clear-progress" defer></script>
   </head>
   <body>
     <div class="workspace">
@@ -92,7 +92,7 @@
           </section>
 
           <aside id="progress-panel" class="progress-panel" data-stage="first" aria-labelledby="progress-heading">
-            <h2 id="progress-heading">Прогресс</h2>
+            <h2 id="progress-heading">Прогресс списка</h2>
             <p id="percentage" class="percentage" aria-hidden="true">0%</p>
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
             <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
@@ -120,10 +120,6 @@
                 <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
               </div>
             </section>
-            <p id="three-steps-badge" class="three-steps-badge" hidden>
-              <span class="three-steps-badge-icon" aria-hidden="true">★</span>
-              <span>Достижение: 3 шага сделано</span>
-            </p>
             <div id="next-action" class="next-action" hidden>
               <p id="next-step">Следующий шаг</p>
               <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
@@ -131,8 +127,8 @@
             </div>
             <section class="milestone-roadmap" aria-labelledby="milestone-heading">
               <div class="milestone-roadmap-heading">
-                <h3 id="milestone-heading">Дорожка достижений</h3>
-                <span class="milestone-record" id="milestone-record">Рекорд: 0</span>
+                <h3 id="milestone-heading">Достижения</h3>
+                <span class="milestone-record" id="milestone-record">Рекорд списка — 0</span>
               </div>
               <ol id="milestone-track" class="milestone-track" aria-label="Этапы достижений">
                 <li data-goal="1" aria-label="1 шаг: ещё не достигнуто">
@@ -149,7 +145,7 @@
                 </li>
               </ol>
               <progress id="milestone-next-progress" class="milestone-next-progress" max="1" value="0" aria-label="Прогресс к следующему достижению"></progress>
-              <p id="milestone-next-label" class="milestone-next-label" role="status">Первый шаг — самая близкая цель.</p>
+              <p id="milestone-next-label" class="milestone-next-label" role="status">До отметки 1 — ещё 1 дело.</p>
             </section>
             <div class="share-progress-block">
               <button id="share-progress" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
