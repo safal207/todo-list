@@ -27,12 +27,12 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=focus-1">
+    <link rel="stylesheet" href="styles.css?v=share-fox-2">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js" defer></script>
-    <script src="app.js?v=focus-1" defer></script>
+    <script src="app.js?v=share-fox-2" defer></script>
   </head>
   <body>
     <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
@@ -88,7 +88,15 @@
               <span class="progress-chevron" aria-hidden="true">⌄</span>
             </button>
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
-            <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <div class="progress-meta">
+              <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <div class="share-progress-block">
+              <button id="share-progress" aria-label="Поделиться прогрессом" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
+                <span class="share-arrow" aria-hidden="true">↗</span>
+                Поделиться
+              </button>
+              <p id="share-progress-hint" class="share-progress-hint">Личные задачи останутся у тебя.</p>
+            </div>
             <div id="progress-details" hidden>
             <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
               <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
@@ -141,13 +149,6 @@
               <progress id="milestone-next-progress" class="milestone-next-progress" max="1" value="0" aria-label="Прогресс к следующему достижению"></progress>
               <p id="milestone-next-label" class="milestone-next-label" role="status">До отметки 1 — ещё 1 дело.</p>
             </section>
-            <div class="share-progress-block">
-              <button id="share-progress" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
-                <span class="share-arrow" aria-hidden="true">↗</span>
-                Поделиться прогрессом
-              </button>
-              <p id="share-progress-hint" class="share-progress-hint">Личные задачи останутся у тебя.</p>
-            </div>
             </div>
           </aside>
 
