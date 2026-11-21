@@ -31,6 +31,10 @@ const filterButtons = [...filterGroup.querySelectorAll("button[data-filter]")];
 const sampleButton = document.querySelector("#sample-button");
 const clearFilterButton = document.querySelector("#clear-filter");
 const progressPanel = document.querySelector("#progress-panel");
+const progressToggle = document.querySelector("#progress-toggle");
+const progressDetails = document.querySelector("#progress-details");
+const completedToggle = document.querySelector("#completed-toggle");
+const completedToggleLabel = document.querySelector("#completed-toggle-label");
 const progress = document.querySelector("#progress");
 const percentage = document.querySelector("#percentage");
 const summary = document.querySelector("#progress-summary");
@@ -62,8 +66,27 @@ const storageNote = document.querySelector("#storage-note");
 const storageWarning = document.querySelector("#storage-warning");
 const feedbackToggle = document.querySelector("#feedback-toggle");
 let activeFilter = "all";
+let completedExpanded = false;
 const taskPanel = document.querySelector(".task-panel");
 const pendingChanges = new Set();
+
+function setProgressExpanded(expanded) {
+  progressDetails.hidden = !expanded;
+  progressToggle.setAttribute("aria-expanded", String(expanded));
+}
+
+progressToggle.addEventListener("click", () => {
+  feedback.play("tap");
+  setProgressExpanded(progressDetails.hidden);
+});
+
+completedToggle.addEventListener("click", () => {
+  feedback.play("tap");
+  const expanding = activeFilter === "active" || !completedExpanded;
+  completedExpanded = expanding;
+  if (expanding && activeFilter === "active") activeFilter = "all";
+  updateList();
+});
 
 const unavailableMessage = storageWarning.textContent;
 const recoveryMessage = "Не удалось прочитать весь список. При сохранении оставим копию исходных данных.";
@@ -761,21 +784,27 @@ function updateList() {
     button.setAttribute("aria-pressed", String(button.dataset.filter === activeFilter));
   }
 
+  const completed = tasks.filter((task) => task.done).length;
+  const showCompleted = activeFilter === "done" || (activeFilter === "all" && completedExpanded);
   let visibleCount = 0;
   for (const row of list.children) {
     const done = row.querySelector(".task-checkbox").checked;
-    row.hidden = activeFilter !== "all" && done !== (activeFilter === "done");
-    if (!row.hidden) {
-      visibleCount += 1;
-    }
+    row.hidden = done ? !showCompleted : activeFilter === "done";
+    if (!row.hidden) visibleCount += 1;
   }
 
   list.hidden = visibleCount === 0;
   filterGroup.hidden = tasks.length === 0;
   emptyState.hidden = tasks.length > 0;
-  filteredEmpty.hidden = tasks.length === 0 || visibleCount > 0;
+  completedToggle.hidden = completed === 0 || activeFilter === "done";
+  completedToggle.setAttribute("aria-expanded", String(activeFilter === "all" && completedExpanded));
+  completedToggleLabel.textContent = activeFilter === "all" && completedExpanded ?
+    `Свернуть выполненные · ${completed}` : `Показать выполненные · ${completed}`;
+  filteredEmpty.hidden = tasks.length === 0 || visibleCount > 0 ||
+    (completed > 0 && activeFilter === "all");
   if (!filteredEmpty.hidden) {
-    filteredMessage.textContent = activeFilter === "done" ? "Выполненных задач пока нет" : "Все задачи выполнены";
+    filteredMessage.textContent = activeFilter === "done" ?
+      "Выполненных задач пока нет" : "Все задачи выполнены";
   }
 }
 
@@ -878,6 +907,7 @@ function toggleTask(task, row, checked, keyboardFocus) {
   saveTasks();
   recordTaskActivity(task.done ? "done" : "reopen");
   updateProgress();
+  if (newFirstWin || newThreeSteps) setProgressExpanded(true);
   updateList();
   if (task.done) {
     focusAfterRemoval(list.querySelector(".task-checkbox:not(:checked)"));
@@ -930,6 +960,7 @@ for (const button of filterButtons) {
   button.addEventListener("click", () => {
     feedback.play("tap");
     activeFilter = button.dataset.filter;
+    if (activeFilter === "all") completedExpanded = true;
     updateList();
   });
 }
@@ -937,6 +968,7 @@ for (const button of filterButtons) {
 clearFilterButton?.addEventListener("click", () => {
   feedback.play("tap");
   activeFilter = "all";
+  completedExpanded = true;
   updateList();
   filterButtons.find((button) => button.dataset.filter === activeFilter)?.focus();
 });

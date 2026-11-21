@@ -27,12 +27,12 @@
     <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <link rel="stylesheet" href="styles.css?v=welcome-1">
+    <link rel="stylesheet" href="styles.css?v=focus-1">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js" defer></script>
-    <script src="app.js?v=welcome-1" defer></script>
+    <script src="app.js?v=focus-1" defer></script>
   </head>
   <body>
     <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
@@ -81,31 +81,15 @@
               <button id="next-break" class="task-break" type="button" hidden>Передохнуть</button>
             </div>
 
-            <div class="task-section">
-              <div id="filter-group" class="filters" role="group" aria-label="Фильтр задач" hidden>
-                <button type="button" data-filter="all" aria-pressed="true">Все</button>
-                <button type="button" data-filter="active" aria-pressed="false">В работе</button>
-                <button type="button" data-filter="done" aria-pressed="false">Готово</button>
-              </div>
-              <p id="completion-hint" hidden>После галочки покажем следующее дело, а в конце — «Готово».</p>
-              <ul id="tasks" class="task-list" role="list"></ul>
-              <div id="empty-state" class="empty-state">
-                <span class="empty-icon brand-icon" aria-hidden="true"></span>
-                <div><p><strong>Задач пока нет</strong></p></div>
-                <button id="sample-button" class="outline-button" type="button">Добавить пример</button>
-              </div>
-              <div id="filtered-empty" class="filtered-empty" hidden>
-                <p id="filtered-message"></p>
-                <button id="clear-filter" class="outline-button" type="button">Показать все</button>
-              </div>
-            </div>
-          </section>
-
           <aside id="progress-panel" class="progress-panel" data-stage="first" aria-labelledby="progress-heading">
-            <h2 id="progress-heading">Прогресс списка</h2>
-            <p id="percentage" class="percentage" aria-hidden="true">0%</p>
+            <button id="progress-toggle" class="progress-toggle" type="button" aria-expanded="false" aria-controls="progress-details">
+              <span id="progress-heading" class="progress-label">Прогресс списка</span>
+              <span id="percentage" class="percentage" aria-hidden="true">0%</span>
+              <span class="progress-chevron" aria-hidden="true">⌄</span>
+            </button>
             <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
             <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <div id="progress-details" hidden>
             <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
               <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
               <h3 id="first-step-title">Запиши одно небольшое дело</h3>
@@ -164,7 +148,34 @@
               </button>
               <p id="share-progress-hint" class="share-progress-hint">Личные задачи останутся у тебя.</p>
             </div>
+            </div>
           </aside>
+
+            <div class="task-section">
+              <div id="filter-group" class="filters" role="group" aria-label="Фильтр задач" hidden>
+                <button type="button" data-filter="all" aria-pressed="true">Все</button>
+                <button type="button" data-filter="active" aria-pressed="false">В работе</button>
+                <button type="button" data-filter="done" aria-pressed="false">Готово</button>
+              </div>
+              <p id="completion-hint" hidden>После галочки покажем следующее дело, а в конце — «Готово».</p>
+              <ul id="tasks" class="task-list" role="list"></ul>
+              <button id="completed-toggle" class="completed-toggle" type="button" aria-controls="tasks" aria-expanded="false" hidden>
+                <span id="completed-toggle-label">Показать выполненные · 0</span>
+                <span class="completed-chevron" aria-hidden="true">⌄</span>
+              </button>
+              <div id="empty-state" class="empty-state">
+                <span class="empty-icon brand-icon" aria-hidden="true"></span>
+                <div><p><strong>Задач пока нет</strong></p></div>
+                <button id="sample-button" class="outline-button" type="button">Добавить пример</button>
+              </div>
+              <div id="filtered-empty" class="filtered-empty" hidden>
+                <p id="filtered-message"></p>
+                <button id="clear-filter" class="outline-button" type="button">Показать все</button>
+              </div>
+            </div>
+          </section>
+
+
         </div>
       </main>
     </div>

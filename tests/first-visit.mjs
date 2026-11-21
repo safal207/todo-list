@@ -89,6 +89,8 @@ try {
   await legacy.goto(origin);
   assert.equal(await legacy.locator("#welcome").isVisible(), false);
   assert.equal(await legacy.locator("#percentage").innerText(), "58%");
+  assert.equal(await legacy.locator("#progress-details").isVisible(), false);
+  await legacy.locator("#progress-toggle").click();
   await legacy.locator("#share-progress").click();
   await legacy.waitForFunction(() => document.querySelector("#share-image-download").download.endsWith("29-of-50.jpg"));
   assert.equal(await legacy.locator("#share-preview-percentage").innerText(), "58%");
