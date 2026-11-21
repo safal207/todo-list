@@ -75,28 +75,28 @@ for (const width of [320, 390, 1280]) {
     assert.equal(await fresh.locator("#backup-preview").isVisible(), false);
 
     await importFile(fresh, "{broken json");
-    assert.match(await fresh.locator("#backup-status").textContent(), /корректным JSON/);
+    await fresh.locator("#backup-status").filter({ hasText: "корректным JSON" }).waitFor();
     assert.equal(await fresh.locator("#backup-preview").isVisible(), false);
     assert.equal((await stored(fresh)).length, 0);
 
     await importFile(fresh, JSON.stringify({ ...exported, version: 999 }));
-    assert.match(await fresh.locator("#backup-status").textContent(), /Неподдерживаемая/);
+    await fresh.locator("#backup-status").filter({ hasText: "Неподдерживаемая" }).waitFor();
     assert.equal((await stored(fresh)).length, 0);
 
     await importFile(fresh, JSON.stringify({
       ...exported, tasks: [exported.tasks[0], { ...exported.tasks[0] }]
     }));
-    assert.match(await fresh.locator("#backup-status").textContent(), /повторяются/);
+    await fresh.locator("#backup-status").filter({ hasText: "повторяются" }).waitFor();
     assert.equal((await stored(fresh)).length, 0);
 
     await importFile(fresh, JSON.stringify({
       ...exported, tasks: [{ ...exported.tasks[0], title: "   " }]
     }));
-    assert.match(await fresh.locator("#backup-status").textContent(), /Некорректные данные задачи/);
+    await fresh.locator("#backup-status").filter({ hasText: "Некорректные данные задачи" }).waitFor();
     assert.equal((await stored(fresh)).length, 0);
 
     await importFile(fresh, exportText);
-    assert.equal(await fresh.locator("#backup-preview").isVisible(), true);
+    await fresh.locator("#backup-preview").waitFor({ state: "visible" });
     assert.match(await fresh.locator("#backup-preview-summary").textContent(), /Новых для добавления: 2/);
     await fresh.locator("#backup-cancel").click();
     assert.equal(await fresh.locator("#backup-preview").isVisible(), false);
@@ -119,7 +119,7 @@ for (const width of [320, 390, 1280]) {
     assert.equal(await fresh.locator(".task-checkbox:checked").count(), 1);
 
     await importFile(fresh, exportText);
-    assert.match(await fresh.locator("#backup-preview-summary").textContent(), /Уже есть в списке: 2/);
+    await fresh.locator("#backup-preview-summary").filter({ hasText: "Уже есть в списке: 2" }).waitFor();
     await fresh.locator("#backup-import").click();
     await settle(fresh);
     assert.equal((await stored(fresh)).length, 2, "Repeated restore must not duplicate tasks");
