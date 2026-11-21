@@ -650,7 +650,8 @@ function appendTask(task) {
         try {
           localStorage.setItem(FIRST_WIN_KEY, "1");
         } catch { /* Keep the milestone in memory for this session. */ }
-        showToast("Первая победа! Один шаг уже сделан.");
+        // First-win card is already the confirmation; do not obscure its CTA.
+        clearTaskToast();
       } else if (newRoadmapMilestone) {
         threeStepsVisible = false;
         clearTaskToast();
