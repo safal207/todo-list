@@ -138,12 +138,36 @@ button { cursor: pointer; }
 
 .task-panel { background: var(--card); }
 
-.task-panel h1 {
-  margin-block-end: .8rem;
+.mini-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-block-end: .95rem;
+  padding: clamp(.75rem, 3vw, 1rem);
+  border-radius: .9rem;
+  background: var(--lilac);
+}
+
+.mini-hero h1 {
   font-size: clamp(1.65rem, 5vw, 2.15rem);
   font-weight: 850;
   line-height: 1.12;
   letter-spacing: -.04em;
+}
+
+.mini-hero p {
+  margin-block-start: .3rem;
+  color: var(--plum);
+  font-size: .9rem;
+  line-height: 1.35;
+}
+
+.mini-hero .brand-icon {
+  width: clamp(2.35rem, 10vw, 3rem);
+  margin-inline-end: .125rem;
+  box-shadow: .15rem .18rem 0 var(--ink);
+  animation: brand-check .65s ease-out both;
 }
 
 #task-form > label {
@@ -493,9 +517,6 @@ button { cursor: pointer; }
 }
 
 
-/* The real brand mark makes a quick hello without covering controls. */
-.site-header .brand-icon { animation: brand-check .9s ease-out both; }
-
 .feedback-toggle {
   min-height: 2.6rem;
   padding: .45rem .7rem;
@@ -597,7 +618,7 @@ button { cursor: pointer; }
   .task-clock { font-size: .75rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .site-header .brand-icon { animation: none; }
+  .mini-hero .brand-icon { animation: none; }
   .task-celebrate, .task-celebrate::after { animation: none; }
   .task-celebrate::after { content: none; }
   .feedback-toggle:active, .filters button:active, .delete-button:active { transform: none; }
