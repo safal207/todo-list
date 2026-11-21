@@ -419,7 +419,6 @@ nextActionButton.addEventListener("click", focusNextStep);
 function updateProgress() {
   const total = tasks.length;
   const completed = tasks.filter((task) => task.done).length;
-  const remaining = total - completed;
   const ratio = total > 0 ? Math.floor((completed * 100) / total) : 0;
   const status = `Выполнено ${completed} из ${total}`;
 
