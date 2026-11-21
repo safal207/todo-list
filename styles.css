@@ -1457,3 +1457,21 @@ button { cursor: pointer; }
 @media (max-width: 28rem) {
   .backup-preview button { width: 100%; }
 }
+
+/* Optional cloud sync is absent in local-only installations. */
+.cloud-sync { margin-top: .9rem; border-color: #d3bbdf; }
+.cloud-sync #cloud-auth-actions { display: grid; gap: .55rem; }
+.cloud-sync #cloud-auth-actions input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: .6rem .75rem;
+  border: 1px solid #947c9f;
+  border-radius: .6rem;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+}
+.cloud-sync #cloud-signed-in { display: grid; gap: .6rem; }
+.cloud-sync .backup-preview { background: var(--lilac); }
+.cloud-sync strong { overflow-wrap: anywhere; }
