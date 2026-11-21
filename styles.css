@@ -1042,3 +1042,139 @@ h1 {
   background: #f9ffda;
 }
 .progress-panel[data-stage="done"] .three-steps-badge-icon { color: #8d5d00; }
+
+/* Progress effect: four visible milestones and an honest personal-best record.
+   The record reflects the highest simultaneous count of completed tasks. */
+.milestone-roadmap {
+  min-width: 0;
+  margin-block-start: 1rem;
+  padding: .85rem .7rem .75rem;
+  border: 1px solid #78668b;
+  border-radius: .88rem;
+  background: #3c2c59;
+}
+.milestone-roadmap-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .35rem .6rem;
+}
+.milestone-roadmap-heading h3 {
+  margin: 0;
+  font-size: .91rem;
+  font-weight: 800;
+  color: #fff8e9;
+  line-height: 1.2;
+}
+.milestone-record {
+  font-size: .72rem;
+  font-weight: 800;
+  color: #ffe49c;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.milestone-track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: .8rem 0 .65rem;
+  padding: 0;
+  list-style: none;
+}
+.milestone-track > li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  gap: .35rem;
+  text-align: center;
+}
+.milestone-track > li:not(:first-child)::before {
+  position: absolute;
+  top: 1.16rem;
+  right: 50%;
+  width: 100%;
+  height: .18rem;
+  background: #6c587f;
+  content: "";
+}
+.milestone-track > li.is-earned:not(:first-child)::before { background: #ffd45f; }
+.milestone-mark {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  max-width: 100%;
+  border: 2px solid #89749a;
+  border-radius: 50%;
+  background: #392a51;
+  color: #f3e6f9;
+  font-size: 1.03rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.milestone-track > li.is-earned .milestone-mark {
+  border-color: #ffd45f;
+  background: #ffd45f;
+  color: #2c1922;
+}
+.milestone-track > li.is-next .milestone-mark {
+  border-color: #fff8e9;
+  box-shadow: 0 0 0 3px #ffd45f55;
+}
+.milestone-label {
+  color: #e9dffb;
+  font-size: .6rem;
+  font-weight: 850;
+  letter-spacing: .035em;
+}
+.milestone-track > li.is-earned .milestone-label { color: #ffe49c; }
+.milestone-next-progress {
+  display: block;
+  width: 100%;
+  height: .38rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 1rem;
+  background: #6c587f;
+  color: #ffd45f;
+  accent-color: #ffd45f;
+  appearance: none;
+}
+.milestone-next-progress::-webkit-progress-bar { background: #6c587f; }
+.milestone-next-progress::-webkit-progress-value { background: #ffd45f; border-radius: 1rem; }
+.milestone-next-progress::-moz-progress-bar { background: #ffd45f; border-radius: 1rem; }
+.milestone-next-label {
+  margin-block-start: .5rem;
+  color: #f0e6f8;
+  font-size: .79rem;
+  line-height: 1.35;
+}
+.progress-panel[data-stage="done"] .milestone-roadmap {
+  border-color: #8ba05d;
+  background: #f6ffd9;
+}
+.progress-panel[data-stage="done"] .milestone-roadmap-heading h3,
+.progress-panel[data-stage="done"] .milestone-next-label { color: #2c1922; }
+.progress-panel[data-stage="done"] .milestone-record { color: #42561f; }
+.progress-panel[data-stage="done"] .milestone-label { color: #554f42; }
+.progress-panel[data-stage="done"] .milestone-track > li.is-earned .milestone-label { color: #42561f; }
+.progress-panel[data-stage="done"] .milestone-track > li:not(.is-earned) .milestone-mark {
+  background: #fcffe9;
+  color: #34441f;
+  border-color: #91a174;
+}
+.progress-panel[data-stage="done"] .milestone-track > li.is-next .milestone-mark {
+  border-color: #34441f;
+  box-shadow: 0 0 0 3px #b9d48c;
+}
+.progress-panel[data-stage="done"] .milestone-track > li.is-earned .milestone-mark {
+  border-color: #34441f;
+  background: #34441f;
+  color: #fff8e9;
+}
+.progress-panel[data-stage="done"] .milestone-track > li.is-earned:not(:first-child)::before { background: #34441f; }
