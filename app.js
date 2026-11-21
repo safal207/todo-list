@@ -127,6 +127,7 @@ feedbackToggle.addEventListener("click", () => {
 function showToast(message) {
   clearTimeout(toastTimeout);
   toast.textContent = message;
+  toast.hidden = false;
   toast.classList.add("is-visible");
   toastTimeout = setTimeout(() => toast.classList.remove("is-visible"), 2800);
 }
@@ -568,6 +569,7 @@ function appendTask(task) {
         // Clear an earlier task's toast too: it could obscure the big "3".
         clearTimeout(toastTimeout);
         toast.classList.remove("is-visible");
+        toast.hidden = true;
       } else if (newFirstWin) {
         firstWinAchieved = true;
         firstWinVisible = true;
