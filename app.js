@@ -3,6 +3,7 @@
 const STORAGE_KEY = "todo-list.tasks.v1";
 const TASK_HISTORY_KEY = "sdelano.tasks.history.v1";
 const FIRST_WIN_KEY = "sdelano.first-win.v1";
+const THREE_STEPS_KEY = "sdelano.three-steps.v1";
 const clock = window.taskClock;
 const feedback = window.taskFeedback;
 let needsClockMigration = false;
@@ -31,6 +32,11 @@ const firstWinCard = document.querySelector("#first-win-card");
 const firstWinNext = document.querySelector("#first-win-next");
 const firstWinShare = document.querySelector("#first-win-share");
 const firstWinDismiss = document.querySelector("#first-win-dismiss");
+const threeStepsCard = document.querySelector("#three-steps-card");
+const threeStepsBadge = document.querySelector("#three-steps-badge");
+const threeStepsNext = document.querySelector("#three-steps-next");
+const threeStepsShare = document.querySelector("#three-steps-share");
+const threeStepsDismiss = document.querySelector("#three-steps-dismiss");
 const shareProgressButton = document.querySelector("#share-progress");
 const nextStep = document.querySelector("#next-step");
 const nextDetail = document.querySelector("#next-detail");
@@ -83,6 +89,19 @@ function hadFirstWinBefore() {
 let firstWinAchieved = hadFirstWinBefore();
 let firstWinVisible = false;
 
+// Count three separate completed tasks, not three toggles of one checkbox.
+// The stored award survives reopened/deleted tasks and is never replayed.
+function hadThreeStepsBefore() {
+  if (tasks.filter((task) => task.done).length >= 3) return true;
+  try {
+    return localStorage.getItem(THREE_STEPS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+let threeStepsAchieved = hadThreeStepsBefore();
+let threeStepsVisible = false;
+
 function saveTasks() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -108,6 +127,7 @@ feedbackToggle.addEventListener("click", () => {
 function showToast(message) {
   clearTimeout(toastTimeout);
   toast.textContent = message;
+  toast.hidden = false;
   toast.classList.add("is-visible");
   toastTimeout = setTimeout(() => toast.classList.remove("is-visible"), 2800);
 }
@@ -393,6 +413,24 @@ firstWinDismiss.addEventListener("click", () => {
   shareProgressButton.focus();
 });
 
+threeStepsNext.addEventListener("click", () => {
+  threeStepsVisible = false;
+  updateProgress();
+  focusNextStep();
+});
+threeStepsShare.addEventListener("click", openShareDialog);
+threeStepsDismiss.addEventListener("click", () => {
+  feedback.play("tap");
+  threeStepsVisible = false;
+  updateProgress();
+  nextActionButton.focus();
+});
+
+function renderThreeSteps() {
+  threeStepsCard.hidden = !threeStepsVisible;
+  threeStepsBadge.hidden = !threeStepsAchieved || threeStepsVisible;
+}
+
 // Context-aware continuation: never create or complete a task without a click.
 function focusNextStep() {
   feedback.play("tap");
@@ -432,7 +470,7 @@ function updateProgress() {
 
   // The first-win achievement is already its own next-step offer.
   // Do not stack two competing CTAs or distract a new user from the mission.
-  nextAction.hidden = !firstWinAchieved || firstWinVisible;
+  nextAction.hidden = !firstWinAchieved || firstWinVisible || threeStepsVisible;
   const pending = tasks.find((task) => !task.done);
   if (pending) {
     nextStep.textContent = "Ещё один шаг?";
@@ -454,6 +492,7 @@ function updateProgress() {
     summary.textContent = status;
   }
   renderFirstStep();
+  renderThreeSteps();
 }
 
 function updateList() {
@@ -511,13 +550,27 @@ function appendTask(task) {
   checkbox.addEventListener("change", () => {
     const now = Date.now();
     const newFirstWin = checkbox.checked && !firstWinAchieved;
+    let newThreeSteps = false;
     if (checkbox.checked) {
       clock.finish(task, now);
+      newThreeSteps = !threeStepsAchieved &&
+        tasks.filter((entry) => entry.done).length >= 3;
       feedback.play("complete");
       row.classList.remove("task-celebrate");
       void row.offsetWidth;
       row.classList.add("task-celebrate");
-      if (newFirstWin) {
+      if (newThreeSteps) {
+        threeStepsAchieved = true;
+        threeStepsVisible = true;
+        firstWinVisible = false;
+        try {
+          localStorage.setItem(THREE_STEPS_KEY, "1");
+        } catch { /* Keep the award in memory if storage is blocked. */ }
+        // Clear an earlier task's toast too: it could obscure the big "3".
+        clearTimeout(toastTimeout);
+        toast.classList.remove("is-visible");
+        toast.hidden = true;
+      } else if (newFirstWin) {
         firstWinAchieved = true;
         firstWinVisible = true;
         try {
@@ -531,6 +584,7 @@ function appendTask(task) {
       clock.reopen(task, now);
       feedback.play("reopen");
       row.classList.remove("task-celebrate");
+      threeStepsVisible = false;
     }
     row.classList.toggle("task-finished", task.done);
     updateClock();
@@ -542,11 +596,14 @@ function appendTask(task) {
       focusAfterRemoval(visibleNeighborCheckbox(row));
     }
     // On small screens the progress card is below the task list.
-    if (newFirstWin && matchMedia("(max-width: 47rem)").matches) {
-      requestAnimationFrame(() => firstWinCard.scrollIntoView({
-        block: "nearest",
-        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
-      }));
+    if ((newFirstWin || newThreeSteps) && matchMedia("(max-width: 47rem)").matches) {
+      requestAnimationFrame(() => {
+        const award = newThreeSteps ? threeStepsCard : firstWinCard;
+        if (!award.hidden) award.scrollIntoView({
+          block: "nearest",
+          behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+        });
+      });
     }
   });
 
