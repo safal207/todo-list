@@ -727,7 +727,6 @@ function updateProgress() {
   nextAction.toggleAttribute("data-break", onBreak);
   const justCompleted = Boolean(firstWinVisible || threeStepsVisible || recentCompletion);
   if (nextBreak) nextBreak.hidden = !justCompleted;
-  shareProgressButton.parentElement.hidden = onBreak || firstWinVisible || threeStepsVisible;
   const pending = tasks.find((task) => !task.done);
   const rewardAction = pending ? "К следующему делу" : "Записать ещё одно дело";
   firstWinNext.textContent = rewardAction;
@@ -1005,7 +1004,8 @@ function greetFirstVisit() {
   const dialog = document.querySelector("#welcome");
   if (typeof dialog.showModal !== "function" || !taskStorageReadable || needsRecovery) return;
 
-  // Skip the extra step on an invitation and for people upgrading an existing list.
+  // A new tab is a new visit. A refresh within the same tab is not a new visit.
+  // Do not interrupt people arriving through a referral link.
   const url = new URL(location.href);
   const invited = !sharedAchievement.hidden || url.searchParams.get("utm_source") === "progress_share";
   const preview = url.searchParams.get("welcome") === "1" && !invited;
@@ -1013,30 +1013,42 @@ function greetFirstVisit() {
     url.searchParams.delete("welcome");
     history.replaceState(history.state, "", url);
   }
-  try {
-    const key = "sdelano.welcome.v1";
-    if (!preview && localStorage.getItem(key) === "1") return;
-    localStorage.setItem(key, "1");
-  } catch { return; }
-  if (invited || (!preview && (tasks.length || firstWinAchieved || lastTaskActivity || savedTaskSnapshot !== null))) return;
+  if (invited || (document.activeElement && document.activeElement !== document.body)) return;
 
+  const visitKey = "sdelano.welcome.session.v2";
+  try {
+    if (!preview && sessionStorage.getItem(visitKey) === "1") return;
+    sessionStorage.setItem(visitKey, "1");
+  } catch {
+    // Some private or embedded browsers block storage. The greeting still works.
+  }
+
+  const returning = tasks.length > 0 || firstWinAchieved || lastTaskActivity > 0;
   const start = document.querySelector("#welcome-start");
   const heading = document.querySelector("#page-heading");
+  if (returning) {
+    document.querySelector("#welcome-title").textContent = "С возвращением!";
+    document.querySelector("#welcome-detail").textContent = "Лисёнок рядом. Продолжим с одного дела?";
+    start.textContent = "К моим делам";
+  }
+
   function enter(inputRequested) {
     if (!dialog.open) return;
     dialog.close();
-    (inputRequested ? titleInput : heading).focus({ preventScroll: true });
+    const next = returning && inputRequested ?
+      (list.querySelector(".task-checkbox:not(:checked)") ?? titleInput) :
+      (inputRequested ? titleInput : heading);
+    next.focus({ preventScroll: true });
   }
-  if (document.activeElement && document.activeElement !== document.body) return;
   dialog.showModal();
   start.addEventListener("click", () => enter(true), { once: true });
   dialog.addEventListener("cancel", event => {
     event.preventDefault();
     enter(false);
   }, { once: true });
-  const timer = setTimeout(() => enter(false), 2600);
+  const timer = setTimeout(() => enter(false), returning ? 2100 : 2600);
   dialog.addEventListener("close", () => clearTimeout(timer), { once: true });
-  // A restored back/forward-cache entry must never replay the greeting.
+  // Do not replay the greeting after restoring a tab from back-forward cache.
   window.addEventListener("pagehide", () => {
     clearTimeout(timer);
     if (dialog.open) dialog.close();
