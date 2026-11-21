@@ -45,6 +45,11 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "Returning to the app starts with a compact progress bar");
     assert.equal(await page.locator("#progress-details").isVisible(), false);
     assert.equal(await page.locator("#progress-summary").isVisible(), true);
+    assert.equal(await page.locator("#share-progress").isVisible(), true,
+      "Share button must stay visible even when progress details are collapsed");
+    await page.locator("#share-progress").click();
+    assert.equal(await page.locator("#share-dialog").isVisible(), true);
+    await page.locator("#share-close").click();
     const progressAboveTasks = await page.evaluate(() =>
       document.querySelector("#progress-panel").getBoundingClientRect().bottom <=
       document.querySelector(".task-section").getBoundingClientRect().top + 1);
@@ -547,7 +552,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#first-win-card").isVisible(), false);
     assert.equal(await page.locator("#next-step").textContent(), "Передышка");
     assert.equal(await page.locator("#next-action-button").evaluate(el => document.activeElement === el), true);
-    assert.equal(await page.locator("#share-progress").isVisible(), false);
+    assert.equal(await page.locator("#share-progress").isVisible(), true,
+      "Sharing stays available even while taking a break");
 
     // Achievement #3: three different completed tasks (not one task checked thrice).
     const awardContext = await browser.newContext({ viewport: { width, height } });
