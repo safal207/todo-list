@@ -461,11 +461,130 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
     assert.equal(await page.locator("#first-win-card").isVisible(), false);
     assert.equal(await page.locator("#share-progress").evaluate(el => document.activeElement === el), true);
 
+    // Achievement #3: three different completed tasks (not one task checked thrice).
+    const awardContext = await browser.newContext({ viewport: { width, height } });
+    try {
+      const award = await awardContext.newPage();
+      const awardErrors = [];
+      award.on("pageerror", (error) => awardErrors.push(error.message));
+      await award.goto(origin, { waitUntil: "networkidle" });
+      await award.evaluate(() => localStorage.clear());
+      await award.reload({ waitUntil: "networkidle" });
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false);
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
+      for (let n = 1; n <= 3; n++) {
+        const name = "Private QA milestone " + width + "-" + n;
+        await award.locator("#task-title").fill(name);
+        await award.locator('#task-form button[type="submit"]').click();
+        const item = award.locator("li.task").nth(n - 1);
+        assert.match(await item.textContent(), new RegExp(name));
+        await item.locator(".task-checkbox").check();
+        if (n === 1) {
+          assert.equal(await award.locator("#first-win-card").isVisible(), true,
+            "First victory still works independently");
+        } else if (n === 2) {
+          assert.equal(await award.locator("#three-steps-card").isVisible(), false,
+            "Two steps must not unlock the award");
+          assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
+        }
+      }
+      assert.equal(await award.locator("#three-steps-card").isVisible(), true);
+      assert.match(await award.locator("#three-steps-title").textContent(), /3 ШАГА СДЕЛАНО/);
+      assert.equal(await award.locator("#first-win-card").isVisible(), false,
+        "The third-step card replaces first-win rather than stacking celebrations");
+      assert.equal(await award.locator("#next-action").isVisible(), false,
+        "Do not stack three competing CTAs");
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), false,
+        "Compact award is shown after the celebration");
+      assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.three-steps.v1")), "1");
+      assert.equal(await award.locator("li.task").count(), 3);
+      const awardLayout = await award.evaluate(() => ({
+        width: innerWidth, scroll: document.documentElement.scrollWidth
+      }));
+      assert.ok(awardLayout.scroll <= awardLayout.width + 1,
+        "Third-step reward must not create horizontal overflow");
+      await award.screenshot({ path: "artifacts/three-steps-" + width + ".png", fullPage: true });
+      await award.locator("#three-steps-share").click();
+      assert.equal(await award.locator("#share-dialog").isVisible(), true);
+      const awardShare = await award.locator("#share-ready-text").inputValue();
+      assert.match(awardShare, /3 из 3 задач выполнено/);
+      assert.ok(!awardShare.includes("Private QA milestone"),
+        "Sharing the milestone must not disclose task names");
+      await award.locator("#share-close").click();
+      await award.locator("#three-steps-next").click();
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false);
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
+      assert.equal(await award.locator("#task-title").evaluate(el => document.activeElement === el), true);
+      assert.equal(await award.locator("li.task").count(), 3,
+        "Next button must not create a new task");
+      assert.equal(await award.locator("#next-action").isVisible(), true);
+
+      const third = award.locator("li.task").nth(2).locator(".task-checkbox");
+      await third.uncheck();
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
+        "Earned awards persist when a task is reopened");
+      await third.check();
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false,
+        "Rechecking the same task must not trigger the award twice");
+      await award.reload({ waitUntil: "networkidle" });
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false);
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
+        "Earned achievement survives reload");
+      await award.locator("li.task").nth(2).locator(".delete-button").click();
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), true,
+        "Deleting a completed task must not revoke an earned milestone");
+
+      // Three pre-existing finished tasks should earn the compact badge
+      // without a misleading newly-unlocked celebration.
+      await award.evaluate(() => {
+        localStorage.clear();
+        localStorage.setItem("todo-list.tasks.v1", JSON.stringify([
+          { title: "Legacy award one", done: true },
+          { title: "Legacy award two", done: true },
+          { title: "Legacy award three", done: true }
+        ]));
+      });
+      await award.reload({ waitUntil: "networkidle" });
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false,
+        "Old achievements should not replay on page load");
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
+
+      // Toggling one single task repeatedly does not count as 3 distinct tasks.
+      await award.evaluate(() => localStorage.clear());
+      await award.reload({ waitUntil: "networkidle" });
+      await award.locator("#task-title").fill("Only one task");
+      await award.locator('#task-form button[type="submit"]').click();
+      const oneTask = award.locator("li.task .task-checkbox");
+      await oneTask.check();
+      await award.locator("#first-win-dismiss").click();
+      await oneTask.uncheck();
+      await oneTask.check();
+      await oneTask.uncheck();
+      await oneTask.check();
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false);
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), false);
+      assert.equal(await award.evaluate(() => localStorage.getItem("sdelano.three-steps.v1")), null);
+      // New third distinct task: dismiss should leave a usable next-step button.
+      for (let n = 2; n <= 3; n++) {
+        await award.locator("#task-title").fill("Distinct task " + n);
+        await award.locator('#task-form button[type="submit"]').click();
+        await award.locator("li.task").nth(n - 1).locator(".task-checkbox").check();
+      }
+      assert.equal(await award.locator("#three-steps-card").isVisible(), true);
+      await award.locator("#three-steps-dismiss").click();
+      assert.equal(await award.locator("#three-steps-card").isVisible(), false);
+      assert.equal(await award.locator("#three-steps-badge").isVisible(), true);
+      assert.equal(await award.locator("#next-action-button").evaluate(el => document.activeElement === el), true);
+      assert.equal(awardErrors.length, 0, "Milestone JS errors: " + awardErrors.join("; "));
+    } finally {
+      await awardContext.close();
+    }
+
     const oldPage = await page.goto(origin + "/goals/", { waitUntil: "domcontentloaded" });
     assert.equal(oldPage.status(), 404, "Old Big Goal page is removed");
     assert.equal(pageErrors.length, 0, "JS errors: " + pageErrors.join("; "));
     console.log("PASS " + width + "x" + height +
-      ": contextual upsell, tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
+      ": three-step achievement, contextual upsell, tripwire first-win, responsive layout, timers, referral sharing, legacy storage, removed goals");
   } catch (error) {
     errors.push(width + "x" + height + ": " + (error.stack || error.message));
     console.error("FAIL " + width + "x" + height + ": " + error.message);
