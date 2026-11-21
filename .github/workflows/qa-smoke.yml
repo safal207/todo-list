@@ -8,6 +8,10 @@ on:
       - "styles.css"
       - "app.js"
       - "backup.js"
+      - "cloud-config.js"
+      - "cloud-sync.js"
+      - "cloud-merge.js"
+      - "supabase/**"
       - "analytics.js"
       - "pilot.js"
       - "pilot-results.js"
@@ -27,6 +31,10 @@ on:
       - "styles.css"
       - "app.js"
       - "backup.js"
+      - "cloud-config.js"
+      - "cloud-sync.js"
+      - "cloud-merge.js"
+      - "supabase/**"
       - "analytics.js"
       - "pilot.js"
       - "pilot-results.js"
@@ -68,6 +76,7 @@ jobs:
           node tests/pilot-results.mjs
           node tests/task-edit.mjs
           node tests/backup-restore.mjs
+          node tests/cloud-sync.mjs
       - name: Upload visual snapshots
         if: always()
         uses: actions/upload-artifact@v4
