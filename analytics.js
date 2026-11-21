@@ -19,7 +19,7 @@ window.sdelanoAnalytics = (() => {
   }
 
   function dayIndex(value) {
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(value ?? "")) return NaN;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value ?? "")) return NaN;
     const [y, m, d] = value.split("-").map(Number);
     const time = Date.UTC(y, m - 1, d);
     const date = new Date(time);
