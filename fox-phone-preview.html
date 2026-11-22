@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fff4df">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="referrer" content="no-referrer">
+<title>Сделано · Fox Evolution v3 · проверка на телефоне</title>
+<link rel="stylesheet" href="styles.css?v=cloud-1">
+<link rel="stylesheet" href="game-preview.css?v=4">
+<link rel="stylesheet" href="game-juice.css?v=1">
+<link rel="stylesheet" href="brand-flavor.css?v=1">
+<link rel="stylesheet" href="fox-evolution.css?v=1">
+<link rel="stylesheet" href="fox-evolution-art-v2.css?v=1">
+<link rel="stylesheet" href="fox-ceremony.css?v=1">
+<style>
+.phone-qa-banner{margin:.55rem 0 .9rem;padding:.8rem 1rem;border:1.5px dashed #bb8548;border-radius:.85rem;background:#fff5df;color:#664126;font-size:.84rem;line-height:1.45}
+.phone-qa-panel{padding:.85rem;margin-top:1rem;border:1.5px solid #e0b680;border-radius:.9rem;background:#fffaf0}
+.phone-qa-panel h2{margin:0 0 .5rem;font-size:1.03rem;color:#5e3520}
+.phone-qa-stages{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;margin:.55rem 0 1rem}
+.phone-qa-stages a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:.35rem .2rem;border:1.5px solid #c58f54;border-radius:.7rem;background:#fff5d8;text-align:center;color:#653b27;text-decoration:none;font-weight:750;font-size:.78rem}
+.phone-qa-stages a[aria-current="page"]{border-color:#8a361d;background:#ffcf72;box-shadow:0 2px 0 #99502e}
+.phone-qa-actions{display:flex;gap:.55rem;flex-wrap:wrap}
+.phone-qa-actions button{min-height:44px;flex:1}
+.phone-qa-secondary{padding:.5rem .8rem;border:1.5px solid #c59667;border-radius:.8rem;background:#fff8e7;color:#653921;font-weight:800;cursor:pointer}
+.phone-qa-secondary:focus-visible,.phone-qa-stages a:focus-visible{outline:3px solid #7142af;outline-offset:2px}
+.phone-qa-result{min-height:1.45rem;color:#774324;font-weight:750;font-size:.84rem;margin:.65rem 0 0}
+.phone-qa-card{margin-top:.85rem;padding:.75rem;border:1.5px solid #d7b083;border-radius:.8rem;background:#fff9e8;display:flex;gap:.55rem;align-items:center}
+.phone-qa-card .phone-qa-check{font-size:1.25rem;color:#447335}
+.phone-qa-footer{margin:1rem 0;color:#6f4a36;font-size:.8rem;line-height:1.55}
+.phone-qa-footer a{color:#843e1f;text-decoration:underline}
+.phone-qa-hint{font-size:.8rem;margin-top:.55rem;color:#74503e}
+@media(max-width:350px){.phone-qa-stages a{font-size:.7rem}.phone-qa-actions{display:grid;grid-template-columns:1fr}.phone-qa-panel{padding:.6rem}}
+</style>
+<script>
+(() => {
+"use strict";
+// Deliberately in-memory only. NO real app code, auth, persistence or analytics.
+const choices={student:240,hero:990,master:2690};
+const param=new URLSearchParams(location.search).get("stage");
+const chosen=Object.prototype.hasOwnProperty.call(choices,param)?param:"student";
+const wallet={xp:choices[chosen],coins:0,energy:5};
+const threshold=level=>25*(level-1)*(level+2);
+const levelFor=xp=>{let level=1;while(level<100&&xp>=threshold(level+1))level++;return level;};
+window.__sdelanoPhoneDemo={wallet,chosen,levelFor};
+window.sdelanoGame=Object.freeze({
+  key:"phone-preview-do-not-persist",
+  threshold,
+  inspect(){
+    const level=levelFor(wallet.xp);
+    return {available:true,xp:wallet.xp,coins:wallet.coins,
+      energy:wallet.energy,maxEnergy:5,level,
+      levelStart:threshold(level),levelEnd:threshold(level+1)};
+  }
+});
+let soundOn=true, audio=null;
+window.taskFeedback={
+  isEnabled(){return soundOn;},
+  setEnabled(value){soundOn=Boolean(value);},
+  play(kind="tap"){
+    if(!soundOn)return;
+    try{
+      const Type=window.AudioContext||window.webkitAudioContext;
+      if(!Type)return;
+      if(!audio)audio=new Type();
+      if(audio.state==="suspended")void audio.resume();
+      const base={tap:520,complete:700,coins:990,xp:800,level:1150,reward:910}[kind]||520;
+      const length=kind==="level"?.35:.14;
+      const oscillator=audio.createOscillator(),gain=audio.createGain();
+      const t=audio.currentTime;
+      oscillator.type="sine";
+      oscillator.frequency.setValueAtTime(base,t);
+      oscillator.frequency.linearRampToValueAtTime(base*1.24,t+length*.8);
+      gain.gain.setValueAtTime(.0001,t);
+      gain.gain.exponentialRampToValueAtTime(.035,t+.015);
+      gain.gain.exponentialRampToValueAtTime(.0001,t+length);
+      oscillator.connect(gain).connect(audio.destination);
+      oscillator.start(t);oscillator.stop(t+length+.01);
+    }catch{/* Audio never blocks the page. */}
+  }
+};
+})();
+</script>
+<script src="game-preview.js?v=2" defer></script>
+<script src="game-juice.js?v=1" defer></script>
+<script src="fox-evolution.js?v=1" defer></script>
+<script src="fox-evolution-art-v2.js?v=1" defer></script>
+<script src="fox-ceremony.js?v=1" defer></script>
+<script src="fox-phone-preview.js?v=1" defer></script>
+</head>
+<body>
+<div class="workspace">
+<header class="site-header">
+<div class="wordmark"><span class="brand-icon" aria-hidden="true"></span> Сделано<span class="wordmark-period">.</span></div>
+<button type="button" class="feedback-toggle" id="feedback-toggle" aria-pressed="true">Отклик: вкл</button>
+<p class="storage-note">Только демоверсия</p>
+</header>
+<p class="phone-qa-banner"><strong>Телефонная проверка Fox Evolution v3.</strong> Нажми «Выполнить дело», чтобы увидеть реальное оформление открытия возраста. Это изолированное демо: здесь нет входа, настоящих задач, записи XP или монет. Не вводи личную информацию.</p>
+    <section id="game-preview" class="game-preview" aria-label="Игровые ресурсы">
+      <button id="game-preview-toggle" class="game-preview-toggle" type="button" aria-expanded="false" aria-controls="game-preview-details">
+        <span class="game-preview-caption"><strong>Награды</strong><small>LVL <span id="game-level-chip">1</span></small></span>
+        <span class="game-preview-resources">
+          <span id="game-coins" class="game-resource game-resource--coins" aria-label="Монеты: 0">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-coin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff5a4"/><stop offset=".46" stop-color="#ffc32f"/><stop offset="1" stop-color="#e77908"/></linearGradient></defs><circle cx="22" cy="22" r="20" fill="#ad610d"/><circle cx="22" cy="20" r="18" fill="url(#sdelano-coin)" stroke="#fff2a2" stroke-width="2"/><circle cx="22" cy="20" r="13.6" fill="none" stroke="#bc7011" stroke-width="1.4"/><circle cx="15.4" cy="17.2" r="2.5" fill="#a55c0b"/><circle cx="21" cy="13.8" r="2.5" fill="#a55c0b"/><circle cx="27" cy="16.1" r="2.5" fill="#a55c0b"/><path d="M15.5 24.5c1-4.8 4-7 6.5-7s6 3 7 7c1.2 4.5-3.2 6.3-6.8 4.4-3.2-1.6-7.7.2-6.7-4.4Z" fill="#a55c0b"/><path d="M9 13c4-6 9-7 13-7" fill="none" stroke="#fff5c4" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span class="game-resource-amount">0</span>
+          </span>
+          <span id="game-xp" class="game-resource game-resource--xp" aria-label="Опыт: 0 XP">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-crystal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a5faff"/><stop offset=".48" stop-color="#6086fc"/><stop offset="1" stop-color="#9d50ee"/></linearGradient></defs><path d="M22 2 35 13l-3 21-10 8-11-8-3-21Z" fill="url(#sdelano-crystal)" stroke="#e0f7ff" stroke-width="2"/><path d="M22 2v40M8 13l14 8 13-8M11 34l11-13 10 13" stroke="#d7f7ff" stroke-opacity=".65" stroke-width="1.4" fill="none"/><path d="M22 2 8 13l14 8Z" fill="#d3feff" fill-opacity=".55"/><path d="M22 21 35 13l-3 21Z" fill="#473bd4" fill-opacity=".28"/></svg>
+            </span>
+            <span class="game-resource-amount">0 <small>XP</small></span>
+          </span>
+          <span id="game-energy" class="game-resource game-resource--energy" aria-label="Энергия: 5 из 5">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-energy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8ff77"/><stop offset=".55" stop-color="#72eb68"/><stop offset="1" stop-color="#18bd9b"/></linearGradient></defs><path d="M25 2 8 24h13l-3 18 19-27H24Z" fill="url(#sdelano-energy)" stroke="#e9ffcb" stroke-width="2" stroke-linejoin="round"/><path d="M25 8 14 22h12" stroke="#fffbc0" stroke-opacity=".8" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            </span>
+            <span class="game-resource-amount">5/5</span>
+          </span>
+        </span>
+        <span class="game-preview-chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div id="game-preview-details" class="game-preview-details" hidden>
+        <div class="game-preview-about">
+          <span class="fox-evolution-figure fox-evolution-portrait" data-fox-stage="cub" aria-hidden="true">
+            <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+            <span class="fox-evolution-core">
+              <img src="assets/fox-mascot.webp" alt="" width="52" height="52" loading="lazy">
+              <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+            </span>
+            <span class="fox-evolution-crest"></span>
+          </span>
+          <div>
+            <strong>Награды за реальные дела</strong>
+            <p>Сделал дело — получи монеты и XP. Фокус добавляет опыт, а энергия восстанавливается со временем.</p>
+          </div>
+        </div>
+        <div class="game-level-details"><span id="game-level-label">Уровень 1</span><span id="game-level-counter">0 / 100 XP</span></div>
+        <progress id="game-level-progress" class="game-level-progress" max="100" value="0" aria-label="Опыт к следующему уровню"></progress>
+        <section class="fox-evolution-card" aria-label="Рост лисёнка">
+          <div class="fox-evolution-card-heading">
+            <strong>Лисёнок растёт с тобой</strong>
+            <span id="fox-evolution-stage" class="fox-evolution-stage">Малыш · LVL 1</span>
+          </div>
+          <ol class="fox-evolution-roadmap" aria-label="Четыре стадии взросления">
+            <li class="fox-evolution-milestone" data-stage="cub" data-unlocked="true" data-current="true" aria-current="step">Малыш</li>
+            <li class="fox-evolution-milestone" data-stage="student" data-unlocked="false" data-current="false">Ученик</li>
+            <li class="fox-evolution-milestone" data-stage="hero" data-unlocked="false" data-current="false">Герой</li>
+            <li class="fox-evolution-milestone" data-stage="master" data-unlocked="false" data-current="false">Мастер</li>
+          </ol>
+          <p id="fox-evolution-next" class="fox-evolution-next">До «Ученика» — ещё 250 XP</p>
+          <progress id="fox-evolution-progress" class="fox-evolution-progress" value="0" max="250" aria-label="Прогресс роста лисёнка до стадии Ученик"></progress>
+        </section>
+
+        <button id="game-preview-try" class="game-preview-try" type="button">Послушать награду (демо)</button>
+        <p id="game-preview-feedback" class="game-preview-feedback" role="status" aria-live="polite"></p>
+      </div>
+      <p id="fox-evolution-notice" class="fox-evolution-notice" role="status" aria-live="polite" hidden></p>
+    </section>
+<main>
+<div class="board">
+<section class="task-panel" aria-labelledby="page-heading">
+            <div class="mini-hero">
+              <div>
+                <p class="flavor-kicker">Дела со вкусом</p>
+                <h1 id="page-heading" tabindex="-1">Список задач</h1>
+                <p>Одно дело — одна победа. Прожарим?</p>
+              </div>
+              <span class="game-hero-fox fox-evolution-figure" data-fox-stage="cub" aria-hidden="true">
+                <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+                <span class="fox-evolution-core">
+                  <img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
+                  <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+                </span>
+                <span class="fox-evolution-crest"></span>
+              </span>
+            </div>
+
+<div class="phone-qa-panel">
+<h2>Проверить превращение</h2>
+<p class="phone-qa-hint">Выбери возраст, который хочешь открыть:</p>
+<nav aria-label="Выбрать возраст лисёнка" class="phone-qa-stages">
+<a href="?stage=student" data-preview-stage="student">Ученик</a>
+<a href="?stage=hero" data-preview-stage="hero">Герой</a>
+<a href="?stage=master" data-preview-stage="master">Мастер</a>
+</nav>
+<p class="phone-qa-hint">Демонстрационный лисёнок стоит за 10–20 XP до роста. Одно нажатие имитирует выполненное дело с наградой +20 XP.</p>
+<div class="phone-qa-actions">
+<button id="phone-qa-complete" type="button" class="add-button">Выполнить дело · +20 XP</button>
+<button id="phone-qa-again" type="button" class="phone-qa-secondary">Повторить</button>
+</div>
+<p id="phone-qa-result" class="phone-qa-result" role="status" aria-live="polite">Нажми кнопку и оцени эффект.</p>
+</div>
+<div id="phone-qa-sample" class="phone-qa-card"><span class="phone-qa-check" aria-hidden="true">○</span><span>Один полезный шаг — сделано!</span></div>
+</section>
+</div>
+</main>
+<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». Все оценки можно сообщить непосредственно в чате. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
+</div>
+</body>
+</html>
