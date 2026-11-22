@@ -130,7 +130,7 @@ try {
     assert.equal(await page.locator("#game-shop-fox").getAttribute("data-fox-stage"), "student");
     assert.match(await page.locator("#fox-evolution-notice").textContent(), /Твой лисёнок вырос.+Ученик/);
     assert.equal(await page.locator("#fox-evolution-notice").isVisible(), true);
-    const style = await page.locator(".fox-evolution--grown .fox-evolution-core").first().evaluate(el =>
+    const style = await page.locator(".fox-evolution--grown .fox-evolution-halo").first().evaluate(el =>
       getComputedStyle(el).animationName);
     assert.equal(style, "none", "Reduced-motion users see stage change without growth animation");
     await page.reload({ waitUntil: "networkidle" });
