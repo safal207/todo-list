@@ -23,6 +23,36 @@ if (!data) {
     ? "Новый пользователь для этого теста"
     : "Сервис уже использовался в этом браузере: результат не включать в расчёт активации новых пользователей";
 
+  // Opt-in qualitative scores are private to this browser until copied by the
+  // participant. Do not include task titles, wallet identifiers or usernames.
+  const ratingsKey = "sdelano.pilot.ratings.v1";
+  const easeField = document.querySelector("#pilot-ease");
+  const delightField = document.querySelector("#pilot-delight");
+  document.querySelector("#pilot-delight-question").hidden = !data.completed;
+  const validRating = value => Number.isSafeInteger(value) && value >= 1 && value <= 5 ? value : null;
+  let ratings = { code: data.code, ease: null, delight: null };
+  try {
+    const stored = JSON.parse(localStorage.getItem(ratingsKey) || "null");
+    if (stored?.code === data.code) {
+      ratings = {
+        code: data.code, ease: validRating(stored.ease),
+        delight: validRating(stored.delight)
+      };
+    }
+  } catch { /* Optional feedback must not block the task report. */ }
+  easeField.value = ratings.ease === null ? "" : String(ratings.ease);
+  delightField.value = ratings.delight === null ? "" : String(ratings.delight);
+  function saveRatings() {
+    ratings = {
+      code: data.code,
+      ease: validRating(Number(easeField.value)) || null,
+      delight: data.completed ? (validRating(Number(delightField.value)) || null) : null
+    };
+    try { localStorage.setItem(ratingsKey, JSON.stringify(ratings)); }
+    catch { /* Controls still hold the choices for this session. */ }
+  }
+  easeField.addEventListener("change", saveRatings);
+  delightField.addEventListener("change", saveRatings);
   const exportField = document.querySelector("#pilot-export");
   const label = document.querySelector("#pilot-fallback-label");
   const feedback = document.querySelector("#pilot-feedback");
@@ -35,6 +65,8 @@ if (!data) {
       "Создал задачу: " + (data.created ? "да" : "нет"),
       "Завершил задачу: " + (data.completed ? "да" : "нет"),
       "Вернулся на следующий календарный день: " + d1Status,
+      "Лёгкость начала (1–5): " + (ratings.ease ?? "—"),
+      "Приятность награды (1–5): " + (data.completed ? (ratings.delight ?? "—") : "—"),
       "Комментарий (добровольно): " + (comment || "нет")
     ].join("\n");
     exportField.value = report;
