@@ -38,6 +38,13 @@
 .phone-review-body p{font-size:.79rem;line-height:1.45;color:#815535;margin:.1rem 0 .8rem}
 .phone-review-field{border:0;padding:0;margin:0 0 .9rem;min-width:0}
 .phone-review-field legend{font-size:.85rem;font-weight:800;color:#67371d;margin:0 0 .36rem}
+.phone-review-field[hidden],.phone-review-share[hidden],.phone-review-prev[hidden]{display:none!important}
+.phone-review-step{font-size:.8rem;font-weight:800;color:#794621;margin:.2rem 0 .7rem!important}
+.phone-review-nav{display:flex;gap:.45rem;align-items:center;justify-content:space-between;margin:0 0 .8rem}
+.phone-review-nav button{min-height:44px;flex:1;border:1.5px solid #c28a53;border-radius:.65rem;background:#fff0d3;color:#693818;font-weight:800;margin:0}
+.phone-review-nav button:focus-visible{outline:3px solid #7144a5;outline-offset:2px}
+.phone-review-share{display:block;width:100%;border:1.5px solid #bf8950;border-radius:.7rem;background:#fff2d8;color:#683a20;font-weight:800}
+
 .phone-review-scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.45rem}
 .phone-review-scale label{position:relative;min-width:0;cursor:pointer}
 .phone-review-scale input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}
@@ -225,6 +232,7 @@ window.taskFeedback={
 <summary>Оценить превращение · 1–5</summary>
 <div class="phone-review-body">
 <p>После превращения поставь оценки. Можно оценить только то, что заметил: остальные пункты необязательны. <strong>5 — отлично.</strong> Для «Не отвлекает» 5 означает «совсем не мешает задачам».</p>
+<p id="phone-review-step" class="phone-review-step" role="status" aria-live="polite">Вопрос 1 из 5</p>
 <fieldset class="phone-review-field" data-review-question="look">
 <legend>Внешний вид и размер</legend><div class="phone-review-scale" role="group" aria-label="Внешний вид и размер: оценка от 1 до 5">
 <label><input type="radio" autocomplete="off" name="review-look" value="1"><span>1</span></label>
@@ -265,9 +273,14 @@ window.taskFeedback={
 <label><input type="radio" autocomplete="off" name="review-focus" value="4"><span>4</span></label>
 <label><input type="radio" autocomplete="off" name="review-focus" value="5"><span>5</span></label>
 </div></fieldset>
+<div class="phone-review-nav" aria-label="Переключение вопросов">
+<button id="phone-review-prev" class="phone-review-prev" type="button" hidden>Назад</button>
+<button id="phone-review-next" type="button">Следующий вопрос</button>
+</div>
 <label for="phone-review-note" class="phone-review-note">Что улучшить? (необязательно)</label>
 <textarea id="phone-review-note" autocomplete="off" maxlength="240" rows="3" placeholder="Например: искры слишком яркие. Не вводи личные данные."></textarea>
 <button type="button" id="phone-review-copy" class="add-button" disabled>Скопировать отзыв</button>
+<button id="phone-review-share" class="phone-review-share" type="button" hidden disabled>Поделиться через телефон</button>
 <p id="phone-review-status" class="phone-review-status" role="status" aria-live="polite">Сначала посмотри превращение и поставь хотя бы одну оценку.</p>
 <label id="phone-review-output-label" class="phone-review-output-label" for="phone-review-output" hidden>Текст отзыва — выдели и скопируй вручную:</label>
 <textarea id="phone-review-output" autocomplete="off" class="phone-review-output" rows="8" readonly hidden></textarea>
@@ -276,7 +289,7 @@ window.taskFeedback={
 </section>
 </div>
 </main>
-<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». После оценки нажми «Скопировать отзыв» и вставь текст в наш чат. Самостоятельно демо ничего не отправляет. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
+<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». После оценки нажми «Скопировать отзыв» или выбери «Поделиться через телефон». Отправка возможна только после твоего выбора. Самостоятельно демо ничего не отправляет. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
 </div>
 </body>
 </html>
