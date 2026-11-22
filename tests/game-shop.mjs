@@ -169,6 +169,33 @@ try {
     await context.close();
   }
 
+  // IDB quota/write failure must roll back a successful localStorage debit.
+  {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await enter(page);
+    await seed(page, 2);
+    const before = await page.evaluate(() => localStorage.getItem("sdelano.game.v1"));
+    const outcome = await page.evaluate(async () => {
+      const original = IDBObjectStore.prototype.put;
+      Object.defineProperty(IDBObjectStore.prototype, "put", {
+        configurable: true,
+        value(value, key) {
+          if (this.name === "guard") throw new DOMException("Quota error", "QuotaExceededError");
+          return original.call(this, value, key);
+        }
+      });
+      try { return await window.sdelanoGame.buyItem("scarf"); }
+      finally { Object.defineProperty(IDBObjectStore.prototype, "put", {
+        configurable: true, value: original
+      }); }
+    });
+    assert.equal(outcome.success, false, "Guard failure must reject purchase");
+    assert.equal(await page.evaluate(() => localStorage.getItem("sdelano.game.v1")), before,
+      "Failed guard write must not deduct any coins");
+    await context.close();
+  }
+
   // Cannot buy without coins. A failed purchase keeps the wallet byte-identical.
   {
     const context = await browser.newContext();
