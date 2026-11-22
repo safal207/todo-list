@@ -195,7 +195,7 @@ body[data-game-theme="cosmic"] .mini-hero { background: linear-gradient(120deg, 
 body[data-game-theme="cosmic"] .game-shop-intro { background: linear-gradient(110deg, #d7daff, #ebd4ff); }
 .mini-hero { position: relative; }
 .game-victory-burst { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.game-victory-burst span { position: absolute; left: calc(17% + var(--game-star-index) * 10%); top: 65%; font-size: 1.4rem; color: #fbb43c; text-shadow: 0 0 5px #fff1ba; animation: game-victory-burst .95s ease-out both; animation-delay: calc(var(--game-star-index) * 50ms); }
+.game-victory-burst span { position: absolute; left: 17%; top: 65%; font-size: 1.4rem; color: #fbb43c; text-shadow: 0 0 5px #fff1ba; animation: game-victory-burst .95s ease-out both;  }
 @keyframes game-victory-burst { 0% { transform: translateY(15px) scale(.3) rotate(-30deg); opacity: 0; } 35% { opacity: 1; } 100% { transform: translateY(-55px) scale(1.25) rotate(35deg); opacity: 0; } }
 @media (max-width: 430px) { .game-shop-grid { grid-template-columns: repeat(2, minmax(0,1fr)); gap: .4rem; } .game-shop-card { padding: .55rem; } .game-shop-intro { gap: .5rem; } .game-shop-fox { width: 4rem; } }
 @media (prefers-reduced-motion: reduce) { .game-victory-burst { display: none; } }
