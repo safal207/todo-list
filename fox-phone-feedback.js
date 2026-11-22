@@ -66,17 +66,27 @@
     if (!reviewReady()) { update(); return; }
     const text = formatReview();
     output.value = text;
-    output.hidden = true;
-    outputLabel.hidden = true;
+    // The manual fallback is immediately available even if the browser
+    // leaves a clipboard permission prompt unanswered for a while.
+    output.hidden = false;
+    outputLabel.hidden = false;
+    status.textContent = "Текст готов. Пробуем скопировать; при необходимости скопируй его ниже.";
+    let timeoutId = null;
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
+        await Promise.race([
+          navigator.clipboard.writeText(text),
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error("clipboard-timeout")), 1400);
+          })
+        ]);
+        output.hidden = true;
+        outputLabel.hidden = true;
         status.textContent = "Отзыв скопирован. Вставь его в наш чат — автоматически ничего не отправлено.";
         return;
       }
-    } catch { /* Clipboard may be blocked in a browser's privacy settings. */ }
-    output.hidden = false;
-    outputLabel.hidden = false;
+    } catch { /* Clipboard may be denied or stalled. Manual text remains ready. */ }
+    finally { if (timeoutId !== null) clearTimeout(timeoutId); }
     output.focus();
     output.select();
     status.textContent = "Доступ к буферу закрыт. Текст выделен ниже — скопируй вручную.";
