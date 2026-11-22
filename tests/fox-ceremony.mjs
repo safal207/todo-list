@@ -108,6 +108,11 @@ try {
           getComputedStyle(el, "::before").animationName);
         assert.match(animation, /sdelano-fox-ceremony-paint/);
       }
+      // Capture the unlocked artwork, not its translucent reveal frame:
+      // the portrait reveal lasts ~920ms and resource count-up ~480ms.
+      if (!reducedMotion) await page.waitForTimeout(1050);
+      assert.deepEqual(await page.locator(".game-resource-amount").allTextContents(),
+        ["40", "260 XP", "5/5"], "Visible balances must settle to the saved wallet");
       await page.screenshot({
         path: "artifacts/fox-ceremony-" + engine + "-" + width + ".png",
         fullPage: true
