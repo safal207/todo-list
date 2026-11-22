@@ -125,6 +125,7 @@ jobs:
           node tests/fox-ceremony.mjs
           node tests/fox-phone-preview.mjs
           node tests/fox-phone-feedback.mjs
+          node tests/fox-smooth-v31.mjs
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
