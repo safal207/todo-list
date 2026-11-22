@@ -24,6 +24,8 @@ on:
       - "focus.js"
       - "shop.js"
       - "game-preview.css"
+      - "game-juice.js"
+      - "game-juice.css"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -49,6 +51,8 @@ on:
       - "effects.js"
       - "game-preview.js"
       - "game-preview.css"
+      - "game-juice.js"
+      - "game-juice.css"
       - "game.js"
       - "focus.js"
       - "shop.js"
@@ -83,6 +87,7 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
           node tests/qa-smoke.mjs
           node tests/game-preview.mjs
+          node tests/game-juice.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
           node tests/game-shop.mjs

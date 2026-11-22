@@ -62,8 +62,20 @@ try {
       await page.locator(".task-checkbox").first().check();
       await page.locator('.task-panel[aria-busy="true"]').waitFor({ state: "hidden" });
       assert.match(await page.locator("#progress-summary").textContent(), /1 из 1/);
+      assert.deepEqual(await page.evaluate(() => {
+        const balance = window.sdelanoGame.inspect();
+        return [balance.coins, balance.xp, balance.energy];
+      }), [10, 20, 5], "Wallet must award new completion immediately");
+      // The wallet publishes the final value before the count-up starts.
+      // Allow the ~480ms animation to finish before asserting the DOM.
+      await page.waitForTimeout(650);
+      await page.waitForFunction(() => {
+        const amounts = Array.from(document.querySelectorAll("#game-preview .game-resource-amount"),
+          el => el.textContent.trim());
+        return amounts.join("|") === "10|20 XP|5/5";
+      });
       assert.deepEqual(await panel.locator(".game-resource-amount").allTextContents(), ["10", "20 XP", "5/5"],
-        "New completed task must grant base XP, coins and first-of-day bonus");
+        "Animated UI must reach the stored balance");
       assert.deepEqual(errors, [], "No page errors: " + errors.join(", "));
       console.log("Game preview QA passed:", engine, width);
     } finally {
