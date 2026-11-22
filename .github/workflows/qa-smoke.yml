@@ -27,6 +27,9 @@ on:
       - "game-juice.js"
       - "game-juice.css"
       - "brand-flavor.css"
+      - "preview-demo.html"
+      - "preview-server.mjs"
+      - "package.json"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -55,6 +58,9 @@ on:
       - "game-juice.js"
       - "game-juice.css"
       - "brand-flavor.css"
+      - "preview-demo.html"
+      - "preview-server.mjs"
+      - "package.json"
       - "game.js"
       - "focus.js"
       - "shop.js"
@@ -91,6 +97,7 @@ jobs:
           node tests/game-preview.mjs
           node tests/game-juice.mjs
           node tests/brand-flavor.mjs
+          node tests/visual-preview.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
           node tests/game-shop.mjs
