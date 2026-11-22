@@ -28,10 +28,11 @@
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
     <link rel="stylesheet" href="styles.css?v=cloud-1">
-    <link rel="stylesheet" href="game-preview.css?v=1">
+    <link rel="stylesheet" href="game-preview.css?v=2">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
-    <script src="game-preview.js?v=1" defer></script>
+    <script src="game.js?v=1" defer></script>
+    <script src="game-preview.js?v=2" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js?v=pilot-1" defer></script>
     <script src="backup.js?v=1" defer></script>
@@ -59,24 +60,24 @@
         <p id="storage-warning" class="storage-warning" role="status" hidden>Сохранение недоступно. Изменения могут исчезнуть после обновления страницы.</p>
       </header>
 
-    <!-- PR 1: visual-only game resources. No real currency or XP is awarded yet. -->
-    <section id="game-preview" class="game-preview" aria-label="Игровые ресурсы — демонстрация">
+    <!-- Real coins and XP from new completions; energy is a visual preview until PR 3. -->
+    <section id="game-preview" class="game-preview" aria-label="Игровые ресурсы">
       <button id="game-preview-toggle" class="game-preview-toggle" type="button" aria-expanded="false" aria-controls="game-preview-details">
-        <span class="game-preview-caption"><strong>Награды</strong><small>ДЕМО</small></span>
+        <span class="game-preview-caption"><strong>Награды</strong><small>LVL <span id="game-level-chip">1</span></small></span>
         <span class="game-preview-resources">
-          <span class="game-resource game-resource--coins" aria-label="Монеты: 0">
+          <span id="game-coins" class="game-resource game-resource--coins" aria-label="Монеты: 0">
             <span class="game-resource-icon" aria-hidden="true">
               <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-coin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff5a4"/><stop offset=".46" stop-color="#ffc32f"/><stop offset="1" stop-color="#e77908"/></linearGradient></defs><circle cx="22" cy="22" r="20" fill="#ad610d"/><circle cx="22" cy="20" r="18" fill="url(#sdelano-coin)" stroke="#fff2a2" stroke-width="2"/><circle cx="22" cy="20" r="13.6" fill="none" stroke="#bc7011" stroke-width="1.4"/><circle cx="15.4" cy="17.2" r="2.5" fill="#a55c0b"/><circle cx="21" cy="13.8" r="2.5" fill="#a55c0b"/><circle cx="27" cy="16.1" r="2.5" fill="#a55c0b"/><path d="M15.5 24.5c1-4.8 4-7 6.5-7s6 3 7 7c1.2 4.5-3.2 6.3-6.8 4.4-3.2-1.6-7.7.2-6.7-4.4Z" fill="#a55c0b"/><path d="M9 13c4-6 9-7 13-7" fill="none" stroke="#fff5c4" stroke-width="2" stroke-linecap="round"/></svg>
             </span>
             <span class="game-resource-amount">0</span>
           </span>
-          <span class="game-resource game-resource--xp" aria-label="Опыт: 0 XP">
+          <span id="game-xp" class="game-resource game-resource--xp" aria-label="Опыт: 0 XP">
             <span class="game-resource-icon" aria-hidden="true">
               <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-crystal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a5faff"/><stop offset=".48" stop-color="#6086fc"/><stop offset="1" stop-color="#9d50ee"/></linearGradient></defs><path d="M22 2 35 13l-3 21-10 8-11-8-3-21Z" fill="url(#sdelano-crystal)" stroke="#e0f7ff" stroke-width="2"/><path d="M22 2v40M8 13l14 8 13-8M11 34l11-13 10 13" stroke="#d7f7ff" stroke-opacity=".65" stroke-width="1.4" fill="none"/><path d="M22 2 8 13l14 8Z" fill="#d3feff" fill-opacity=".55"/><path d="M22 21 35 13l-3 21Z" fill="#473bd4" fill-opacity=".28"/></svg>
             </span>
             <span class="game-resource-amount">0 <small>XP</small></span>
           </span>
-          <span class="game-resource game-resource--energy" aria-label="Энергия: 5 из 5">
+          <span id="game-energy" class="game-resource game-resource--energy" aria-label="Энергия — пока демонстрация: 5 из 5">
             <span class="game-resource-icon" aria-hidden="true">
               <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-energy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8ff77"/><stop offset=".55" stop-color="#72eb68"/><stop offset="1" stop-color="#18bd9b"/></linearGradient></defs><path d="M25 2 8 24h13l-3 18 19-27H24Z" fill="url(#sdelano-energy)" stroke="#e9ffcb" stroke-width="2" stroke-linejoin="round"/><path d="M25 8 14 22h12" stroke="#fffbc0" stroke-opacity=".8" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
             </span>
@@ -89,11 +90,13 @@
         <div class="game-preview-about">
           <img src="assets/fox-mascot.webp" alt="" width="52" height="52" loading="lazy">
           <div>
-            <strong>Скоро — награды за реальные дела</strong>
-            <p>Золото, кристаллы опыта и энергия. Пока это предпросмотр: баланс не начисляется и не тратится.</p>
+            <strong>Награды за реальные дела</strong>
+            <p>Закрой новую задачу и получи XP и монеты. Энергия и магазин появятся позже.</p>
           </div>
         </div>
-        <button id="game-preview-try" class="game-preview-try" type="button">Посмотреть и послушать награду</button>
+        <div class="game-level-details"><span id="game-level-label">Уровень 1</span><span id="game-level-counter">0 / 100 XP</span></div>
+        <progress id="game-level-progress" class="game-level-progress" max="100" value="0" aria-label="Опыт к следующему уровню"></progress>
+        <button id="game-preview-try" class="game-preview-try" type="button">Послушать награду (демо)</button>
         <p id="game-preview-feedback" class="game-preview-feedback" role="status" aria-live="polite"></p>
       </div>
     </section>
