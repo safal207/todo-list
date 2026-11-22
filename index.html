@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <meta name="theme-color" content="#fff7e7">
+    <meta name="theme-color" content="#fff4df">
     <title>Хватит кормить задачи «завтраками». Сделано!</title>
     <link rel="canonical" href="https://safal207.github.io/todo-list/">
 
@@ -30,6 +30,7 @@
     <link rel="stylesheet" href="styles.css?v=cloud-1">
     <link rel="stylesheet" href="game-preview.css?v=4">
     <link rel="stylesheet" href="game-juice.css?v=1">
+    <link rel="stylesheet" href="brand-flavor.css?v=1">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="game.js?v=5" defer></script>
@@ -95,7 +96,7 @@
           <img src="assets/fox-mascot.webp" alt="" width="52" height="52" loading="lazy">
           <div>
             <strong>Награды за реальные дела</strong>
-            <p>Закрывай задачи и получай XP и монеты. Фокус-сессии добавляют опыт, а энергия восстанавливается со временем.</p>
+            <p>Сделал дело — получи монеты и XP. Фокус добавляет опыт, а энергия восстанавливается со временем.</p>
           </div>
         </div>
         <div class="game-level-details"><span id="game-level-label">Уровень 1</span><span id="game-level-counter">0 / 100 XP</span></div>
@@ -175,8 +176,9 @@
           <section class="task-panel" aria-labelledby="page-heading">
             <div class="mini-hero">
               <div>
+                <p class="flavor-kicker">Дела со вкусом</p>
                 <h1 id="page-heading" tabindex="-1">Список задач</h1>
-                <p>Начни с одного дела.</p>
+                <p>Одно дело — одна победа. Прожарим?</p>
               </div>
               <span class="game-hero-fox"><img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
                 <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span></span>
