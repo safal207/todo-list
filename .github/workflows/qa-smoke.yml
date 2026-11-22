@@ -27,6 +27,9 @@ on:
       - "game-juice.js"
       - "game-juice.css"
       - "brand-flavor.css"
+      - "preview-demo.html"
+      - "preview-server.mjs"
+      - "package.json"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -55,6 +58,9 @@ on:
       - "game-juice.js"
       - "game-juice.css"
       - "brand-flavor.css"
+      - "preview-demo.html"
+      - "preview-server.mjs"
+      - "package.json"
       - "game.js"
       - "focus.js"
       - "shop.js"
@@ -84,6 +90,17 @@ jobs:
         run: |
           npm install --no-save --no-package-lock playwright@1.62.1
           npx playwright install --with-deps "$SDELANO_QA_ENGINE"
+      - name: Verify the public read-only visual preview URL
+        if: github.head_ref == 'preview/sdelano-delight-v1'
+        env:
+          PREVIEW_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          url="https://raw.githack.com/safal207/todo-list/$PREVIEW_SHA/preview-demo.html"
+          curl -fL --retry 2 --max-time 35 --output /tmp/sdelano-preview.html "$url"
+          grep -q 'Визуальное демо' /tmp/sdelano-preview.html
+          grep -q 'game-juice-particle' /tmp/sdelano-preview.html
+          printf 'Preview HTML fetched: %s bytes\\n' "$(wc -c </tmp/sdelano-preview.html)"
       - name: Serve and test mobile + desktop
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
@@ -91,6 +108,7 @@ jobs:
           node tests/game-preview.mjs
           node tests/game-juice.mjs
           node tests/brand-flavor.mjs
+          node tests/visual-preview.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
           node tests/game-shop.mjs
