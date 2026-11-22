@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
 import { chromium, firefox, webkit } from "playwright";
 
 const engine = process.env.SDELANO_QA_ENGINE || "chromium";
 const browser = await ({ chromium, firefox, webkit })[engine].launch({
   headless: true, executablePath: process.env.SDELANO_QA_EXECUTABLE
 });
+
+mkdirSync("artifacts", { recursive: true });
 
 try {
   for (const width of [320, 390, 1280]) {
@@ -27,6 +30,7 @@ try {
       assert.equal(await page.locator("#pilot-content").isVisible(), true);
       assert.equal(await page.locator("#pilot-delight-question").isVisible(), false,
         "Cannot rate earned reward before finishing a real task");
+      await page.screenshot({ path: "artifacts/pilot-survey-before-" + engine + "-" + width + ".png", fullPage: true });
       await page.locator("#pilot-ease").selectOption("4");
       assert.equal(await page.evaluate(() =>
         JSON.parse(localStorage.getItem("sdelano.pilot.ratings.v1")).ease), 4);
@@ -48,12 +52,16 @@ try {
       assert.equal(await page.locator("#pilot-delight-question").isVisible(), true);
       assert.equal(await page.locator("#pilot-ease").inputValue(), "4",
         "Optional ease rating must persist locally");
+      await page.screenshot({ path: "artifacts/pilot-survey-after-" + engine + "-" + width + ".png", fullPage: true });
       await page.locator("#pilot-delight").selectOption("5");
+      await page.locator("#pilot-comment").fill("Без личных данных\\nКод: T10");
       await page.locator("#pilot-copy").click();
       report = await page.locator("#pilot-export").inputValue();
       assert.match(report, /Приятность награды \(1–5\): 5/);
       assert.equal(report.includes("Личная задача не для отчёта"), false,
         "Private task titles must never enter the report");
+      assert.equal(report.split("\\n").filter(line => line.startsWith("Код:")).length, 1,
+        "Multiline comments cannot forge report participant codes");
       assert.equal(report.includes("sdelano.game.v1"), false,
         "Game storage and wallet keys must remain private");
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
