@@ -316,6 +316,16 @@
     return new Promise(resolve => {
       let tx, outcome = { success: false, reason: "storage-error" };
       let before = null, written = null;
+      const rollback = () => {
+        // Only roll back our exact write, not a newer operation's result.
+        try {
+          if (written !== null && localStorage.getItem(KEY) === written) {
+            if (before === null) localStorage.removeItem(KEY);
+            else localStorage.setItem(KEY, before);
+            window.dispatchEvent(new Event("sdelano:game-changed"));
+          }
+        } catch { /* Storage may be unavailable; report unsafe persistence. */ }
+      };
       try {
         tx = db.transaction("guard", "readwrite");
         const store = tx.objectStore("guard");
@@ -334,6 +344,7 @@
               store.put({ id: "wallet", fingerprint: purchaseFingerprint(load()) });
             }
           } catch (error) {
+            rollback();
             report(error);
             outcome = { success: false, reason: "storage-error" };
           }
@@ -341,14 +352,7 @@
         get.onerror = () => { outcome = { success: false, reason: "storage-error" }; };
         tx.oncomplete = () => resolve(outcome);
         tx.onabort = tx.onerror = () => {
-          // Only roll back our own write. Never discard a concurrent edit.
-          try {
-            if (written !== null && localStorage.getItem(KEY) === written) {
-              if (before === null) localStorage.removeItem(KEY);
-              else localStorage.setItem(KEY, before);
-              window.dispatchEvent(new Event("sdelano:game-changed"));
-            }
-          } catch { /* Storage may be unavailable. Fail closed. */ }
+          rollback();
           resolve({ success: false, reason: "storage-error" });
         };
       } catch (error) {
