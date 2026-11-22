@@ -337,6 +337,48 @@
     });
   }
 
+  // Grants and purchases are a ledger. Never sum unrelated balances on import.
+  function cloneWallet(input) {
+    if (!plain(input)) throw new Error("В копии отсутствует игровой кошелёк.");
+    const wallet = JSON.parse(JSON.stringify(input));
+    check(wallet);
+    return wallet;
+  }
+  function exportWallet() { return cloneWallet(load()); }
+  function economicFingerprint(wallet) {
+    if (!wallet) return "empty";
+    return JSON.stringify({
+      grants: wallet.grants, purchases: wallet.purchases || [],
+      equipped: shopEquipped(wallet), energy: wallet.energy || null
+    });
+  }
+  function walletHasActivity(wallet) {
+    return Boolean(wallet && (wallet.grants.length || wallet.purchases?.length ||
+      (wallet.energy && wallet.energy.value < MAX_ENERGY)));
+  }
+  function combineExclusions(primary, secondary) {
+    const excluded = new Set([...(primary.excludedIds || []), ...(secondary?.excludedIds || [])]);
+    if (excluded.size > MAX_EXCLUDED) throw new Error("Слишком много исключённых задач для переноса.");
+    primary.excludedIds = [...excluded];
+    return check(primary);
+  }
+  function planWalletImport(source) {
+    const imported = cloneWallet(source), current = exportWallet();
+    const identical = economicFingerprint(current) === economicFingerprint(imported);
+    if (!identical && walletHasActivity(current)) {
+      throw new Error("На этом устройстве уже есть другой игровой кошелёк. " +
+        "Автоматическое объединение монет и покупок запрещено. Сохрани обе копии JSON.");
+    }
+    const selected = identical ? current : imported;
+    return { wallet: combineExclusions(selected, identical ? imported : current),
+      mode: identical ? "same" : "transfer" };
+  }
+  function restoreWallet(source) {
+    const planned = planWalletImport(source);
+    save(planned.wallet);
+    return planned.mode;
+  }
+
   // Completed tasks coming from a backup or another cloud device are legacy
   // for this browser's local economy. Never mint currency from imports.
   function excludeCompleted(ids) {
@@ -370,6 +412,7 @@
 
   window.sdelanoGame = Object.freeze({
     inspect, awardTask, excludeCompleted, claimFocus, buyItem, equipItem,
+    exportWallet, cloneWallet, planWalletImport, restoreWallet,
     catalog: CATALOG, key: KEY, focusKey: FOCUS_KEY, focusMs: FOCUS_MS,
     rechargeMs: RECHARGE_MS, threshold
   });
