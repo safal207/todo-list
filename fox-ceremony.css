@@ -1,0 +1,135 @@
+/* Fox Evolution v3: a small, genuine stage-unlock celebration.
+ * Never overlays the task controls, never blocks clicks, and honors motion
+ * preferences. All figures and costumes remain the same approved artwork. */
+.fox-evolution-notice.fox-ceremony-banner {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 4.6rem;
+  padding: .5rem .72rem;
+  border: 2px solid #b67b29;
+  border-radius: .9rem;
+  background: linear-gradient(120deg, #fff4be, #ffcf74 66%, #ffc35a);
+  box-shadow: 0 3px 0 #b7772d4d, 0 6px 16px #a7672a20;
+}
+.fox-ceremony-banner[data-fox-ceremony-stage="hero"] {
+  background: linear-gradient(120deg, #fff3c1, #ffce83 58%, #f5b177);
+}
+.fox-ceremony-banner[data-fox-ceremony-stage="master"] {
+  border-color: #aa6724;
+  background: linear-gradient(120deg, #fff5bf, #ffd879 55%, #eda65f);
+}
+.fox-ceremony-portrait {
+  position: relative;
+  flex: none;
+  display: block;
+  width: 3.4rem;
+  height: 3.4rem;
+  isolation: isolate;
+}
+.fox-ceremony-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.fox-ceremony-portrait::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background-image: url("assets/fox-evolution-stages.webp");
+  background-size: 100% 400%;
+  background-repeat: no-repeat;
+  background-position: 50% 0%;
+  opacity: 0;
+  pointer-events: none;
+}
+body[data-fox-art="ready"] .fox-ceremony-portrait img {
+  opacity: 0;
+}
+body[data-fox-art="ready"] .fox-ceremony-portrait::before {
+  opacity: 1;
+}
+.fox-ceremony-banner[data-fox-ceremony-stage="student"] .fox-ceremony-portrait::before {
+  background-position: 50% 33.3333%;
+}
+.fox-ceremony-banner[data-fox-ceremony-stage="hero"] .fox-ceremony-portrait::before {
+  background-position: 50% 66.6667%;
+}
+.fox-ceremony-banner[data-fox-ceremony-stage="master"] .fox-ceremony-portrait::before {
+  background-position: 50% 100%;
+}
+.fox-ceremony-copy { display: grid; min-width: 0; gap: .15rem; }
+.fox-ceremony-copy strong {
+  color: #5d3016;
+  font-size: clamp(.85rem, 2.5vw, 1rem);
+  font-weight: 900;
+  line-height: 1.2;
+}
+.fox-ceremony-copy small {
+  color: #7f491e;
+  font-size: .72rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+.fox-ceremony-sparks {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: block;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.fox-ceremony-sparks > span {
+  position: absolute;
+  left: var(--fox-spark-left);
+  bottom: 14%;
+  color: #fff6b7;
+  font-size: clamp(.85rem, 3vw, 1.35rem);
+  text-shadow: 0 0 4px #fff, 0 0 7px #e99430;
+  opacity: 0;
+}
+@keyframes sdelano-fox-ceremony-paint {
+  0% { clip-path: circle(0% at 49% 52%); filter: brightness(2); transform: scale(.84); }
+  52% { clip-path: circle(78% at 49% 52%); filter: brightness(1.25); transform: scale(1.08); }
+  100% { clip-path: circle(85% at 49% 52%); filter: brightness(1); transform: scale(1); }
+}
+@keyframes sdelano-fox-ceremony-cheer {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  32% { transform: translateY(-7px) rotate(-6deg); }
+  65% { transform: translateY(-2px) rotate(5deg); }
+}
+@keyframes sdelano-fox-ceremony-star {
+  0% { opacity: 0; transform: translate(0, 12px) scale(.45) rotate(-25deg); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--fox-spark-drift), -54px) scale(1.15) rotate(30deg); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  body[data-fox-art="ready"] .fox-evolution--grown .fox-evolution-core::before {
+    animation: sdelano-fox-ceremony-paint .92s ease-out both;
+  }
+  .fox-ceremony--cheer .fox-evolution-figure .fox-evolution-core {
+    animation: sdelano-fox-ceremony-cheer .9s ease-out;
+  }
+  .fox-ceremony-sparks > span {
+    animation: sdelano-fox-ceremony-star 1.12s ease-out var(--fox-spark-delay) both;
+  }
+  body[data-fox-art="ready"] .fox-ceremony-banner .fox-ceremony-portrait::before {
+    animation: sdelano-fox-ceremony-paint .92s ease-out both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fox-ceremony-sparks { display: none !important; }
+  .fox-ceremony-banner, .fox-ceremony-portrait, .fox-ceremony-portrait::before {
+    animation: none !important;
+    transition: none !important;
+  }
+  .fox-evolution-figure .fox-evolution-core::before { animation: none !important; }
+}
+@media (max-width: 350px) {
+  .fox-evolution-notice.fox-ceremony-banner { gap: .45rem; padding-inline: .4rem; }
+  .fox-ceremony-portrait { width: 2.75rem; height: 2.75rem; }
+  .fox-ceremony-copy small { font-size: .66rem; }
+}

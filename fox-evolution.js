@@ -22,6 +22,7 @@
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   let timer = null;
   let currentStage = null;
+  let lastCelebratedStage = 0;
 
   function stageForLevel(level) {
     const number = Number.isSafeInteger(level) && level >= 1 ? level : 1;
@@ -86,7 +87,11 @@
     if (!wallet.available || wallet.xp < earned) return;
     const previous = stageForXp(wallet.xp - earned);
     const after = stageForLevel(wallet.level);
-    if (STAGES.indexOf(after) <= STAGES.indexOf(previous)) return;
+    const nextIndex = STAGES.indexOf(after);
+    if (nextIndex <= STAGES.indexOf(previous) || nextIndex <= lastCelebratedStage) return;
+    // Browser-session-only guard: repeated delivery must never show a second
+    // ceremony. Do not create a separate persisted growth wallet or streak.
+    lastCelebratedStage = nextIndex;
     render();
     notice.hidden = false;
     notice.textContent = "Твой лисёнок вырос! Теперь он — " + after.name + ".";
@@ -102,6 +107,11 @@
       for (const figure of figures) figure.classList.remove("fox-evolution--grown");
       timer = null;
     }, 3400);
+    // Presentation-only signal, emitted solely for an actual newly earned
+    // stage. Consumers must not mutate XP, tasks, purchases or wallet.
+    window.dispatchEvent(new CustomEvent("sdelano:fox-evolved", {
+      detail: { stage: after.id, name: after.name, level: wallet.level, from: previous.id }
+    }));
   }
 
   window.addEventListener("sdelano:game-changed", render);
