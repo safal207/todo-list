@@ -66,7 +66,7 @@ try {
         assert.ok(remaining.out <= 1, "Horizontal overflow on " + width + ": " + remaining.out);
         assert.deepEqual(remaining.storage, [], "Demo must not write a wallet or tasks");
         if (width === 390) assert.equal(remaining.particles, 0);
-        else assert.equal(remaining.particles, 9);
+        else assert.equal(remaining.particles, 6, 'Stage reveal uses six gentle sparks');
         assert.equal(await page.locator("#phone-qa-complete").isDisabled(), true);
         await page.waitForTimeout(width === 390 ? 100 : 1050);
         await page.screenshot({
