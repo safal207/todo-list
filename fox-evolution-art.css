@@ -2,7 +2,7 @@
  * A single 160 × 640 transparent WebP atlas is decoded into four square
  * viewports. Older CSS-only anatomy is superseded, preserving original
  * mascot and owned cosmetic overlays without any wallet changes. */
-.fox-evolution-figure .fox-evolution-core {
+body.fox-art-ready .fox-evolution-figure .fox-evolution-core {
   transform: none !important;
   overflow: visible;
   background-image: url("assets/fox-evolution-stages.webp");
@@ -11,66 +11,66 @@
   background-position: center top;
   image-rendering: auto;
 }
-.fox-evolution-figure .fox-evolution-core img {
+body.fox-art-ready .fox-evolution-figure .fox-evolution-core img {
   opacity: 0;
   user-select: none;
 }
-.fox-evolution-figure[data-fox-stage="cub"] .fox-evolution-core {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="cub"] .fox-evolution-core {
   background-position: center 0%;
 }
-.fox-evolution-figure[data-fox-stage="student"] .fox-evolution-core {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="student"] .fox-evolution-core {
   background-position: center 33.333333%;
 }
-.fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-core {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-core {
   background-position: center 66.666667%;
 }
-.fox-evolution-figure[data-fox-stage="master"] .fox-evolution-core {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="master"] .fox-evolution-core {
   background-position: center 100%;
 }
 /* Real painted tails and facial details replace the earlier CSS mock tails. */
-.fox-evolution-figure .fox-evolution-tail,
-.fox-evolution-figure .fox-evolution-crest {
+body.fox-art-ready .fox-evolution-figure .fox-evolution-tail,
+body.fox-art-ready .fox-evolution-figure .fox-evolution-crest {
   display: none;
 }
-.fox-evolution-figure .fox-evolution-halo {
+body.fox-art-ready .fox-evolution-figure .fox-evolution-halo {
   inset: 8%;
   opacity: .8;
 }
-.fox-evolution-figure[data-fox-stage="cub"] .fox-evolution-halo {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="cub"] .fox-evolution-halo {
   opacity: .5;
 }
-.fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-halo,
-.fox-evolution-figure[data-fox-stage="master"] .fox-evolution-halo {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-halo,
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="master"] .fox-evolution-halo {
   opacity: .62;
 }
 /* Keep the costume layers attached to the face and chest in each painting.
  * All rules are purely visual; equipped state still comes from shop.js. */
-.fox-evolution-figure .game-fox-glasses,
-.fox-evolution-figure .game-fox-scarf {
+body.fox-art-ready .fox-evolution-figure .game-fox-glasses,
+body.fox-art-ready .fox-evolution-figure .game-fox-scarf {
   z-index: 4;
 }
-.fox-evolution-figure[data-fox-stage="cub"] .game-fox-glasses {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="cub"] .game-fox-glasses {
   left: 34%; top: 34%; width: 49%; height: 17%;
 }
-.fox-evolution-figure[data-fox-stage="cub"] .game-fox-scarf {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="cub"] .game-fox-scarf {
   left: 37%; top: 64%; width: 38%; height: 10%;
 }
-.fox-evolution-figure[data-fox-stage="student"] .game-fox-glasses {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="student"] .game-fox-glasses {
   left: 43%; top: 29%; width: 43%; height: 16%;
 }
-.fox-evolution-figure[data-fox-stage="student"] .game-fox-scarf {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="student"] .game-fox-scarf {
   left: 48%; top: 58%; width: 38%; height: 10%;
 }
-.fox-evolution-figure[data-fox-stage="hero"] .game-fox-glasses {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="hero"] .game-fox-glasses {
   left: 59%; top: 31%; width: 34%; height: 13%;
 }
-.fox-evolution-figure[data-fox-stage="hero"] .game-fox-scarf {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="hero"] .game-fox-scarf {
   left: 56%; top: 52%; width: 34%; height: 10%;
 }
-.fox-evolution-figure[data-fox-stage="master"] .game-fox-glasses {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="master"] .game-fox-glasses {
   left: 58%; top: 26%; width: 37%; height: 13%;
 }
-.fox-evolution-figure[data-fox-stage="master"] .game-fox-scarf {
+body.fox-art-ready .fox-evolution-figure[data-fox-stage="master"] .game-fox-scarf {
   left: 51%; top: 50%; width: 38%; height: 10%;
 }
 @media (prefers-reduced-motion: reduce) {
