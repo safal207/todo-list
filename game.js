@@ -275,17 +275,101 @@
   // One lock serializes purchases, equipment selection, task and focus wallet
   // writes on browsers that support Web Locks. Without locks operations remain
   // best-effort and are not a financial-grade multi-device economy.
-  async function withShopLock(action) {
-    let entered = false;
-    try {
-      if (navigator.locks?.request) return await navigator.locks.request(TASKS_KEY, () => {
-        entered = true;
-        return action();
+  // Web Locks alone are insufficient on some multi-process browsers: a
+  // newly granted lock may still read a stale localStorage cache. Serialize
+  // purchases through a real IndexedDB readwrite transaction and compare the
+  // previous committed purchase journal before writing another wallet.
+  // Never fall back to unguarded purchases when IDB is unavailable.
+  let shopDBPromise;
+  function openShopDB() {
+    if (!shopDBPromise) {
+      shopDBPromise = new Promise((resolve, reject) => {
+        if (typeof indexedDB === "undefined") {
+          reject(new Error("IndexedDB недоступна."));
+          return;
+        }
+        const request = indexedDB.open("sdelano.shop.guard.v1", 1);
+        request.onupgradeneeded = () => request.result.createObjectStore("guard", { keyPath: "id" });
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Не удалось открыть журнал покупок."));
+        request.onblocked = () => reject(new Error("Журнал покупок занят другой вкладкой."));
+      }).catch(error => {
+        shopDBPromise = null;
+        throw error;
       });
-    } catch (error) {
-      if (entered) { report(error); return { success: false, reason: "lock-error" }; }
     }
-    return action();
+    return shopDBPromise;
+  }
+
+  function purchaseFingerprint(wallet) {
+    return JSON.stringify((wallet.purchases || [])
+      .map(p => [p.id, p.coins, p.at]).sort((a, b) => a[0].localeCompare(b[0])));
+  }
+
+  async function inShopTransaction(action) {
+    let db;
+    try { db = await openShopDB(); }
+    catch (error) {
+      report(error);
+      return { success: false, reason: "storage-error" };
+    }
+    return new Promise(resolve => {
+      let tx, outcome = { success: false, reason: "storage-error" };
+      let before = null, written = null;
+      try {
+        tx = db.transaction("guard", "readwrite");
+        const store = tx.objectStore("guard");
+        const get = store.get("wallet");
+        get.onsuccess = () => {
+          try {
+            before = localStorage.getItem(KEY);
+            const state = load();
+            if (get.result && get.result.fingerprint !== purchaseFingerprint(state)) {
+              outcome = { success: false, reason: "stale-wallet" };
+              return;
+            }
+            outcome = action();
+            if (outcome.success) {
+              written = localStorage.getItem(KEY);
+              store.put({ id: "wallet", fingerprint: purchaseFingerprint(load()) });
+            }
+          } catch (error) {
+            report(error);
+            outcome = { success: false, reason: "storage-error" };
+          }
+        };
+        get.onerror = () => { outcome = { success: false, reason: "storage-error" }; };
+        tx.oncomplete = () => resolve(outcome);
+        tx.onabort = tx.onerror = () => {
+          // Only roll back our own write. Never discard a concurrent edit.
+          try {
+            if (written !== null && localStorage.getItem(KEY) === written) {
+              if (before === null) localStorage.removeItem(KEY);
+              else localStorage.setItem(KEY, before);
+              window.dispatchEvent(new Event("sdelano:game-changed"));
+            }
+          } catch { /* Storage may be unavailable. Fail closed. */ }
+          resolve({ success: false, reason: "storage-error" });
+        };
+      } catch (error) {
+        report(error);
+        resolve({ success: false, reason: "storage-error" });
+      }
+    });
+  }
+
+  async function withShopLock(action) {
+    // Serialize with existing task/focus Web Locks where supported; IndexedDB
+    // remains authoritative for cross-tab purchase coordination.
+    if (navigator.locks?.request) {
+      try {
+        return await navigator.locks.request(TASKS_KEY, () => inShopTransaction(action));
+      } catch (error) {
+        report(error);
+        return { success: false, reason: "lock-error" };
+      }
+    }
+    return inShopTransaction(action);
   }
 
   function equipState(state, itemId, enabled) {
