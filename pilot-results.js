@@ -41,6 +41,23 @@
     if (commentLines.length > 1) throw new Error("Повторяется комментарий " + data.code + ".");
     const comment = commentLines.length ? commentLines[0].slice("Комментарий (добровольно):".length).trim() : "";
     data.comment = comment === "нет" ? "" : comment.slice(0, 500);
+    // New opt-in scores are backwards compatible with existing pilot reports.
+    for (const [label, key] of [
+      ["Лёгкость начала (1–5)", "ease"],
+      ["Приятность награды (1–5)", "delight"]
+    ]) {
+      const prefix = label + ":";
+      const matches = lines.filter(line => line.startsWith(prefix));
+      if (matches.length > 1) throw new Error("Повторная оценка «" + label + "».");
+      const value = matches.length ? matches[0].slice(prefix.length).trim() : "—";
+      if (!["—", "1", "2", "3", "4", "5"].includes(value)) {
+        throw new Error("Некорректная оценка «" + label + "».");
+      }
+      data[key] = value === "—" ? null : Number(value);
+    }
+    if (!data.completed && data.delight !== null) {
+      throw new Error("Нельзя оценить награду без выполненного дела.");
+    }
     return data;
   }
 
@@ -54,7 +71,10 @@
     return row && row.code === code && typeof row.newUser === "boolean" &&
       typeof row.created === "boolean" && typeof row.completed === "boolean" &&
       !(row.completed && !row.created) && ["да", "нет", "проверим завтра"].includes(row.d1) &&
-      typeof row.comment === "string";
+      typeof row.comment === "string" &&
+      (row.ease == null || (Number.isSafeInteger(row.ease) && row.ease >= 1 && row.ease <= 5)) &&
+      (row.delight == null || (Number.isSafeInteger(row.delight) && row.delight >= 1 &&
+        row.delight <= 5 && row.completed));
   }
 
   function load() {
@@ -74,6 +94,16 @@
     return total ? Math.round(success * 100 / total) + "%" : "—";
   }
 
+  function scoreInfo(rows, key) {
+    const scored = rows.filter(row => Number.isSafeInteger(row[key]) &&
+      row[key] >= 1 && row[key] <= 5);
+    const sum = scored.reduce((total, row) => total + row[key], 0);
+    return {
+      label: scored.length ? (sum / scored.length).toFixed(1).replace(".", ",") + "/5" : "—",
+      count: scored.length
+    };
+  }
+
   function render() {
     const rows = codes.map(code => reports[code]).filter(Boolean);
     const fresh = rows.filter(row => row.newUser);
@@ -82,6 +112,15 @@
     document.querySelector("#created-rate").textContent = percent(fresh.filter(row => row.created).length, fresh.length);
     document.querySelector("#completed-rate").textContent = percent(fresh.filter(row => row.completed).length, fresh.length);
     document.querySelector("#d1-rate").textContent = percent(resolvedD1.filter(row => row.d1 === "да").length, resolvedD1.length);
+    const ease = scoreInfo(fresh, "ease");
+    const delight = scoreInfo(fresh.filter(row => row.completed), "delight");
+    document.querySelector("#ease-score").textContent = ease.label;
+    document.querySelector("#delight-score").textContent = delight.label;
+    document.querySelector("#ease-denominator").textContent =
+      ease.count + " из " + fresh.length + " новых пользователей с отчётом";
+    document.querySelector("#delight-denominator").textContent =
+      delight.count + " из " + fresh.filter(row => row.completed).length +
+      " новых участников, завершивших дело";
     document.querySelector("#created-denominator").textContent = fresh.filter(row => row.created).length + " из " + fresh.length + " новых с отчётом";
     document.querySelector("#completed-denominator").textContent = fresh.filter(row => row.completed).length + " из " + fresh.length + " новых с отчётом";
     document.querySelector("#d1-denominator").textContent = resolvedD1.filter(row => row.d1 === "да").length + " из " + resolvedD1.length + " новых с известным D1";
@@ -112,6 +151,12 @@
         const d1 = document.createElement("span");
         d1.textContent = "D1: " + row.d1;
         li.append(state, created, d1);
+        if (row.ease != null || row.delight != null) {
+          const impression = document.createElement("span");
+          impression.textContent = "Легко начать: " + (row.ease ?? "—") +
+            "/5 · Награда: " + (row.delight ?? "—") + "/5";
+          li.append(impression);
+        }
         if (row.comment) {
           const comment = document.createElement("small");
           comment.textContent = "Отзыв: " + row.comment;
@@ -166,6 +211,10 @@
       "Завершили задачу: " + fresh.filter(row => row.completed).length + "/" + fresh.length,
       "D1 возврат: " + known.filter(row => row.d1 === "да").length + "/" + known.length +
         "; ожидают уточнения: " + (fresh.length - known.length),
+      "Легко начать (1–5): " + scoreInfo(fresh, "ease").label +
+        " (ответов: " + scoreInfo(fresh, "ease").count + ")",
+      "Приятность награды (1–5): " + scoreInfo(fresh.filter(row => row.completed), "delight").label +
+        " (ответов: " + scoreInfo(fresh.filter(row => row.completed), "delight").count + ")",
       "Отсутствующие отчёты не учитывались как неуспех.",
       "Результаты не являются статистически значимыми."
     ].join("\n");
