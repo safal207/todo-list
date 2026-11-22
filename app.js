@@ -1238,6 +1238,7 @@ backupImport.addEventListener("click", () => {
           if (oldWallet === null) localStorage.removeItem(window.sdelanoGame.key);
           else localStorage.setItem(window.sdelanoGame.key, oldWallet);
         } catch { /* Warn and preserve as much data as the browser allows. */ }
+        window.dispatchEvent(new Event("sdelano:game-changed"));
         reportBackup("Не хватает места или обнаружен конфликт кошелька. Копия не применена; проверь данные перед повтором.", true);
         return;
       }
