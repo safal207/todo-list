@@ -82,8 +82,12 @@
     piece.style.top = pos.y + "px";
     piece.style.setProperty("--juice-i", index);
     const arc = index - 1.5;
-    piece.style.setProperty("--juice-x", (arc * (kind === "coin" ? 24 : 31)) + "px");
-    piece.style.setProperty("--juice-y", (-18 - (index % 2) * 17) + "px");
+    const dx = arc * (kind === "coin" ? 24 : 31);
+    const dy = -18 - (index % 2) * 17;
+    piece.style.setProperty("--juice-x", dx + "px");
+    piece.style.setProperty("--juice-y", dy + "px");
+    piece.style.setProperty("--juice-x-mid", (dx * .4) + "px");
+    piece.style.setProperty("--juice-y-mid", (dy * .45) + "px");
     piece.style.animationDelay = (index * 50) + "ms";
     if (kind === "coin") {
       const graphic = coin.querySelector(".game-resource-icon svg")?.cloneNode(true);
