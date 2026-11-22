@@ -16,7 +16,7 @@
   if (!panel || !toggle || !details || !tryButton || !status || !game || !coins || !xp) return;
 
   let animationTimer = null;
-  let rewardTimer = null;
+  let rewardTimers = [];
 
   function refresh() {
     const data = game.inspect();
@@ -71,11 +71,11 @@
     status.textContent = levelUp ? "Новый уровень " + levelUp + "! +" + gainedXP + " XP, +" + gainedCoins + " монет" :
       "Получено +" + gainedXP + " XP и +" + gainedCoins + " монет!";
     // The existing task-complete sound plays first.
-    if (rewardTimer !== null) clearTimeout(rewardTimer);
-    rewardTimer = setTimeout(() => {
-      window.taskFeedback?.play(levelUp ? "level" : "coins");
-      rewardTimer = null;
-    }, 250);
+    rewardTimers.forEach(clearTimeout);
+    rewardTimers = [];
+    if (gainedCoins > 0) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("coins"), 170));
+    if (gainedXP > 0) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("xp"), 420));
+    if (levelUp) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("level"), 710));
   });
   window.addEventListener("sdelano:game-error", event => {
     panel.classList.add("game-preview--unavailable");
