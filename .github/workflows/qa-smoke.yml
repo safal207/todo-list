@@ -33,6 +33,7 @@ on:
       - "fox-evolution-art-v2.css"
       - "fox-phone-preview.html"
       - "fox-phone-preview.js"
+      - "fox-phone-feedback.js"
       - "fox-ceremony.css"
       - "fox-ceremony.js"
       - "invite/index.html"
@@ -69,6 +70,7 @@ on:
       - "fox-evolution-art-v2.css"
       - "fox-phone-preview.html"
       - "fox-phone-preview.js"
+      - "fox-phone-feedback.js"
       - "fox-ceremony.css"
       - "fox-ceremony.js"
       - "game.js"
@@ -110,6 +112,7 @@ jobs:
           curl -fL --retry 2 --max-time 30 --output /tmp/sdelano-fox-phone-preview.html "$url"
           grep -q 'Fox Evolution v3' /tmp/sdelano-fox-phone-preview.html
           grep -q 'phone-qa-complete' /tmp/sdelano-fox-phone-preview.html
+          grep -q 'phone-qa-review' /tmp/sdelano-fox-phone-preview.html
           printf 'Mobile preview fetched: %s bytes\\n' "$(wc -c </tmp/sdelano-fox-phone-preview.html)"
       - name: Serve and test mobile + desktop
         run: |
@@ -121,6 +124,7 @@ jobs:
           node tests/fox-evolution-art-v2.mjs
           node tests/fox-ceremony.mjs
           node tests/fox-phone-preview.mjs
+          node tests/fox-phone-feedback.mjs
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
