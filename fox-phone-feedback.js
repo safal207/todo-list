@@ -9,8 +9,30 @@
   const status = document.querySelector("#phone-review-status");
   const output = document.querySelector("#phone-review-output");
   const outputLabel = document.querySelector("#phone-review-output-label");
+  const progress = document.querySelector("#phone-review-step");
+  const prevButton = document.querySelector("#phone-review-prev");
+  const nextButton = document.querySelector("#phone-review-next");
+  const shareButton = document.querySelector("#phone-review-share");
+  const fields = [...panel.querySelectorAll(".phone-review-field")];
   if (!demo || !complete || !panel || !copyButton || !note || !status ||
-      !output || !outputLabel) return;
+      !output || !outputLabel || !progress || !prevButton || !nextButton ||
+      !shareButton || fields.length !== 5) return;
+  let activeQuestion = 0;
+  shareButton.hidden = typeof navigator.share !== "function";
+  function showQuestion() {
+    fields.forEach((field, index) => { field.hidden = index !== activeQuestion; });
+    progress.textContent = "Вопрос " + (activeQuestion + 1) + " из " + fields.length;
+    prevButton.hidden = activeQuestion === 0;
+    nextButton.hidden = activeQuestion === fields.length - 1;
+  }
+  prevButton.addEventListener("click", () => {
+    activeQuestion = Math.max(0, activeQuestion - 1);
+    showQuestion();
+  });
+  nextButton.addEventListener("click", () => {
+    activeQuestion = Math.min(fields.length - 1, activeQuestion + 1);
+    showQuestion();
+  });
 
   const questions = Object.freeze([
     ["look", "Внешний вид и размер"],
@@ -31,6 +53,7 @@
   }
   function update() {
     copyButton.disabled = !reviewReady();
+    shareButton.disabled = !reviewReady();
     if (copyButton.disabled) {
       status.textContent = complete.disabled ?
         "Поставь хотя бы одну оценку. Остальные вопросы можно пропустить." :
@@ -60,6 +83,20 @@
   note.addEventListener("input", () => {
     output.hidden = true;
     outputLabel.hidden = true;
+  });
+
+  shareButton.addEventListener("click", async () => {
+    if (!reviewReady() || typeof navigator.share !== "function") return;
+    try {
+      // Native share sheet only from an explicit user gesture. No default
+      // recipient or automatic post: the user chooses the destination.
+      await navigator.share({ title: "Сделано · Fox Evolution", text: formatReview() });
+      status.textContent = "Меню телефона закрыто. Отправка зависит только от твоего выбора.";
+    } catch (error) {
+      status.textContent = error?.name === "AbortError"
+        ? "Поделиться отменено. Отзыв не отправлен автоматически."
+        : "Не удалось открыть меню. Используй «Скопировать отзыв».";
+    }
   });
 
   copyButton.addEventListener("click", async () => {
@@ -93,6 +130,8 @@
   });
 
   function resetVoluntaryReview() {
+    activeQuestion = 0;
+    showQuestion();
     for (const radio of panel.querySelectorAll('input[type="radio"]')) radio.checked = false;
     note.value = "";
     output.value = "";
