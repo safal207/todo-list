@@ -66,7 +66,9 @@ try {
         const balance = window.sdelanoGame.inspect();
         return [balance.coins, balance.xp, balance.energy];
       }), [10, 20, 5], "Wallet must award new completion immediately");
-      // The UI intentionally counts up for ~480ms; wait for the animation to settle.
+      // The wallet publishes the final value before the count-up starts.
+      // Allow the ~480ms animation to finish before asserting the DOM.
+      await page.waitForTimeout(650);
       await page.waitForFunction(() => {
         const amounts = Array.from(document.querySelectorAll("#game-preview .game-resource-amount"),
           el => el.textContent.trim());
