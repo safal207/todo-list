@@ -240,9 +240,11 @@ function saveTasks() {
     unsavedTasks = false;
     setStorageWarning(false);
     window.dispatchEvent(new Event("sdelano:tasks-changed"));
+    return true;
   } catch {
     unsavedTasks = true;
     setStorageWarning(true);
+    return false;
   }
 }
 
@@ -1020,7 +1022,8 @@ function toggleTask(task, row, checked, keyboardFocus) {
   }
   row.classList.toggle("task-finished", task.done);
   clockUpdates.get(task)();
-  saveTasks();
+  const persisted = saveTasks();
+  if (checked && persisted) window.sdelanoGame?.awardTask(task.id, now);
   recordTaskActivity(task.done ? "done" : "reopen");
   updateProgress();
   if (newFirstWin || newThreeSteps) setProgressExpanded(true);
@@ -1222,6 +1225,8 @@ backupImport.addEventListener("click", () => {
       needsTaskMigration = false;
       unsavedTasks = false;
       tasks.push(...plan.added);
+      // Completed tasks imported from backups must never mint new rewards.
+      window.sdelanoGame?.excludeCompleted(plan.added.filter(task => task.done).map(task => task.id));
       plan.added.forEach(appendTask);
     }
     const importedRecord = selected.achievements.record;
