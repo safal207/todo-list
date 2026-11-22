@@ -140,13 +140,15 @@ try {
       adopt: merge.mergeWallet(empty, wallet, null).game?.purchases?.length,
       remoteChanged: merge.mergeWallet(wallet, changedA, wallet).game?.grants.length,
       divergent: merge.mergeWallet(changedA, changedB, wallet).conflict,
-      downgrade: merge.mergeWallet(wallet, null, wallet).conflict
+      downgrade: merge.mergeWallet(wallet, null, wallet).conflict,
+      reset: merge.mergeWallet({ ...wallet, grants: [] }, wallet, wallet).conflict
     };
   });
   assert.equal(checks.adopt, 4);
   assert.equal(checks.remoteChanged, archive.game.grants.length + 1);
   assert.equal(checks.divergent, true);
   assert.equal(checks.downgrade, true);
+  assert.equal(checks.reset, true, "Clearing wallet on one device cannot erase earned balance");
 
   await sourceContext.close();
   await targetContext.close();
