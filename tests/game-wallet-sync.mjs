@@ -165,7 +165,11 @@ try {
       remoteChanged: merge.mergeWallet(wallet, changedA, wallet).game?.grants.length,
       divergent: merge.mergeWallet(changedA, changedB, wallet).conflict,
       downgrade: merge.mergeWallet(wallet, null, wallet).conflict,
-      reset: merge.mergeWallet({ ...wallet, grants: [] }, wallet, wallet).conflict
+      reset: merge.mergeWallet({ ...wallet, grants: [] }, wallet, wallet).conflict,
+      changedOldReward: merge.mergeWallet({
+        ...wallet, grants: wallet.grants.map((g,i) => i ? g : { ...g, coins: g.coins + 1 })
+      }, wallet, wallet).conflict,
+      removedPurchase: merge.mergeWallet({ ...wallet, purchases: [] }, wallet, wallet).conflict
     };
   });
   assert.equal(checks.adopt, 4);
@@ -173,6 +177,8 @@ try {
   assert.equal(checks.divergent, true);
   assert.equal(checks.downgrade, true);
   assert.equal(checks.reset, true, "Clearing wallet on one device cannot erase earned balance");
+  assert.equal(checks.changedOldReward, true, "Historical XP/coin grants are immutable");
+  assert.equal(checks.removedPurchase, true, "Previously purchased cosmetics cannot disappear silently");
 
   await sourceContext.close();
   await targetContext.close();
