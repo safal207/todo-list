@@ -22,7 +22,9 @@
     // A v1 client overwriting a synced v2 snapshot is a destructive downgrade.
     if (base && !remote && base.grants?.length) return { game: null, conflict: true };
     let selected;
-    if (sameWallet(local, remote)) selected = local || remote;
+    if (!local) selected = remote;
+    else if (!remote) selected = local;
+    else if (sameWallet(local, remote)) selected = local;
     else if (base && sameWallet(local, base)) selected = remote;
     else if (base && sameWallet(remote, base)) selected = local;
     else if (emptyWallet(local)) selected = remote;
