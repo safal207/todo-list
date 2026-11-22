@@ -17,11 +17,22 @@
   const sameWallet = (a, b) => same(walletCore(a), walletCore(b));
   const emptyWallet = value => !value || (!value.grants.length && !(value.purchases || []).length &&
     (!value.energy || value.energy.value === 5));
+  function containsBaseOperations(candidate, base) {
+    if (!base || (!base.grants?.length && !(base.purchases || []).length)) return true;
+    if (!candidate) return false;
+    // Economic operations are immutable. No valid edit removes old grants or
+    // purchases, even when some newer operations remain in the wallet.
+    const grants = new Map((candidate.grants || []).map(g => [g.key, JSON.stringify(g)]));
+    const purchases = new Map((candidate.purchases || []).map(p => [p.id, JSON.stringify(p)]));
+    return (base.grants || []).every(g => grants.get(g.key) === JSON.stringify(g)) &&
+      (base.purchases || []).every(p => purchases.get(p.id) === JSON.stringify(p));
+  }
   function mergeWallet(local, remote, base) {
     if (!local && !remote) return { game: null, conflict: false };
     // A v1 client overwriting a synced v2 snapshot is a destructive downgrade.
-    if (base && !emptyWallet(base) && (emptyWallet(local) || emptyWallet(remote))) {
-      return { game: null, conflict: true }; // Never silently reset a previously earned wallet.
+    if (base && (!containsBaseOperations(local, base) ||
+      !containsBaseOperations(remote, base))) {
+      return { game: null, conflict: true }; // An immutable ledger cannot lose existing operations.
     }
     let selected;
     if (!local) selected = remote;
