@@ -150,6 +150,7 @@
       throw new Error("Облако обновлено, но устройство не сохранило данные. Не очищай браузер; проверь место и повтори.");
     }
     window.dispatchEvent(new Event("sdelano:cloud-applied"));
+    if (walletEnabled() && snapshot.game) window.dispatchEvent(new Event("sdelano:game-changed"));
   }
 
   // An origin-wide lock serializes cloud work with existing local task writes.
