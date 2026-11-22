@@ -44,6 +44,7 @@ try {
 
     const first = page.locator('li.task:has-text("Первая задача игры") .task-checkbox');
     await first.uncheck();
+    await page.locator('.task-panel[aria-busy="true"]').waitFor({ state: "hidden" });
     await page.locator('[data-filter="active"]').click();
     await first.check();
     await page.locator('.task-panel[aria-busy="true"]').waitFor({ state: "hidden" });
