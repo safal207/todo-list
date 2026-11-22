@@ -31,17 +31,17 @@
     <link rel="stylesheet" href="game-preview.css?v=4">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
-    <script src="game.js?v=3" defer></script>
+    <script src="game.js?v=5" defer></script>
     <script src="game-preview.js?v=2" defer></script>
     <script src="focus.js?v=1" defer></script>
     <script src="shop.js?v=1" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js?v=pilot-1" defer></script>
-    <script src="backup.js?v=1" defer></script>
+    <script src="backup.js?v=2" defer></script>
     <script src="cloud-config.js?v=1" defer></script>
-    <script src="cloud-merge.js?v=1" defer></script>
-    <script src="app.js?v=cloud-1" defer></script>
-    <script src="cloud-sync.js?v=1" defer></script>
+    <script src="cloud-merge.js?v=2" defer></script>
+    <script src="app.js?v=wallet-2" defer></script>
+    <script src="cloud-sync.js?v=2" defer></script>
   </head>
   <body>
     <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
@@ -305,6 +305,10 @@
                       <button id="cloud-signout" class="backup-cancel" type="button">Выйти</button>
                     </div>
                   </div>
+                  <div class="backup-preview">
+                    <button id="cloud-wallet-toggle" class="backup-button" type="button" hidden>Включить перенос монет и магазина</button>
+                  </div>
+                  <p id="cloud-wallet-detail" class="backup-hint">Игровые ресурсы пока хранятся только на этом устройстве.</p>
                   <p id="cloud-status" class="backup-status" role="status" aria-live="polite"></p>
                   <p class="backup-hint">Нужен интернет. Если изменения на устройствах конфликтуют, синхронизация останавливается без перезаписи. Перед подключением сохрани резервную копию JSON.</p>
                 </div>
@@ -312,11 +316,11 @@
               <details id="backup-tools" class="backup-tools">
                 <summary>Резервная копия задач</summary>
                 <div class="backup-content">
-                  <p>Сохрани свои дела на телефон или компьютер, чтобы восстановить их в другом браузере. Файл содержит названия задач — храни его у себя.</p>
-                  <button id="backup-download" class="backup-button" type="button">Скачать копию (.json)</button>
+                  <p>Полная копия v2 сохраняет задачи, достижения, монеты, XP, энергию и купленные предметы. Файл содержит личные названия задач — никому не передавай без необходимости.</p>
+                  <button id="backup-download" class="backup-button" type="button">Скачать полную копию (.json)</button>
                   <label for="backup-file">Восстановить из файла</label>
                   <input id="backup-file" type="file" accept=".json,application/json" aria-describedby="backup-file-hint">
-                  <p id="backup-file-hint" class="backup-hint">При восстановлении новые дела добавятся к текущим. Совпадающие задачи не перезаписываются.</p>
+                  <p id="backup-file-hint" class="backup-hint">Поддерживаются копии v1 и v2. Задачи добавляются без дублей. Кошелёк v2 переносится только в пустую игровую коллекцию либо при точном совпадении: разные непустые кошельки не складываются.</p>
                   <div id="backup-preview" class="backup-preview" hidden>
                     <p id="backup-preview-summary"></p>
                     <button id="backup-import" class="backup-button" type="button">Добавить задачи из копии</button>

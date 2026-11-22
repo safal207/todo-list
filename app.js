@@ -1141,11 +1141,11 @@ backupDownload.addEventListener("click", () => {
       return;
     }
     syncStoredTasks();
-    const json = backup.create(tasks, {
+    const json = backup.createPortable(tasks, {
       firstWin: firstWinAchieved,
       threeSteps: threeStepsAchieved,
       record: milestoneRecord
-    });
+    }, window.sdelanoGame.exportWallet());
     const blob = new Blob([json], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -1186,7 +1186,9 @@ backupFile.addEventListener("change", async () => {
     backupPreviewSummary.textContent = "В копии: " + parsed.tasks.length +
       " задач. Новых для добавления: " + plan.added.length +
       ". Уже есть в списке: " + plan.skipped +
-      ". Действующие задачи не будут удалены.";
+      ". Действующие задачи не будут удалены. " +
+      (parsed.game ? "Игровой кошелёк, покупки и энергия будут перенесены безопасно." :
+        "Это старая копия: игровые награды из неё не восстановятся.");
     backupPreview.hidden = false;
     reportBackup("Файл проверен. Нажми «Добавить задачи из копии», чтобы восстановить список.");
   } catch (error) {
@@ -1210,24 +1212,45 @@ backupImport.addEventListener("click", () => {
       return;
     }
     const plan = backup.plan(tasks, selected.tasks);
-    if (plan.added.length) {
+    // Never import a different nonempty wallet over earned coins or purchases.
+    let plannedWallet = null;
+    try {
+      if (selected.game) plannedWallet = window.sdelanoGame.planWalletImport(selected.game);
+    } catch (error) {
+      reportBackup(error.message || "Не удалось объединить игровые кошельки.", true);
+      return;
+    }
+    if (plan.added.length || plannedWallet) {
       const combined = [...tasks, ...plan.added];
       let raw;
+      // Save both snapshots before mutating the UI, with best-effort rollback.
+      // The task and wallet keys are separate localStorage records.
+      const oldTasks = localStorage.getItem(STORAGE_KEY);
+      const oldWallet = localStorage.getItem(window.sdelanoGame.key);
       try {
         raw = JSON.stringify(combined);
-        // Write first, update in-memory list only after the whole write succeeds.
-        localStorage.setItem(STORAGE_KEY, raw);
+        if (plan.added.length) localStorage.setItem(STORAGE_KEY, raw);
+        if (plannedWallet) window.sdelanoGame.restoreWallet(selected.game);
       } catch {
-        reportBackup("Не хватает места для восстановления. Текущий список сохранён без изменений.", true);
+        try {
+          if (oldTasks === null) localStorage.removeItem(STORAGE_KEY);
+          else localStorage.setItem(STORAGE_KEY, oldTasks);
+          if (oldWallet === null) localStorage.removeItem(window.sdelanoGame.key);
+          else localStorage.setItem(window.sdelanoGame.key, oldWallet);
+        } catch { /* Warn and preserve as much data as the browser allows. */ }
+        window.dispatchEvent(new Event("sdelano:game-changed"));
+        reportBackup("Не хватает места или обнаружен конфликт кошелька. Копия не применена; проверь данные перед повтором.", true);
         return;
       }
-      savedTaskSnapshot = raw;
-      needsTaskMigration = false;
-      unsavedTasks = false;
-      tasks.push(...plan.added);
-      // Completed tasks imported from backups must never mint new rewards.
-      window.sdelanoGame?.excludeCompleted(plan.added.filter(task => task.done).map(task => task.id));
-      plan.added.forEach(appendTask);
+      if (plan.added.length) {
+        savedTaskSnapshot = raw;
+        needsTaskMigration = false;
+        unsavedTasks = false;
+        tasks.push(...plan.added);
+        // Imported completed tasks without local grants must not mint rewards.
+        window.sdelanoGame?.excludeCompleted(plan.added.filter(task => task.done).map(task => task.id));
+        plan.added.forEach(appendTask);
+      }
     }
     const importedRecord = selected.achievements.record;
     milestoneRecord = Math.max(milestoneRecord, importedRecord);
@@ -1246,7 +1269,10 @@ backupImport.addEventListener("click", () => {
     updateList();
     clearBackupSelection();
     reportBackup("Восстановлено: " + plan.added.length +
-      " задач. Уже существующих: " + plan.skipped + ". Прогресс и таймеры сохранены.");
+      " задач. Уже существующих: " + plan.skipped +
+      (selected.game ? ". Игровые монеты, XP, энергия и покупки перенесены." :
+        ". Это копия v1: игровые ресурсы не изменены.") +
+      " Прогресс и таймеры сохранены.");
     window.dispatchEvent(new Event("sdelano:tasks-changed"));
     backupDownload.focus({ preventScroll: true });
   });

@@ -61,6 +61,24 @@
     return json;
   }
 
+  // Portable v2 contains tasks, achievements and the complete validated game
+  // ledger. Keep create() v1 for legacy cloud clients and existing consumers.
+  function createPortable(tasks, achievements, wallet) {
+    const game = window.sdelanoGame;
+    if (!game) throw new Error("Игровой модуль не загружен.");
+    const backup = {
+      format, version: 2, exportedAt: new Date().toISOString(),
+      tasks: validateTasks(tasks),
+      achievements: validateAchievements(achievements),
+      game: game.cloneWallet(wallet)
+    };
+    const json = JSON.stringify(backup, null, 2);
+    if (new Blob([json]).size > maxBytes) {
+      throw new Error("Полная копия превышает 2 МБ. Не очищай браузер; сократи список задач.");
+    }
+    return json;
+  }
+
   function parse(text) {
     if (typeof text !== "string" || new Blob([text]).size > maxBytes) {
       throw new Error("Размер файла превышает допустимые 2 МБ.");
@@ -69,18 +87,24 @@
     try { payload = JSON.parse(text); }
     catch { throw new Error("Файл не является корректным JSON."); }
     if (!payload || typeof payload !== "object" || Array.isArray(payload) ||
-        payload.format !== format || payload.version !== version) {
+        payload.format !== format || ![version, 2].includes(payload.version)) {
       throw new Error("Неподдерживаемая резервная копия «Сделано».");
     }
     if (typeof payload.exportedAt !== "string" ||
         !Number.isFinite(Date.parse(payload.exportedAt))) {
       throw new Error("В файле отсутствует дата создания копии.");
     }
-    return {
+    const result = {
       exportedAt: payload.exportedAt,
       tasks: validateTasks(payload.tasks),
-      achievements: validateAchievements(payload.achievements)
+      achievements: validateAchievements(payload.achievements),
+      version: payload.version
     };
+    if (payload.version === 2) {
+      if (!window.sdelanoGame) throw new Error("Невозможно проверить игровой кошелёк.");
+      result.game = window.sdelanoGame.cloneWallet(payload.game);
+    } else result.game = null;
+    return result;
   }
 
   function plan(existing, incoming) {
@@ -91,5 +115,5 @@
     };
   }
 
-  window.sdelanoBackup = Object.freeze({ create, parse, plan, maxBytes });
+  window.sdelanoBackup = Object.freeze({ create, createPortable, parse, plan, maxBytes });
 })();
