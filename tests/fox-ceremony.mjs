@@ -98,12 +98,20 @@ try {
         "Celebration portrait must use the newly unlocked artwork");
       if (reducedMotion) {
         assert.equal(earned.sparkCount, 0, "No star animation when reduced motion is on");
+        assert.equal(await page.locator(".fox-ceremony-previous").count(), 0,
+          "Reduced motion must not create dissolving artwork");
         assert.equal(await page.locator(".fox-evolution--grown").count(), 0);
         const animation = await page.locator(".fox-ceremony-portrait").evaluate(el =>
           getComputedStyle(el, "::before").animationName);
         assert.equal(animation, "none");
       } else {
-        assert.equal(earned.sparkCount, 9, "Joy burst must have nine decoration-only stars");
+        assert.equal(earned.sparkCount, 6, "Joy burst must have six subtle decoration-only sparks");
+        assert.equal(await page.locator(".mini-hero .fox-ceremony-previous").count(), 1,
+          "The previous age must dissolve into the newly earned illustration");
+        assert.equal(await page.locator(".mini-hero .fox-ceremony-previous").getAttribute("data-from"), "cub");
+        const previousAnimation = await page.locator(".mini-hero .fox-ceremony-previous").evaluate(el =>
+          getComputedStyle(el).animationName);
+        assert.match(previousAnimation, /sdelano-fox-ceremony-crossfade/);
         const animation = await page.locator(".fox-ceremony-portrait").evaluate(el =>
           getComputedStyle(el, "::before").animationName);
         assert.match(animation, /sdelano-fox-ceremony-paint/);
