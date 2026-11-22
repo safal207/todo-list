@@ -31,6 +31,8 @@ on:
       - "fox-evolution.css"
       - "fox-evolution-art-v2.js"
       - "fox-evolution-art-v2.css"
+      - "fox-ceremony.css"
+      - "fox-ceremony.js"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -63,6 +65,8 @@ on:
       - "fox-evolution.css"
       - "fox-evolution-art-v2.js"
       - "fox-evolution-art-v2.css"
+      - "fox-ceremony.css"
+      - "fox-ceremony.js"
       - "game.js"
       - "focus.js"
       - "shop.js"
@@ -100,6 +104,7 @@ jobs:
           node tests/game-juice.mjs
           node tests/fox-evolution.mjs
           node tests/fox-evolution-art-v2.mjs
+          node tests/fox-ceremony.mjs
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
