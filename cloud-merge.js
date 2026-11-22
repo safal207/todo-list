@@ -20,7 +20,9 @@
   function mergeWallet(local, remote, base) {
     if (!local && !remote) return { game: null, conflict: false };
     // A v1 client overwriting a synced v2 snapshot is a destructive downgrade.
-    if (base && !remote && base.grants?.length) return { game: null, conflict: true };
+    if (base && !emptyWallet(base) && (emptyWallet(local) || emptyWallet(remote))) {
+      return { game: null, conflict: true }; // Never silently reset a previously earned wallet.
+    }
     let selected;
     if (!local) selected = remote;
     else if (!remote) selected = local;
