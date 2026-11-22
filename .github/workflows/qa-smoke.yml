@@ -19,6 +19,10 @@ on:
       - "share-poster.js"
       - "clock.js"
       - "effects.js"
+      - "game-preview.js"
+      - "game-preview.css"
+      - "game-preview.js"
+      - "game-preview.css"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -72,6 +76,7 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
           node tests/qa-smoke.mjs
+          node tests/game-preview.mjs
           node tests/first-visit.mjs
           node tests/pilot-results.mjs
           node tests/task-edit.mjs
