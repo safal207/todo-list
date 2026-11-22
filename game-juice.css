@@ -112,7 +112,7 @@
 @keyframes sdelano-juice-fly {
   0% { opacity: 0; transform: translate(-50%, 12px) scale(.35) rotate(-70deg); }
   20% { opacity: 1; }
-  55% { opacity: 1; transform: translate(calc(-50% + var(--juice-x) * .4), calc(-18px + var(--juice-y) * .45)) scale(1.22) rotate(70deg); }
+  55% { opacity: 1; transform: translate(calc(-50% + var(--juice-x-mid)), calc(-18px + var(--juice-y-mid))) scale(1.22) rotate(70deg); }
   100% { opacity: 0; transform: translate(calc(-50% + var(--juice-x)), calc(-18px + var(--juice-y))) scale(.5) rotate(155deg); }
 }
 @keyframes sdelano-juice-float-label {
