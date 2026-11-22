@@ -152,6 +152,23 @@ try {
     await context.close();
   }
 
+  // Fail closed if transactional purchase coordination is unavailable.
+  {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await enter(page);
+    await seed(page, 2);
+    const before = await page.evaluate(() => localStorage.getItem("sdelano.game.v1"));
+    const refused = await page.evaluate(async () => {
+      Object.defineProperty(window, "indexedDB", { configurable: true, value: undefined });
+      return await window.sdelanoGame.buyItem("scarf");
+    });
+    assert.equal(refused.success, false, "Purchase must fail without IndexedDB");
+    assert.equal((await wallet(page)).coins, 100);
+    assert.equal(await page.evaluate(() => localStorage.getItem("sdelano.game.v1")), before);
+    await context.close();
+  }
+
   // Cannot buy without coins. A failed purchase keeps the wallet byte-identical.
   {
     const context = await browser.newContext();
