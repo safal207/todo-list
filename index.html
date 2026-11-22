@@ -34,6 +34,7 @@
     <script src="game.js?v=1" defer></script>
     <script src="game-preview.js?v=2" defer></script>
     <script src="focus.js?v=1" defer></script>
+    <script src="shop.js?v=1" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js?v=pilot-1" defer></script>
     <script src="backup.js?v=1" defer></script>
@@ -116,6 +117,46 @@
           <p id="game-focus-status" class="game-focus-status" role="status" aria-live="polite">Вкладка должна оставаться открытой. При уходе таймер ставится на паузу.</p>
           <p class="game-focus-note">При нулевой энергии список задач работает как обычно. Заряд списывается только при получении бонуса.</p>
         </section>
+        <details id="game-shop" class="game-shop">
+          <summary><span>Магазин лисёнка</span><span id="game-shop-balance" class="game-shop-wallet">0 монет</span></summary>
+          <div class="game-shop-content">
+            <div class="game-shop-intro">
+              <span class="game-hero-fox game-shop-fox" id="game-shop-fox">
+                <img src="assets/fox-mascot.webp" width="96" height="96" alt="Лисёнок" loading="lazy">
+                <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span>
+              </span>
+              <p>Выполняй настоящие дела и украшай своего лисёнка. Монеты игровые, все покупки — только за успехи в приложении.</p>
+            </div>
+            <ul class="game-shop-grid" aria-label="Предметы магазина">
+              <li class="game-shop-card" data-item="scarf">
+                <span class="game-shop-icon game-shop-icon--scarf" aria-hidden="true">🧣</span>
+                <span class="game-shop-name">Золотой шарфик</span>
+                <span class="game-shop-card-status">Цена: 50 монет</span>
+                <button class="game-shop-action" type="button">Купить · 50</button>
+              </li>
+              <li class="game-shop-card" data-item="glasses">
+                <span class="game-shop-icon game-shop-icon--glasses" aria-hidden="true">🕶️</span>
+                <span class="game-shop-name">Синие очки</span>
+                <span class="game-shop-card-status">Цена: 100 монет</span>
+                <button class="game-shop-action" type="button">Купить · 100</button>
+              </li>
+              <li class="game-shop-card" data-item="cosmic">
+                <span class="game-shop-icon game-shop-icon--cosmic" aria-hidden="true">🌌</span>
+                <span class="game-shop-name">Космическая тема</span>
+                <span class="game-shop-card-status">Цена: 150 монет</span>
+                <button class="game-shop-action" type="button">Купить · 150</button>
+              </li>
+              <li class="game-shop-card" data-item="sparkle">
+                <span class="game-shop-icon game-shop-icon--sparkle" aria-hidden="true">✨</span>
+                <span class="game-shop-name">Искры победы</span>
+                <span class="game-shop-card-status">Цена: 200 монет</span>
+                <button class="game-shop-action" type="button">Купить · 200</button>
+              </li>
+            </ul>
+            <p id="game-shop-message" class="game-shop-message" role="status" aria-live="polite">Выбирай награду за достигнутые цели. Купленные предметы остаются в коллекции.</p>
+            <p class="game-shop-note">Предмет покупается один раз, затем его можно надевать и снимать без дополнительных списаний.</p>
+          </div>
+        </details>
         <button id="game-preview-try" class="game-preview-try" type="button">Послушать награду (демо)</button>
         <p id="game-preview-feedback" class="game-preview-feedback" role="status" aria-live="polite"></p>
       </div>
@@ -135,7 +176,8 @@
                 <h1 id="page-heading" tabindex="-1">Список задач</h1>
                 <p>Начни с одного дела.</p>
               </div>
-              <img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
+              <span class="game-hero-fox"><img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
+                <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span></span>
             </div>
             <form id="task-form">
               <label for="task-title">Новая задача</label>
