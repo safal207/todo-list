@@ -233,7 +233,8 @@
 @media (prefers-reduced-motion: no-preference) {
   .fox-evolution-core { transition: transform .48s cubic-bezier(.2,.75,.18,1); }
   .fox-evolution-tail, .fox-evolution-halo, .fox-evolution-crest { transition: transform .48s ease, background .4s ease, opacity .35s ease; }
-  .fox-evolution--grown .fox-evolution-core { animation: sdelano-fox-grow 1.05s ease-out both; }
+  /* Animate the halo rather than the body: age-specific body scale stays stable. */
+  .fox-evolution--grown .fox-evolution-halo { animation: sdelano-fox-grow 1.05s ease-out both; }
   .fox-evolution-notice:not([hidden]) { animation: sdelano-fox-grow-notice .55s ease-out both; }
 }
 @media (prefers-reduced-motion: reduce) {
