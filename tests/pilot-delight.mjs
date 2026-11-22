@@ -47,6 +47,7 @@ try {
       await page.locator("#task-title").press("Enter");
       await page.locator(".task-checkbox").first().check();
       await page.locator('.task-panel[aria-busy="true"]').waitFor({ state: "hidden" });
+      await page.waitForFunction(() => window.sdelanoAnalytics.pilotSummary()?.completed === true);
       assert.equal((await page.evaluate(() => window.sdelanoAnalytics.pilotSummary())).completed, true);
       await page.goto("http://127.0.0.1:8765/pilot/", { waitUntil: "networkidle" });
       assert.equal(await page.locator("#pilot-delight-question").isVisible(), true);
