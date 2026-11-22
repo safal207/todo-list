@@ -68,6 +68,7 @@ try {
           localStorage.setItem("sdelano.game.v1", JSON.stringify(record));
         }, wallet(xp, stage === "master"));
         await page.goto(base, { waitUntil: "networkidle" });
+        await page.locator("body.fox-art-ready").waitFor();
         await page.evaluate(() => {
           if (document.querySelector("#welcome")?.open)
             document.querySelector("#welcome-start")?.click();
@@ -114,5 +115,18 @@ try {
       assert.deepEqual(errors, [], "JS errors: " + errors.join(" | "));
     } finally { await ctx.close(); }
   }
+  // Temporary loss of the new asset must fall back to the original mascot.
+  const fallback = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const offline = await fallback.newPage();
+  try {
+    await offline.route("**/assets/fox-evolution-stages.webp", route => route.abort());
+    await offline.goto(base, { waitUntil: "networkidle" });
+    assert.equal(await offline.locator("body.fox-art-ready").count(), 0,
+      "Unavailable art should not activate the 4-frame CSS");
+    assert.equal(await offline.locator(".fox-evolution-core img").first()
+      .evaluate(el => getComputedStyle(el).opacity), "1",
+      "Original approved fox must remain visible when atlas is missing");
+    assert.equal(await offline.locator("#game-preview-toggle").isVisible(), true);
+  } finally { await fallback.close(); }
   console.log("Fox art v2 QA passed:", engine);
 } finally { await browser.close(); }
