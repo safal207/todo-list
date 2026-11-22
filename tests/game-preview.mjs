@@ -42,7 +42,7 @@ try {
         game: localStorage.getItem("sdelano.game.v1")
       }));
       await page.locator("#game-preview-try").click();
-      assert.match(await page.locator("#game-preview-feedback").textContent(), /Демо.*баланс не изменился/);
+      assert.match(await page.locator("#game-preview-feedback").textContent(), /Только звук и анимация.*баланс не изменён/);
       assert.ok((await page.evaluate(() => window.__gameSounds)).includes("reward"), "Demo must use the reward sound");
       const after = await page.evaluate(() => ({
         tasks: localStorage.getItem("todo-list.tasks.v1"),
@@ -61,8 +61,8 @@ try {
       await page.locator(".task-checkbox").first().check();
       await page.locator('.task-panel[aria-busy="true"]').waitFor({ state: "hidden" });
       assert.match(await page.locator("#progress-summary").textContent(), /1 из 1/);
-      assert.deepEqual(await panel.locator(".game-resource-amount").allTextContents(), ["0", "0 XP", "5/5"],
-        "PR 1 must not invent rewards on completion");
+      assert.deepEqual(await panel.locator(".game-resource-amount").allTextContents(), ["10", "20 XP", "5/5"],
+        "New completed task must grant base XP, coins and first-of-day bonus");
       assert.deepEqual(errors, [], "No page errors: " + errors.join(", "));
       console.log("Game preview QA passed:", engine, width);
     } finally {
