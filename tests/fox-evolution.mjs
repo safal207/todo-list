@@ -15,7 +15,7 @@ function seedWallet(xp, cosmetics = false, resting = false) {
     const amount = Math.min(100, left);
     grants.push({
       key: "task:seed-" + index, xp: amount, coins: 10,
-      day: "2026-11-23", at: Date.now()
+      day: "2020-01-01", at: Date.now()
     });
     left -= amount;
   }
