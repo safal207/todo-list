@@ -1,4 +1,4 @@
-/* Visual-only game resource preview. No resource balance is stored by PR 1. */
+/* Responsive game resource bar: XP and coins are earned, energy remains a preview. */
 .game-preview {
   position: relative;
   isolation: isolate;
@@ -119,3 +119,12 @@
   .game-resource-amount { font-size: .82rem; }
   .game-preview-chevron { font-size: 1.2rem; padding: 0; }
 }
+
+.game-level-details { display: flex; justify-content: space-between; gap: .8rem; margin-top: .8rem; font-size: .82rem; color: #49377c; font-weight: 750; }
+.game-level-progress { width: 100%; height: .65rem; margin-top: .28rem; border: none; border-radius: 99px; overflow: hidden; accent-color: #7154d9; background: #e0d8f8; }
+.game-level-progress::-webkit-progress-bar { background: #e0d8f8; border-radius: 99px; }
+.game-level-progress::-webkit-progress-value { background: linear-gradient(90deg, #4caff3, #8b66e6); border-radius: 99px; }
+.game-level-progress::-moz-progress-bar { background: #745ce0; border-radius: 99px; }
+.game-preview--unavailable { border-color: #bb665b; }
+.game-preview--unavailable .game-preview-feedback { color: #992b25; }
+.game-preview-try:disabled { cursor: not-allowed; opacity: .55; }
