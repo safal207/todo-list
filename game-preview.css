@@ -128,3 +128,28 @@
 .game-preview--unavailable { border-color: #bb665b; }
 .game-preview--unavailable .game-preview-feedback { color: #992b25; }
 .game-preview-try:disabled { cursor: not-allowed; opacity: .55; }
+
+/* Focus mode stays inside the collapsible resource details, keeping tasks primary. */
+.game-focus { margin-top: .9rem; padding: .85rem; border: 1px solid #b7d8c2; border-radius: .85rem; background: linear-gradient(135deg, #f1fff2, #f2f2ff); }
+.game-focus-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .2rem .75rem; }
+.game-focus-heading strong { color: #28654c; font-size: 1rem; font-weight: 850; }
+.game-focus-heading span { color: #386852; font-size: .79rem; font-weight: 700; }
+.game-energy-caption { display: block; margin: .45rem 0 .22rem; font-size: .75rem; color: #466457; }
+.game-energy-progress, .game-focus-progress { display: block; width: 100%; height: .55rem; border: 0; border-radius: 99px; overflow: hidden; accent-color: #52b97a; background: #dcefe2; }
+.game-energy-progress::-webkit-progress-bar, .game-focus-progress::-webkit-progress-bar { border-radius: 99px; background: #dcefe2; }
+.game-energy-progress::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg,#22c49b,#9deb65); }
+.game-focus-progress::-webkit-progress-value { border-radius: 99px; background: linear-gradient(90deg,#60a4ff,#896deb); }
+.game-energy-progress::-moz-progress-bar { border-radius: 99px; background: #40c59c; }
+.game-focus-progress::-moz-progress-bar { border-radius: 99px; background: #737bea; }
+.game-focus-meter { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1.25rem; margin-block: .7rem .5rem; }
+.game-focus-timer { color: #30246a; font-size: clamp(2rem, 6vw, 2.6rem); font-weight: 850; line-height: 1.1; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.game-focus-meter-copy { display: grid; gap: .12rem; }
+.game-focus-meter-copy strong { color: #4f45a6; font-size: .9rem; }
+.game-focus-meter-copy span { color: #635b71; font-size: .76rem; }
+.game-focus-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; }
+.game-focus-actions button { min-height: 2.5rem; padding: .45rem .8rem; border-radius: .6rem; border: 1.5px solid #285d52; background: linear-gradient(120deg,#5bd49b,#b3f27b); color: #16402c; font-size: .84rem; font-weight: 800; }
+.game-focus-actions button.game-focus-cancel { border-color: #c9bdd7; color: #4c435a; background: #fff; }
+.game-focus-actions button:disabled { cursor: wait; opacity: .6; }
+.game-focus-status { margin-top: .55rem; color: #395b4f; font-size: .82rem; font-weight: 700; }
+.game-focus-note { margin-top: .35rem; font-size: .74rem; line-height: 1.4; color: #695d71; }
+@media (prefers-reduced-motion: reduce) { .game-focus-actions button { transition: none; } }
