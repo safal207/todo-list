@@ -31,6 +31,28 @@
 .phone-qa-footer{margin:1rem 0;color:#6f4a36;font-size:.8rem;line-height:1.55}
 .phone-qa-footer a{color:#843e1f;text-decoration:underline}
 .phone-qa-hint{font-size:.8rem;margin-top:.55rem;color:#74503e}
+.phone-review{margin:.9rem 0 0;border:1.5px solid #d8af7a;background:#fffbf1;border-radius:.85rem;overflow:hidden;color:#653a20}
+.phone-review>summary{padding:.85rem .75rem;cursor:pointer;min-height:48px;font-size:.92rem;font-weight:850;list-style-position:inside}
+.phone-review>summary:focus-visible{outline:3px solid #7044aa;outline-offset:-3px}
+.phone-review-body{padding:0 .8rem .9rem}
+.phone-review-body p{font-size:.79rem;line-height:1.45;color:#815535;margin:.1rem 0 .8rem}
+.phone-review-field{border:0;padding:0;margin:0 0 .9rem;min-width:0}
+.phone-review-field legend{font-size:.85rem;font-weight:800;color:#67371d;margin:0 0 .36rem}
+.phone-review-scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.45rem}
+.phone-review-scale label{position:relative;min-width:0;cursor:pointer}
+.phone-review-scale input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}
+.phone-review-scale label span{display:flex;justify-content:center;align-items:center;min-height:44px;border:1.5px solid #cf9e65;border-radius:.68rem;background:#fff8e8;color:#653a20;font-weight:900}
+.phone-review-scale input:checked+span{background:#ffc86f;border-color:#873e19;box-shadow:0 2px 0 #a56835}
+.phone-review-scale input:focus-visible+span{outline:3px solid #7144a5;outline-offset:2px}
+.phone-review-note{display:block;font-weight:750;font-size:.82rem;margin:.35rem 0}
+.phone-review textarea{display:block;width:100%;box-sizing:border-box;min-height:76px;padding:.65rem;border:1.5px solid #d2a879;border-radius:.6rem;background:#fffefb;color:#553019;font:inherit;font-size:.88rem;resize:vertical}
+.phone-review textarea:focus-visible{outline:3px solid #7144a5;outline-offset:2px}
+.phone-review button{min-height:44px;margin-top:.65rem}
+.phone-review button:disabled{opacity:.6;cursor:not-allowed}
+.phone-review-status{font-size:.8rem;color:#714326;min-height:1.5em;margin:.55rem 0 0!important}
+.phone-review-output-label{display:block;margin-top:.55rem;font-size:.8rem;font-weight:800}
+.phone-review-output[hidden],.phone-review-output-label[hidden]{display:none!important}
+@media(max-width:350px){.phone-review-scale{gap:.28rem}.phone-review-body{padding-inline:.55rem}}
 @media(max-width:350px){.phone-qa-stages a{font-size:.7rem}.phone-qa-actions{display:grid;grid-template-columns:1fr}.phone-qa-panel{padding:.6rem}}
 </style>
 <script>
@@ -88,6 +110,7 @@ window.taskFeedback={
 <script src="fox-evolution-art-v2.js?v=1" defer></script>
 <script src="fox-ceremony.js?v=1" defer></script>
 <script src="fox-phone-preview.js?v=1" defer></script>
+<script src="fox-phone-feedback.js?v=1" defer></script>
 </head>
 <body>
 <div class="workspace">
@@ -194,10 +217,62 @@ window.taskFeedback={
 <p id="phone-qa-result" class="phone-qa-result" role="status" aria-live="polite">Нажми кнопку и оцени эффект.</p>
 </div>
 <div id="phone-qa-sample" class="phone-qa-card"><span class="phone-qa-check" aria-hidden="true">○</span><span>Один полезный шаг — сделано!</span></div>
+<details class="phone-review" id="phone-qa-review">
+<summary>Оценить превращение · 1–5</summary>
+<div class="phone-review-body">
+<p>После превращения поставь оценки. Можно оценить только то, что заметил: остальные пункты необязательны. <strong>5 — отлично.</strong> Для «Не отвлекает» 5 означает «совсем не мешает задачам».</p>
+<fieldset class="phone-review-field" data-review-question="look">
+<legend>Внешний вид и размер</legend><div class="phone-review-scale" role="group" aria-label="Внешний вид и размер: оценка от 1 до 5">
+<label><input type="radio" name="review-look" value="1"><span>1</span></label>
+<label><input type="radio" name="review-look" value="2"><span>2</span></label>
+<label><input type="radio" name="review-look" value="3"><span>3</span></label>
+<label><input type="radio" name="review-look" value="4"><span>4</span></label>
+<label><input type="radio" name="review-look" value="5"><span>5</span></label>
+</div></fieldset>
+<fieldset class="phone-review-field" data-review-question="spark">
+<legend>Золотая вспышка</legend><div class="phone-review-scale" role="group" aria-label="Золотая вспышка: оценка от 1 до 5">
+<label><input type="radio" name="review-spark" value="1"><span>1</span></label>
+<label><input type="radio" name="review-spark" value="2"><span>2</span></label>
+<label><input type="radio" name="review-spark" value="3"><span>3</span></label>
+<label><input type="radio" name="review-spark" value="4"><span>4</span></label>
+<label><input type="radio" name="review-spark" value="5"><span>5</span></label>
+</div></fieldset>
+<fieldset class="phone-review-field" data-review-question="sound">
+<legend>Звук</legend><div class="phone-review-scale" role="group" aria-label="Звук: оценка от 1 до 5">
+<label><input type="radio" name="review-sound" value="1"><span>1</span></label>
+<label><input type="radio" name="review-sound" value="2"><span>2</span></label>
+<label><input type="radio" name="review-sound" value="3"><span>3</span></label>
+<label><input type="radio" name="review-sound" value="4"><span>4</span></label>
+<label><input type="radio" name="review-sound" value="5"><span>5</span></label>
+</div></fieldset>
+<fieldset class="phone-review-field" data-review-question="joy">
+<legend>Радость от превращения</legend><div class="phone-review-scale" role="group" aria-label="Радость от превращения: оценка от 1 до 5">
+<label><input type="radio" name="review-joy" value="1"><span>1</span></label>
+<label><input type="radio" name="review-joy" value="2"><span>2</span></label>
+<label><input type="radio" name="review-joy" value="3"><span>3</span></label>
+<label><input type="radio" name="review-joy" value="4"><span>4</span></label>
+<label><input type="radio" name="review-joy" value="5"><span>5</span></label>
+</div></fieldset>
+<fieldset class="phone-review-field" data-review-question="focus">
+<legend>Не отвлекает от дел</legend><div class="phone-review-scale" role="group" aria-label="Не отвлекает от дел: оценка от 1 до 5">
+<label><input type="radio" name="review-focus" value="1"><span>1</span></label>
+<label><input type="radio" name="review-focus" value="2"><span>2</span></label>
+<label><input type="radio" name="review-focus" value="3"><span>3</span></label>
+<label><input type="radio" name="review-focus" value="4"><span>4</span></label>
+<label><input type="radio" name="review-focus" value="5"><span>5</span></label>
+</div></fieldset>
+<label for="phone-review-note" class="phone-review-note">Что улучшить? (необязательно)</label>
+<textarea id="phone-review-note" maxlength="240" rows="3" placeholder="Например: искры слишком яркие. Не вводи личные данные."></textarea>
+<button type="button" id="phone-review-copy" class="add-button" disabled>Скопировать отзыв</button>
+<p id="phone-review-status" class="phone-review-status" role="status" aria-live="polite">Сначала посмотри превращение и поставь хотя бы одну оценку.</p>
+<label id="phone-review-output-label" class="phone-review-output-label" for="phone-review-output" hidden>Текст отзыва — выдели и скопируй вручную:</label>
+<textarea id="phone-review-output" class="phone-review-output" rows="8" readonly hidden></textarea>
+</div>
+</details>
 </section>
 </div>
 </main>
-<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». Все оценки можно сообщить непосредственно в чате. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
+<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». После оценки нажми «Скопировать отзыв» и вставь текст в наш чат. Самостоятельно демо ничего не отправляет. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
 </div>
 </body>
 </html>
