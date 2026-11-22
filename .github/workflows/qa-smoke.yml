@@ -29,6 +29,8 @@ on:
       - "brand-flavor.css"
       - "fox-evolution.js"
       - "fox-evolution.css"
+      - "fox-evolution-art-v2.js"
+      - "fox-evolution-art-v2.css"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -59,6 +61,8 @@ on:
       - "brand-flavor.css"
       - "fox-evolution.js"
       - "fox-evolution.css"
+      - "fox-evolution-art-v2.js"
+      - "fox-evolution-art-v2.css"
       - "game.js"
       - "focus.js"
       - "shop.js"
@@ -95,6 +99,7 @@ jobs:
           node tests/game-preview.mjs
           node tests/game-juice.mjs
           node tests/fox-evolution.mjs
+          node tests/fox-evolution-art-v2.mjs
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
