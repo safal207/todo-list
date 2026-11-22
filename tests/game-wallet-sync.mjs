@@ -125,6 +125,30 @@ try {
   await conflict.locator("#backup-status").filter({ hasText: "История игровых покупок повреждена" }).waitFor();
   assert.equal((await wallet(conflict)).coins, 10);
 
+  // A quota failure while saving the wallet must roll back imported tasks.
+  {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    await enter(page);
+    await importFile(page, exported);
+    await page.evaluate(() => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function(key, value) {
+        if (key === "sdelano.game.v1") throw new DOMException("Full", "QuotaExceededError");
+        return original.call(this, key, value);
+      };
+      window.__resetStorage = () => { Storage.prototype.setItem = original; };
+    });
+    await page.locator("#backup-import").click();
+    await page.locator("#backup-status").filter({ hasText: "Не хватает места" }).waitFor();
+    await page.evaluate(() => window.__resetStorage());
+    assert.equal((await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("todo-list.tasks.v1") || "[]"))).length, 0,
+      "Failed wallet write must not leave imported tasks behind");
+    assert.equal((await wallet(page)).coins, 0);
+    await context.close();
+  }
+
   // Three-way wallet merge must halt on concurrent independent rewards.
   const checks = await source.evaluate(() => {
     const merge = window.sdelanoSyncMerge;
