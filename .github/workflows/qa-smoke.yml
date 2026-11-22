@@ -97,6 +97,7 @@ jobs:
           node tests/game-wallet-sync.mjs
           node tests/first-visit.mjs
           node tests/pilot-results.mjs
+          node tests/pilot-delight.mjs
           node tests/task-edit.mjs
           node tests/backup-restore.mjs
           node tests/cloud-sync.mjs
