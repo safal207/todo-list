@@ -5,6 +5,11 @@
   // ledger, and each grant has a stable idempotency key.
   const KEY = "sdelano.game.v1";
   const TASKS_KEY = "todo-list.tasks.v1";
+  const FOCUS_KEY = "sdelano.focus.session.v1";
+  const FOCUS_MS = 15 * 60 * 1000;
+  const RECHARGE_MS = 60 * 60 * 1000;
+  const MAX_FOCUS_DAILY = 3;
+  const MAX_ENERGY = 5;
   const MAX_EVENTS = 12000;
   const MAX_EXCLUDED = 12000;
   const integer = value => Number.isSafeInteger(value) && value >= 0;
@@ -29,12 +34,18 @@
     const keys = new Set();
     for (const grant of state.grants) {
       if (!plain(grant) || typeof grant.key !== "string" || grant.key.length > 170 ||
-          !/^(task:|daily:|triple:)/.test(grant.key) || keys.has(grant.key) ||
+          !/^(task:|daily:|triple:|focus:)/.test(grant.key) || keys.has(grant.key) ||
           !integer(grant.xp) || grant.xp > 100 || !integer(grant.coins) ||
           grant.coins > 50 || !validDay(grant.day) || !integer(grant.at)) {
         throw new Error("История наград недоступна. Перезапись заблокирована.");
       }
       keys.add(grant.key);
+    }
+    // Existing v1 wallets without an energy object remain valid.
+    if (state.energy !== undefined && (!plain(state.energy) ||
+        !Number.isSafeInteger(state.energy.value) || state.energy.value < 0 ||
+        state.energy.value > MAX_ENERGY || !integer(state.energy.updatedAt))) {
+      throw new Error("Игровая энергия повреждена. Перезапись заблокирована.");
     }
     const ids = new Set();
     for (const id of state.excludedIds) {
@@ -89,6 +100,17 @@
     return level;
   }
 
+  function energyAt(state, now = Date.now()) {
+    if (!state.energy) return { value: MAX_ENERGY, updatedAt: now, nextAt: null };
+    const stored = state.energy;
+    if (stored.value === MAX_ENERGY) return { value: MAX_ENERGY, updatedAt: now, nextAt: null };
+    const restored = Math.min(MAX_ENERGY - stored.value,
+      Math.floor(Math.max(0, now - stored.updatedAt) / RECHARGE_MS));
+    const value = stored.value + restored;
+    const updatedAt = value === MAX_ENERGY ? now : stored.updatedAt + restored * RECHARGE_MS;
+    return { value, updatedAt, nextAt: value === MAX_ENERGY ? null : updatedAt + RECHARGE_MS };
+  }
+
   function inspect() {
     try {
       const state = load();
@@ -97,12 +119,16 @@
       const level = levelFor(xp);
       failure = "";
       return { available: true, xp, coins, level, levelStart: threshold(level),
-        levelEnd: threshold(level + 1), energy: 5, maxEnergy: 5,
+        levelEnd: threshold(level + 1), energy: energyAt(state).value,
+        nextEnergyAt: energyAt(state).nextAt, maxEnergy: MAX_ENERGY,
+        focusToday: state.grants.filter(g => g.key.startsWith("focus:") && g.day === dayKey(Date.now())).length,
+        maxFocusDaily: MAX_FOCUS_DAILY,
         earnedTasks: state.grants.filter(grant => grant.key.startsWith("task:")).length };
     } catch (error) {
       report(error);
       return { available: false, xp: 0, coins: 0, level: 1, levelStart: 0,
-        levelEnd: 100, energy: 5, maxEnergy: 5, error: failure, earnedTasks: 0 };
+        levelEnd: 100, energy: MAX_ENERGY, nextEnergyAt: null, maxEnergy: MAX_ENERGY,
+        focusToday: 0, maxFocusDaily: MAX_FOCUS_DAILY, error: failure, earnedTasks: 0 };
     }
   }
 
@@ -148,6 +174,64 @@
     }
   }
 
+  // Only a completed, locally persisted 15-minute visible session may be claimed.
+  // Serialize with task writes because both task completions and focus sessions
+  // append events to the same local wallet.
+  async function claimFocus(id) {
+    if (!validId(id)) return { awarded: false, reason: "invalid" };
+    const attempt = () => {
+      try {
+        const session = JSON.parse(sessionStorage.getItem(FOCUS_KEY) || "null");
+        if (!plain(session) || session.id !== id ||
+            session.status !== "ready" || !integer(session.elapsedMs) ||
+            session.elapsedMs < FOCUS_MS) return { awarded: false, reason: "unfinished" };
+
+        const state = load();
+        const key = "focus:" + id;
+        if (state.grants.some(grant => grant.key === key)) {
+          return { awarded: false, reason: "already-awarded" };
+        }
+        const now = Date.now(), day = dayKey(now);
+        if (state.grants.filter(g => g.key.startsWith("focus:") && g.day === day).length >= MAX_FOCUS_DAILY) {
+          return { awarded: false, reason: "daily-limit" };
+        }
+        const energy = energyAt(state, now);
+        if (!energy.value) return { awarded: false, reason: "no-energy" };
+        if (state.grants.length >= MAX_EVENTS) {
+          return { awarded: false, reason: "limit" };
+        }
+        const beforeXP = state.grants.reduce((sum, grant) => sum + grant.xp, 0);
+        state.energy = {
+          value: energy.value - 1,
+          updatedAt: energy.value === MAX_ENERGY ? now : energy.updatedAt
+        };
+        state.grants.push({ key, day, at: now, xp: 5, coins: 0 });
+        save(state);  // Atomic wallet commit: grant and energy debit together.
+        const levelAfter = levelFor(beforeXP + 5), levelBefore = levelFor(beforeXP);
+        window.dispatchEvent(new CustomEvent("sdelano:focus-earned", {
+          detail: { xp: 5, energy: state.energy.value,
+            levelUp: levelAfter > levelBefore ? levelAfter : 0 }
+        }));
+        return { awarded: true, xp: 5, energy: state.energy.value };
+      } catch (error) {
+        report(error);
+        return { awarded: false, reason: "storage-error" };
+      }
+    };
+    let entered = false;
+    try {
+      if (navigator.locks?.request) {
+        return await navigator.locks.request(TASKS_KEY, () => {
+          entered = true;
+          return attempt();
+        });
+      }
+    } catch (error) {
+      if (entered) { report(error); return { awarded: false, reason: "lock-error" }; }
+    }
+    return attempt(); // Best effort for older browsers without Web Locks.
+  }
+
   // Completed tasks coming from a backup or another cloud device are legacy
   // for this browser's local economy. Never mint currency from imports.
   function excludeCompleted(ids) {
@@ -180,7 +264,8 @@
   window.addEventListener("sdelano:cloud-applied", excludeCloudCompletions);
 
   window.sdelanoGame = Object.freeze({
-    inspect, awardTask, excludeCompleted,
-    key: KEY, threshold
+    inspect, awardTask, excludeCompleted, claimFocus,
+    key: KEY, focusKey: FOCUS_KEY, focusMs: FOCUS_MS,
+    rechargeMs: RECHARGE_MS, threshold
   });
 })();
