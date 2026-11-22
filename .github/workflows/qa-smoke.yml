@@ -123,6 +123,7 @@ jobs:
           node tests/fox-evolution.mjs
           node tests/fox-evolution-art-v2.mjs
           node tests/fox-ceremony.mjs
+          node tests/fox-smooth.mjs
           node tests/fox-phone-preview.mjs
           node tests/fox-phone-feedback.mjs
           node tests/fox-smooth-v31.mjs
