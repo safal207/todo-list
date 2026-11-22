@@ -12,7 +12,12 @@
     add: [[520, 0, 0.075], [720, 0.06, 0.10]],
     complete: [[550, 0, 0.09], [750, 0.09, 0.11], [1000, 0.19, 0.16]],
     reopen: [[630, 0, 0.08]],
-    remove: [[330, 0, 0.11]]
+    remove: [[330, 0, 0.11]],
+    coins: [[880, 0, 0.08], [1220, 0.08, 0.13]],
+    xp: [[560, 0, 0.09], [750, 0.08, 0.11], [960, 0.18, 0.14]],
+    energy: [[390, 0, 0.10], [590, 0.09, 0.12], [780, 0.18, 0.13]],
+    reward: [[660, 0, 0.08], [880, 0.08, 0.10], [1175, 0.18, 0.15]],
+    level: [[520, 0, 0.11], [660, 0.11, 0.11], [880, 0.22, 0.13], [1100, 0.35, 0.18]]
   };
 
   function sound(kind) {
@@ -25,7 +30,7 @@
       for (const [frequency, delay, length] of (melody[kind] || melody.tap)) {
         const oscillator = context.createOscillator();
         const gain = context.createGain();
-        oscillator.type = kind === "complete" ? "sine" : "triangle";
+        oscillator.type = ["complete", "coins", "reward", "level"].includes(kind) ? "sine" : "triangle";
         oscillator.frequency.setValueAtTime(frequency, time + delay);
         gain.gain.setValueAtTime(0.0001, time + delay);
         gain.gain.exponentialRampToValueAtTime(0.045, time + delay + 0.012);
