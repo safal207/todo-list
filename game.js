@@ -83,13 +83,18 @@
     return 25 * (level - 1) * (level + 2);
   }
 
+  function levelFor(xp) {
+    let level = 1;
+    while (level < 100 && xp >= threshold(level + 1)) level++;
+    return level;
+  }
+
   function inspect() {
     try {
       const state = load();
       const xp = state.grants.reduce((sum, grant) => sum + grant.xp, 0);
       const coins = state.grants.reduce((sum, grant) => sum + grant.coins, 0);
-      let level = 1;
-      while (level < 100 && xp >= threshold(level + 1)) level++;
+      const level = levelFor(xp);
       failure = "";
       return { available: true, xp, coins, level, levelStart: threshold(level),
         levelEnd: threshold(level + 1), energy: 5, maxEnergy: 5,
@@ -113,6 +118,7 @@
       if (state.excludedIds.includes(taskId) || state.grants.some(grant => grant.key === key)) {
         return { awarded: false, reason: "already-awarded" };
       }
+      const beforeXP = state.grants.reduce((sum, grant) => sum + grant.xp, 0);
       const day = dayKey(at);
       const today = state.grants.filter(grant => grant.day === day && grant.key.startsWith("task:")).length;
       const grants = [{ key, day, at, xp: 10, coins: 5 }];
@@ -129,8 +135,11 @@
       save(state); // Commit before any congratulation or sound.
       const xp = grants.reduce((sum, grant) => sum + grant.xp, 0);
       const coins = grants.reduce((sum, grant) => sum + grant.coins, 0);
+      const levelBefore = levelFor(beforeXP);
+      const levelAfter = levelFor(beforeXP + xp);
       window.dispatchEvent(new CustomEvent("sdelano:reward-earned", {
-        detail: { taskId, xp, coins, bonuses: grants.slice(1).map(grant => grant.key.split(":")[0]) }
+        detail: { taskId, xp, coins, levelUp: levelAfter > levelBefore ? levelAfter : 0,
+          bonuses: grants.slice(1).map(grant => grant.key.split(":")[0]) }
       }));
       return { awarded: true, xp, coins };
     } catch (error) {
