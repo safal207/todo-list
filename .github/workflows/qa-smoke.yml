@@ -22,6 +22,7 @@ on:
       - "game-preview.js"
       - "game.js"
       - "focus.js"
+      - "shop.js"
       - "game-preview.css"
       - "invite/index.html"
       - "tests/*.mjs"
@@ -50,6 +51,7 @@ on:
       - "game-preview.css"
       - "game.js"
       - "focus.js"
+      - "shop.js"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -83,6 +85,7 @@ jobs:
           node tests/game-preview.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
+          node tests/game-shop.mjs
           node tests/first-visit.mjs
           node tests/pilot-results.mjs
           node tests/task-edit.mjs

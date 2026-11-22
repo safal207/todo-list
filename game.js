@@ -10,6 +10,20 @@
   const RECHARGE_MS = 60 * 60 * 1000;
   const MAX_FOCUS_DAILY = 3;
   const MAX_ENERGY = 5;
+  // Fixed catalog: cosmetic-only, no real-world currency and no random prizes.
+  const CATALOG = Object.freeze([
+    Object.freeze({ id: "scarf", name: "Золотой шарфик", price: 50, slot: "scarf" }),
+    Object.freeze({ id: "glasses", name: "Синие очки", price: 100, slot: "glasses" }),
+    Object.freeze({ id: "cosmic", name: "Космическая тема", price: 150, slot: "theme" }),
+    Object.freeze({ id: "sparkle", name: "Искры победы", price: 200, slot: "victory" })
+  ]);
+  const shopItem = id => CATALOG.find(item => item.id === id);
+  const DEFAULT_EQUIPPED = Object.freeze({
+    scarf: false, glasses: false, theme: "default", victory: "default"
+  });
+  const shopEquipped = state => ({ ...DEFAULT_EQUIPPED, ...(state.equipped || {}) });
+  const boughtIds = state => (state.purchases || []).map(purchase => purchase.id);
+  const spentCoins = state => (state.purchases || []).reduce((sum, p) => sum + p.coins, 0);
   const MAX_EVENTS = 12000;
   const MAX_EXCLUDED = 12000;
   const integer = value => Number.isSafeInteger(value) && value >= 0;
@@ -52,10 +66,34 @@
       if (!validId(id) || ids.has(id)) throw new Error("Список старых наград повреждён.");
       ids.add(id);
     }
+    // Optional cosmetics preserve compatibility with older v1 wallets.
+    if (state.purchases !== undefined) {
+      if (!Array.isArray(state.purchases) || state.purchases.length > CATALOG.length)
+        throw new Error("Список покупок повреждён.");
+      const purchased = new Set();
+      for (const purchase of state.purchases) {
+        if (!plain(purchase) || !shopItem(purchase.id) || purchased.has(purchase.id) ||
+            !integer(purchase.coins) || purchase.coins < 1 || purchase.coins > 10000 ||
+            !integer(purchase.at)) throw new Error("История игровых покупок повреждена.");
+        purchased.add(purchase.id);
+      }
+    }
+    if (state.equipped !== undefined) {
+      const eq = state.equipped, owned = new Set(boughtIds(state));
+      if (!plain(eq) || typeof eq.scarf !== "boolean" || typeof eq.glasses !== "boolean" ||
+          !["default", "cosmic"].includes(eq.theme) ||
+          !["default", "sparkle"].includes(eq.victory) ||
+          (eq.scarf && !owned.has("scarf")) || (eq.glasses && !owned.has("glasses")) ||
+          (eq.theme === "cosmic" && !owned.has("cosmic")) ||
+          (eq.victory === "sparkle" && !owned.has("sparkle"))) {
+        throw new Error("Выбранное оформление недоступно. Игровая запись сохранена.");
+      }
+    }
     // A single wrong or manipulated value must never overflow the UI.
     const xp = state.grants.reduce((sum, grant) => sum + grant.xp, 0);
     const coins = state.grants.reduce((sum, grant) => sum + grant.coins, 0);
-    if (!integer(xp) || !integer(coins)) throw new Error("Некорректный баланс.");
+    if (!integer(xp) || !integer(coins) || !integer(spentCoins(state)) ||
+        spentCoins(state) > coins) throw new Error("Некорректный баланс игровых монет.");
     return state;
   }
 
@@ -115,12 +153,13 @@
     try {
       const state = load();
       const xp = state.grants.reduce((sum, grant) => sum + grant.xp, 0);
-      const coins = state.grants.reduce((sum, grant) => sum + grant.coins, 0);
+      const coins = state.grants.reduce((sum, grant) => sum + grant.coins, 0) - spentCoins(state);
       const level = levelFor(xp);
       failure = "";
       return { available: true, xp, coins, level, levelStart: threshold(level),
         levelEnd: threshold(level + 1), energy: energyAt(state).value,
         nextEnergyAt: energyAt(state).nextAt, maxEnergy: MAX_ENERGY,
+        purchases: boughtIds(state), equipped: shopEquipped(state),
         focusToday: state.grants.filter(g => g.key.startsWith("focus:") && g.day === dayKey(Date.now())).length,
         maxFocusDaily: MAX_FOCUS_DAILY,
         earnedTasks: state.grants.filter(grant => grant.key.startsWith("task:")).length };
@@ -128,7 +167,8 @@
       report(error);
       return { available: false, xp: 0, coins: 0, level: 1, levelStart: 0,
         levelEnd: 100, energy: MAX_ENERGY, nextEnergyAt: null, maxEnergy: MAX_ENERGY,
-        focusToday: 0, maxFocusDaily: MAX_FOCUS_DAILY, error: failure, earnedTasks: 0 };
+        focusToday: 0, maxFocusDaily: MAX_FOCUS_DAILY, error: failure,
+        purchases: [], equipped: { ...DEFAULT_EQUIPPED }, earnedTasks: 0 };
     }
   }
 
@@ -232,6 +272,71 @@
     return attempt(); // Best effort for older browsers without Web Locks.
   }
 
+  // One lock serializes purchases, equipment selection, task and focus wallet
+  // writes on browsers that support Web Locks. Without locks operations remain
+  // best-effort and are not a financial-grade multi-device economy.
+  async function withShopLock(action) {
+    let entered = false;
+    try {
+      if (navigator.locks?.request) return await navigator.locks.request(TASKS_KEY, () => {
+        entered = true;
+        return action();
+      });
+    } catch (error) {
+      if (entered) { report(error); return { success: false, reason: "lock-error" }; }
+    }
+    return action();
+  }
+
+  function equipState(state, itemId, enabled) {
+    const eq = shopEquipped(state);
+    if (itemId === "scarf" || itemId === "glasses") eq[itemId] = enabled;
+    else if (itemId === "cosmic") eq.theme = enabled ? "cosmic" : "default";
+    else if (itemId === "sparkle") eq.victory = enabled ? "sparkle" : "default";
+    return eq;
+  }
+
+  async function buyItem(itemId) {
+    const item = shopItem(itemId);
+    if (!item) return { success: false, reason: "unknown" };
+    return withShopLock(() => {
+      try {
+        const state = load(), purchased = new Set(boughtIds(state));
+        if (purchased.has(itemId)) return { success: false, reason: "already-owned" };
+        const balance = state.grants.reduce((sum, grant) => sum + grant.coins, 0) - spentCoins(state);
+        if (balance < item.price) return { success: false, reason: "insufficient", need: item.price - balance };
+        state.purchases ||= [];
+        state.purchases.push({ id: itemId, coins: item.price, at: Date.now() });
+        state.equipped = equipState(state, itemId, true);
+        save(state); // Purchase + debit + equipped state in the same record.
+        window.dispatchEvent(new CustomEvent("sdelano:item-purchased", {
+          detail: { itemId, name: item.name, coins: item.price }
+        }));
+        return { success: true, itemId, coins: item.price };
+      } catch (error) {
+        report(error);
+        return { success: false, reason: "storage-error" };
+      }
+    });
+  }
+
+  async function equipItem(itemId, enabled = true) {
+    const item = shopItem(itemId);
+    if (!item) return { success: false, reason: "unknown" };
+    return withShopLock(() => {
+      try {
+        const state = load();
+        if (!boughtIds(state).includes(itemId)) return { success: false, reason: "not-owned" };
+        state.equipped = equipState(state, itemId, Boolean(enabled));
+        save(state);
+        return { success: true, itemId, equipped: Boolean(enabled) };
+      } catch (error) {
+        report(error);
+        return { success: false, reason: "storage-error" };
+      }
+    });
+  }
+
   // Completed tasks coming from a backup or another cloud device are legacy
   // for this browser's local economy. Never mint currency from imports.
   function excludeCompleted(ids) {
@@ -264,8 +369,8 @@
   window.addEventListener("sdelano:cloud-applied", excludeCloudCompletions);
 
   window.sdelanoGame = Object.freeze({
-    inspect, awardTask, excludeCompleted, claimFocus,
-    key: KEY, focusKey: FOCUS_KEY, focusMs: FOCUS_MS,
+    inspect, awardTask, excludeCompleted, claimFocus, buyItem, equipItem,
+    catalog: CATALOG, key: KEY, focusKey: FOCUS_KEY, focusMs: FOCUS_MS,
     rechargeMs: RECHARGE_MS, threshold
   });
 })();
