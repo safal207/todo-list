@@ -1,0 +1,161 @@
+/* Juicy resources: authored for the existing SVGs and the real reward ledger.
+ * Visual effects never grant coins, XP or energy. */
+.game-preview {
+  --juice-gold: #ffe067;
+  --juice-blue: #7cbaff;
+  --juice-green: #8ff17e;
+}
+.game-resource {
+  position: relative;
+  overflow: visible;
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+.game-resource-icon {
+  position: relative;
+  isolation: isolate;
+  transform-origin: center 60%;
+  will-change: auto;
+}
+.game-resource--coins .game-resource-icon {
+  perspective: 160px;
+  filter: drop-shadow(0 3px 0 #955817) drop-shadow(0 6px 3px #79441355);
+}
+.game-resource--coins .game-resource-icon::before {
+  content: "";
+  position: absolute;
+  inset: 3% 10% 52% 12%;
+  z-index: 2;
+  border-radius: 50%;
+  background: linear-gradient(165deg, #fffbd5aa, transparent 75%);
+  transform: rotate(-25deg);
+  pointer-events: none;
+}
+.game-resource--coins .game-resource-icon svg {
+  border-radius: 50%;
+  filter: drop-shadow(0 1px 1px #8c430555);
+}
+.game-resource--xp {
+  box-shadow: inset 0 1px 1px #fff, 0 0 12px #85a0ff22, 0 3px 9px #55418f1a;
+}
+.game-resource--xp .game-resource-icon {
+  filter: drop-shadow(0 0 3px #77e7ff) drop-shadow(0 2px 3px #5d49b066);
+}
+.game-resource--energy .game-resource-icon {
+  filter: drop-shadow(0 0 5px #83e6a877) drop-shadow(0 2px 2px #2c192235);
+}
+.game-juice-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.game-juice-particle, .game-juice-label {
+  position: absolute;
+  display: inline-grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%);
+}
+.game-juice-particle {
+  width: 19px;
+  height: 19px;
+  margin-left: -9.5px;
+  margin-top: -9.5px;
+}
+.game-juice-particle svg { width: 100%; height: 100%; display: block; }
+.game-juice-particle--coin {
+  filter: drop-shadow(0 1px 2px #7c4d1a66);
+}
+.game-juice-particle--xp {
+  font-size: 18px;
+  line-height: 1;
+  color: #e9fbff;
+  text-shadow: 0 0 3px #488cff, 0 0 8px #8260ff, 1px 1px #5035b5;
+}
+.game-juice-label {
+  z-index: 1;
+  white-space: nowrap;
+  padding: .13rem .38rem;
+  border: 1px solid #fff7ce;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 950;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 2px 8px #3524513d;
+}
+.game-juice-label--coin { color: #925005; background: linear-gradient(115deg, #fffbc3, #ffcf51); }
+.game-juice-label--xp { color: #3649aa; background: linear-gradient(115deg, #d6ffff, #c8b5ff); }
+.game-juice-label--energy { color: #186d43; background: linear-gradient(115deg, #e6ffc6, #9cebb3); }
+@keyframes sdelano-coin-shine-idle {
+  0%, 84%, 100% { filter: drop-shadow(0 3px 0 #955817) drop-shadow(0 6px 3px #79441355) brightness(1); transform: rotate(0); }
+  91% { filter: drop-shadow(0 3px 0 #955817) drop-shadow(0 5px 5px #c08b385e) brightness(1.25); transform: rotate(-7deg); }
+  96% { transform: rotate(4deg); }
+}
+@keyframes sdelano-xp-breath {
+  0%, 100% { transform: scale(.98); filter: drop-shadow(0 0 2px #77e7ff77) drop-shadow(0 2px 3px #5d49b066); }
+  50% { transform: scale(1.075); filter: drop-shadow(0 0 8px #7ccaffc9) drop-shadow(0 0 5px #987cff99); }
+}
+@keyframes sdelano-energy-glow {
+  0%, 100% { filter: drop-shadow(0 0 3px #77e6a066) drop-shadow(0 2px 2px #29654944); }
+  50% { filter: drop-shadow(0 0 8px #82eeadbb) drop-shadow(0 2px 3px #29654955); }
+}
+@keyframes sdelano-resource-pop {
+  0% { transform: scale(1); }
+  26% { transform: scale(1.16) translateY(-2px); }
+  62% { transform: scale(.97); }
+  100% { transform: scale(1); }
+}
+@keyframes sdelano-juice-fly {
+  0% { opacity: 0; transform: translate(-50%, 12px) scale(.35) rotate(-70deg); }
+  20% { opacity: 1; }
+  55% { opacity: 1; transform: translate(calc(-50% + var(--juice-x) * .4), calc(-18px + var(--juice-y) * .45)) scale(1.22) rotate(70deg); }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--juice-x)), calc(-18px + var(--juice-y))) scale(.5) rotate(155deg); }
+}
+@keyframes sdelano-juice-float-label {
+  0% { opacity: 0; transform: translate(-50%, 9px) scale(.75); }
+  20% { opacity: 1; transform: translate(-50%, -6px) scale(1.05); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -23px) scale(1); }
+}
+@keyframes sdelano-level-glint {
+  0%, 100% { box-shadow: 0 3px 0 #2e225022, 0 8px 25px #4e42910d; }
+  35% { box-shadow: 0 0 0 3px #ffeaa7bb, 0 0 30px #9975ff9a; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .game-resource--coins .game-resource-icon {
+    animation: sdelano-coin-shine-idle 9s ease-in-out infinite;
+  }
+  .game-resource--xp .game-resource-icon {
+    animation: sdelano-xp-breath 4.5s ease-in-out infinite;
+  }
+  .game-resource--energy .game-resource-icon {
+    animation: sdelano-energy-glow 5.5s ease-in-out infinite;
+  }
+  .game-preview--celebrate .game-resource--coins .game-resource-icon {
+    animation: sdelano-game-coin-bounce .75s ease-out, sdelano-coin-shine-idle 9s ease-in-out .75s infinite;
+  }
+  .game-preview--celebrate .game-resource--xp .game-resource-icon {
+    animation: sdelano-game-crystal-spark .8s .12s ease-in-out, sdelano-xp-breath 4.5s ease-in-out .95s infinite;
+  }
+  .game-preview--celebrate .game-resource--energy .game-resource-icon {
+    animation: sdelano-game-energy-pulse .9s .17s ease-out, sdelano-energy-glow 5.5s ease-in-out 1.1s infinite;
+  }
+  .game-resource--pop { animation: sdelano-resource-pop .55s ease-out; }
+  .game-juice-particle { animation: sdelano-juice-fly .88s cubic-bezier(.21,.65,.25,1) both; }
+  .game-juice-label { animation: sdelano-juice-float-label 1.05s ease-out both; }
+  .game-juice--level-up { animation: sdelano-level-glint .9s ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-resource-icon, .game-resource--pop, .game-juice-layer * {
+    animation: none !important;
+    transition: none !important;
+  }
+  .game-juice-layer { display: none; }
+}
+@media (max-width: 350px) {
+  .game-juice-label { font-size: .58rem; padding: .1rem .22rem; }
+}
