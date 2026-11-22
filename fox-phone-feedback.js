@@ -92,5 +92,19 @@
     status.textContent = "Доступ к буферу закрыт. Текст выделен ниже — скопируй вручную.";
   });
 
-  update();
+  function resetVoluntaryReview() {
+    for (const radio of panel.querySelectorAll('input[type="radio"]')) radio.checked = false;
+    note.value = "";
+    output.value = "";
+    output.hidden = true;
+    outputLabel.hidden = true;
+    panel.open = false;
+    update();
+  }
+  // Firefox and other browsers may restore form values natively on reload
+  // even without localStorage. Explicitly discard voluntary feedback on
+  // both page exit and re-entry, including bfcache restoration.
+  window.addEventListener("pagehide", resetVoluntaryReview);
+  window.addEventListener("pageshow", resetVoluntaryReview);
+  resetVoluntaryReview();
 })();
