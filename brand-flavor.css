@@ -200,6 +200,52 @@ body {
   border-color: #81501d;
   background: #ffd063;
 }
+/* Legacy purple milestone card clashed with the warm visual language.
+ * Keep the reward information and hierarchy, but harmonize the palette. */
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-roadmap {
+  border: 1px solid #bf8958;
+  background: linear-gradient(140deg, #78482f, #623824);
+  box-shadow: inset 0 1px 0 #f9d4a42b;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-roadmap-heading h3 {
+  color: #fff4dd;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-record,
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-track > li.is-earned .milestone-label {
+  color: #ffe09c;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-label,
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-next-label {
+  color: #ffebd5;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-track > li:not(:first-child)::before {
+  background: #bd916f;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-track > li.is-earned:not(:first-child)::before {
+  background: #ffd15a;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-mark {
+  background: #5c331f;
+  border-color: #c49b77;
+  color: #ffefdb;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-track > li.is-earned .milestone-mark {
+  background: #ffd15a;
+  border-color: #ffd15a;
+  color: #4c2a1c;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-track > li.is-next .milestone-mark {
+  border-color: #fff4dd;
+  box-shadow: 0 0 0 3px #ffcc6659;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-next-progress,
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-next-progress::-webkit-progress-bar {
+  background: #ad7b53;
+}
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-next-progress::-webkit-progress-value,
+.task-panel .progress-panel:not([data-stage="done"]) .milestone-next-progress::-moz-progress-bar {
+  background: #ffd15a;
+}
 .game-preview {
   border: 2px solid #d79b5c;
   border-radius: 1.15rem;
