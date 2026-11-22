@@ -109,7 +109,8 @@
     for (let n = 0; n < 8; n++) {
       const star = document.createElement("span");
       star.textContent = n % 2 ? "✧" : "✦";
-      star.style.setProperty("--game-star-index", String(n));
+      star.style.left = (17 + n * 10) + "%";
+      star.style.animationDelay = (n * 50) + "ms";
       burst.append(star);
     }
     host.append(burst);
