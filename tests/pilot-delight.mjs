@@ -54,13 +54,13 @@ try {
         "Optional ease rating must persist locally");
       await page.screenshot({ path: "artifacts/pilot-survey-after-" + engine + "-" + width + ".png", fullPage: true });
       await page.locator("#pilot-delight").selectOption("5");
-      await page.locator("#pilot-comment").fill("Без личных данных\\nКод: T10");
+      await page.locator("#pilot-comment").fill("Без личных данных\nКод: T10");
       await page.locator("#pilot-copy").click();
       report = await page.locator("#pilot-export").inputValue();
       assert.match(report, /Приятность награды \(1–5\): 5/);
       assert.equal(report.includes("Личная задача не для отчёта"), false,
         "Private task titles must never enter the report");
-      assert.equal(report.split("\\n").filter(line => line.startsWith("Код:")).length, 1,
+      assert.equal(report.split("\n").filter(line => line.startsWith("Код:")).length, 1,
         "Multiline comments cannot forge report participant codes");
       assert.equal(report.includes("sdelano.game.v1"), false,
         "Game storage and wallet keys must remain private");
