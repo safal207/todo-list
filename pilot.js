@@ -57,7 +57,7 @@ if (!data) {
   const label = document.querySelector("#pilot-fallback-label");
   const feedback = document.querySelector("#pilot-feedback");
   document.querySelector("#pilot-copy").addEventListener("click", async () => {
-    const comment = document.querySelector("#pilot-comment").value.trim();
+    const comment = document.querySelector("#pilot-comment").value.trim().replace(/\s+/g, " ");
     const report = [
       "Тест «Сделано» / анонимный результат",
       "Код: " + data.code,
