@@ -11,7 +11,9 @@ const sessionKey = "sdelano.focus.session.v1";
 
 async function enter(page) {
   await page.goto(origin, { waitUntil: "networkidle" });
-  if (await page.locator("#welcome").evaluate(el => el.open)) await page.locator("#welcome-start").click();
+  await page.evaluate(() => {
+    if (document.querySelector("#welcome")?.open) document.querySelector("#welcome-start")?.click();
+  });
   await page.locator("#game-preview-toggle").click();
 }
 
