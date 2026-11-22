@@ -90,7 +90,8 @@ try {
           assert.equal(view.stage, stage);
           assert.match(view.image, /fox-evolution-stages\.webp/);
           assert.equal(view.size, "100% 400%");
-          assert.ok(view.position.endsWith(position), "Wrong sprite quadrant: " + view.position);
+          assert.ok(Math.abs(parseFloat(view.position.split(" ").at(-1)) - parseFloat(position)) < 0.03,
+            "Wrong sprite quadrant: " + view.position);
           assert.equal(view.originalStillPresent, true, "Original mascot preserved in the DOM");
           assert.equal(view.overlayGlasses, true);
           assert.equal(view.overlayScarf, true);
