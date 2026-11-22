@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
+mkdirSync("artifacts", { recursive: true });
 import { chromium, firefox, webkit } from "playwright";
 
 const engine = process.env.SDELANO_QA_ENGINE || "chromium";
@@ -83,6 +85,9 @@ try {
     await buy(page, "glasses");
     assert.equal((await wallet(page)).coins, 450);
     assert.equal(await page.evaluate(() => document.body.dataset.gameGlasses), "on");
+    const appliedGlasses = await page.locator(".game-hero-fox .game-fox-glasses").first()
+      .evaluate(el => getComputedStyle(el).display);
+    assert.equal(appliedGlasses, "block", "Bought glasses must be visible over the fox");
     await buy(page, "cosmic");
     assert.equal((await wallet(page)).coins, 300);
     assert.equal(await page.evaluate(() => document.body.dataset.gameTheme), "cosmic");
@@ -102,6 +107,10 @@ try {
     assert.equal(await page.evaluate(() => document.body.dataset.gameScarf), "on");
     assert.equal((await wallet(page)).purchases.length, 4);
 
+    if (await page.locator("#game-preview-toggle").getAttribute("aria-expanded") === "false") {
+      await page.locator("#game-preview-toggle").click();
+    }
+    await page.screenshot({ path: "artifacts/fox-shop-" + engine + "-" + width + ".png", fullPage: true });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     assert.ok(overflow <= 1, "No horizontal page overflow at width " + width);
     if (width === 390) {
