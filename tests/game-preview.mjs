@@ -13,8 +13,9 @@ try {
     page.on("pageerror", error => errors.push(error.message));
     try {
       await page.goto("http://127.0.0.1:8765/", { waitUntil: "networkidle" });
-      const welcome = page.locator("#welcome");
-      if (await welcome.evaluate(el => el.open)) await page.locator("#welcome-start").click();
+      await page.evaluate(() => {
+        if (document.querySelector("#welcome")?.open) document.querySelector("#welcome-start")?.click();
+      });
 
       const panel = page.locator("#game-preview");
       assert.equal(await panel.isVisible(), true, "Resource preview must be visible");
