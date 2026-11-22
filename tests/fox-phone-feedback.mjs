@@ -17,6 +17,14 @@ try {
   ]) {
     const context = await browser.newContext({ viewport: { width, height: 844 } });
     const page = await context.newPage();
+    if (width === 390) {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, "share", {
+          configurable: true,
+          value: async data => { window.__nativeSharedReview = data; }
+        });
+      });
+    }
     const errors = [], writes = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("request", req => {
@@ -32,17 +40,39 @@ try {
       assert.equal(await page.locator("#phone-qa-review fieldset").count(), 5);
       assert.equal(await page.locator("#phone-qa-review input[type=radio]").count(), 25);
       await page.locator("#phone-qa-review summary").click();
+      assert.equal(await page.locator(".phone-review-field:visible").count(), 1,
+        "Only one question should take vertical space on a phone");
+      assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 1 из 5/);
       await page.locator('input[name="review-look"][value="5"]').check();
       assert.equal(await page.locator("#phone-review-copy").isDisabled(), true,
         "Review must follow a real visible transformation");
       await page.locator("#phone-qa-complete").click();
       assert.equal(await page.locator("#phone-review-copy").isEnabled(), true,
         "At least one completed stage and one score may be copied");
+      await page.locator("#phone-review-next").click();
+      assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 2 из 5/);
       await page.locator('input[name="review-spark"][value="4"]').check();
+      await page.locator("#phone-review-next").click();
+      await page.locator("#phone-review-next").click();
+      await page.locator("#phone-review-next").click();
+      assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 5 из 5/);
       await page.locator('input[name="review-focus"][value="3"]').check();
+      assert.equal(await page.locator(".phone-review-field:visible").count(), 1);
+      await page.locator("#phone-review-prev").click();
+      assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 4 из 5/);
+      await page.locator("#phone-review-next").click();
       await page.locator("#phone-review-note").fill("Искры красивые, но размер можно увеличить.");
-      const minTapHeight = await page.locator('.phone-review-scale label span').first()
+      const minTapHeight = await page.locator('.phone-review-field:not([hidden]) .phone-review-scale label span').first()
         .evaluate(el => el.getBoundingClientRect().height);
+      if (width === 390) {
+        assert.equal(await page.locator("#phone-review-share").isVisible(), true);
+        assert.equal(await page.locator("#phone-review-share").isEnabled(), true);
+        await page.locator("#phone-review-share").click();
+        const shared = await page.evaluate(() => window.__nativeSharedReview);
+        assert.match(shared?.text || "", /Открытая стадия: Герой/);
+        assert.match(shared?.text || "", /Золотая вспышка: 4\/5/);
+        assert.equal(shared?.title, "Сделано · Fox Evolution");
+      }
       assert.ok(minTapHeight >= 44, "Touch targets must be at least 44px high");
       if (width === 320) {
         // Simulate a privacy-restricted mobile browser with no Clipboard API.
@@ -86,6 +116,8 @@ try {
       assert.equal(await page.locator('input[name="review-look"]:checked').count(), 0,
         "Ratings must disappear on reload, never persist");
       assert.equal(await page.locator("#phone-review-copy").isDisabled(), true);
+      assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 1 из 5/);
+      assert.equal(await page.locator(".phone-review-field:visible").count(), 1);
       assert.deepEqual(errors, [], "JavaScript errors: " + errors.join(" | "));
       console.log("Phone feedback QA passed:", engine, width, stage);
     } finally { await context.close(); }
