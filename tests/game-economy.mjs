@@ -9,9 +9,9 @@ const url = "http://127.0.0.1:8765/";
 
 async function arrive(page) {
   await page.goto(url, { waitUntil: "networkidle" });
-  if (await page.locator("#welcome").evaluate(el => el.open)) {
-    await page.locator("#welcome-start").click();
-  }
+  await page.evaluate(() => {
+    if (document.querySelector("#welcome")?.open) document.querySelector("#welcome-start")?.click();
+  });
 }
 
 async function add(page, name) {
