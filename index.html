@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="game-preview.css?v=4">
     <link rel="stylesheet" href="game-juice.css?v=1">
     <link rel="stylesheet" href="brand-flavor.css?v=1">
+    <link rel="stylesheet" href="fox-evolution.css?v=1">
     <script src="clock.js?v=open-time" defer></script>
     <script src="effects.js" defer></script>
     <script src="game.js?v=5" defer></script>
@@ -38,6 +39,7 @@
     <script src="focus.js?v=1" defer></script>
     <script src="shop.js?v=1" defer></script>
     <script src="game-juice.js?v=1" defer></script>
+    <script src="fox-evolution.js?v=1" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js?v=pilot-1" defer></script>
     <script src="backup.js?v=2" defer></script>
@@ -93,7 +95,14 @@
       </button>
       <div id="game-preview-details" class="game-preview-details" hidden>
         <div class="game-preview-about">
-          <img src="assets/fox-mascot.webp" alt="" width="52" height="52" loading="lazy">
+          <span class="fox-evolution-figure fox-evolution-portrait" data-fox-stage="cub" aria-hidden="true">
+            <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+            <span class="fox-evolution-core">
+              <img src="assets/fox-mascot.webp" alt="" width="52" height="52" loading="lazy">
+              <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+            </span>
+            <span class="fox-evolution-crest"></span>
+          </span>
           <div>
             <strong>Награды за реальные дела</strong>
             <p>Сделал дело — получи монеты и XP. Фокус добавляет опыт, а энергия восстанавливается со временем.</p>
@@ -101,6 +110,20 @@
         </div>
         <div class="game-level-details"><span id="game-level-label">Уровень 1</span><span id="game-level-counter">0 / 100 XP</span></div>
         <progress id="game-level-progress" class="game-level-progress" max="100" value="0" aria-label="Опыт к следующему уровню"></progress>
+        <section class="fox-evolution-card" aria-label="Рост лисёнка">
+          <div class="fox-evolution-card-heading">
+            <strong>Лисёнок растёт с тобой</strong>
+            <span id="fox-evolution-stage" class="fox-evolution-stage">Малыш · LVL 1</span>
+          </div>
+          <ol class="fox-evolution-roadmap" aria-label="Четыре стадии взросления">
+            <li class="fox-evolution-milestone" data-stage="cub" data-unlocked="true" data-current="true" aria-current="step">Малыш</li>
+            <li class="fox-evolution-milestone" data-stage="student" data-unlocked="false" data-current="false">Ученик</li>
+            <li class="fox-evolution-milestone" data-stage="hero" data-unlocked="false" data-current="false">Герой</li>
+            <li class="fox-evolution-milestone" data-stage="master" data-unlocked="false" data-current="false">Мастер</li>
+          </ol>
+          <p id="fox-evolution-next" class="fox-evolution-next">До «Ученика» — ещё 250 XP</p>
+          <progress id="fox-evolution-progress" class="fox-evolution-progress" value="0" max="250" aria-label="Прогресс роста лисёнка до стадии Ученик"></progress>
+        </section>
         <section id="game-focus" class="game-focus" aria-label="Фокус-сессия на 15 минут">
           <div class="game-focus-heading"><strong>Фокус · 15 минут</strong><span id="game-energy-next">Полный заряд</span></div>
           <label class="game-energy-caption" for="game-energy-progress">Заряд для фокуса · 1 единица за 60 минут</label>
@@ -124,9 +147,13 @@
           <summary><span>Магазин лисёнка</span><span id="game-shop-balance" class="game-shop-wallet">0 монет</span></summary>
           <div class="game-shop-content">
             <div class="game-shop-intro">
-              <span class="game-hero-fox game-shop-fox" id="game-shop-fox">
-                <img src="assets/fox-mascot.webp" width="96" height="96" alt="Лисёнок" loading="lazy">
-                <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span>
+              <span class="game-hero-fox game-shop-fox fox-evolution-figure" id="game-shop-fox" data-fox-stage="cub">
+                <span class="fox-evolution-halo" aria-hidden="true"></span><span class="fox-evolution-tail" aria-hidden="true"></span>
+                <span class="fox-evolution-core">
+                  <img src="assets/fox-mascot.webp" width="96" height="96" alt="Лисёнок" loading="lazy">
+                  <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span>
+                </span>
+                <span class="fox-evolution-crest" aria-hidden="true"></span>
               </span>
               <p>Выполняй настоящие дела и украшай своего лисёнка. Монеты игровые, все покупки — только за успехи в приложении.</p>
             </div>
@@ -163,6 +190,7 @@
         <button id="game-preview-try" class="game-preview-try" type="button">Послушать награду (демо)</button>
         <p id="game-preview-feedback" class="game-preview-feedback" role="status" aria-live="polite"></p>
       </div>
+      <p id="fox-evolution-notice" class="fox-evolution-notice" role="status" aria-live="polite" hidden></p>
     </section>
 
       <main>
@@ -180,8 +208,14 @@
                 <h1 id="page-heading" tabindex="-1">Список задач</h1>
                 <p>Одно дело — одна победа. Прожарим?</p>
               </div>
-              <span class="game-hero-fox"><img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
-                <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span></span>
+              <span class="game-hero-fox fox-evolution-figure" data-fox-stage="cub" aria-hidden="true">
+                <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+                <span class="fox-evolution-core">
+                  <img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
+                  <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+                </span>
+                <span class="fox-evolution-crest"></span>
+              </span>
             </div>
             <form id="task-form">
               <label for="task-title">Новая задача</label>
