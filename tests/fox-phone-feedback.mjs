@@ -60,6 +60,10 @@ try {
       assert.match(text, /Радость от превращения: не оценено/);
       assert.match(text, /Не отвлекает от дел: 3\/5/);
       assert.match(text, /Искры красивые, но размер можно увеличить/);
+      await page.waitForFunction(() =>
+        /Отзыв скопирован|Доступ к буферу закрыт/.test(
+          document.querySelector("#phone-review-status")?.textContent || ""
+        ), null, { timeout: 5000 });
       assert.match(await page.locator("#phone-review-status").textContent(),
         /Отзыв скопирован|Доступ к буферу закрыт/);
       if (width === 320) {
