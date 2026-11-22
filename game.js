@@ -10,7 +10,7 @@
   const integer = value => Number.isSafeInteger(value) && value >= 0;
   const plain = value => value && typeof value === "object" && !Array.isArray(value);
   const validId = value => typeof value === "string" && value.length > 0 && value.length <= 150;
-  const validDay = value => typeof value === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(value);
+  const validDay = value => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
   let failure = "";
 
