@@ -38,8 +38,13 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
   });
   try {
     await page.goto(origin, { waitUntil: "networkidle" });
+    // Welcome can auto-close while WebKit finishes networkidle and layout.
+    // Enter only if the dialog is still open; never wait on a hidden button.
+    await page.evaluate(() => {
+      const welcome = document.querySelector("#welcome");
+      if (welcome?.open) document.querySelector("#welcome-start")?.click();
+    });
     await showProgress(page);
-    await page.locator("#welcome-start").click();
     await page.reload({ waitUntil: "networkidle" });
     assert.equal(await page.locator("#progress-toggle").getAttribute("aria-expanded"), "false",
       "Returning to the app starts with a compact progress bar");
