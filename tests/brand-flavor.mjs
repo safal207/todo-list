@@ -63,6 +63,19 @@ try {
         path: "artifacts/flavor-brand-" + engine + "-" + width + ".png",
         fullPage: true
       });
+      if (await page.locator("#progress-toggle").getAttribute("aria-expanded") === "false") {
+        await page.locator("#progress-toggle").click();
+      }
+      const achievementColors = await page.locator(".milestone-roadmap").evaluate(el => ({
+        backgroundImage: getComputedStyle(el).backgroundImage,
+        backgroundColor: getComputedStyle(el).backgroundColor
+      }));
+      assert.match(achievementColors.backgroundImage, /linear-gradient/,
+        "Achievement card should have a warm caramel gradient, not legacy purple");
+      await page.screenshot({
+        path: "artifacts/flavor-brand-expanded-" + engine + "-" + width + ".png",
+        fullPage: true
+      });
 
       await page.locator("#task-title").fill("Прожарить маленькое дело");
       await page.locator("#task-title").press("Enter");
