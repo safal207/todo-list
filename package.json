@@ -1,0 +1,13 @@
+{
+  "name": "sdelano-preview",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Isolated preview server; not the production Сделано website.",
+  "type": "module",
+  "scripts": {
+    "start": "node preview-server.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
