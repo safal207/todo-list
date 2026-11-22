@@ -9,9 +9,9 @@ const url = "http://127.0.0.1:8765/";
 
 async function enter(page) {
   await page.goto(url, { waitUntil: "networkidle" });
-  if (await page.locator("#welcome").evaluate(el => el.open)) {
-    await page.locator("#welcome-start").click();
-  }
+  await page.evaluate(() => {
+    if (document.querySelector("#welcome")?.open) document.querySelector("#welcome-start")?.click();
+  });
   if (await page.locator("#game-preview-toggle").getAttribute("aria-expanded") === "false") {
     await page.locator("#game-preview-toggle").click();
   }
@@ -42,9 +42,7 @@ async function wallet(page) {
 async function buy(page, id) {
   const card = page.locator('.game-shop-card[data-item="' + id + '"]');
   await card.locator(".game-shop-action").click();
-  await assert.doesNotReject(async () => {
-    await card.locator(".game-shop-card-status").waitFor({ state: "visible" });
-  });
+  await page.waitForFunction(id => document.querySelector('.game-shop-card[data-item="' + id + '"]')?.dataset.owned === "true", id);
   return card;
 }
 
@@ -77,10 +75,10 @@ try {
     assert.equal((await wallet(page)).coins, 550);
 
     await page.locator('.game-shop-card[data-item="scarf"] .game-shop-action').click();
-    assert.equal(await page.evaluate(() => document.body.dataset.gameScarf), "off");
+    await page.waitForFunction(() => document.body.dataset.gameScarf === "off");
     assert.equal((await wallet(page)).coins, 550);
     await page.locator('.game-shop-card[data-item="scarf"] .game-shop-action').click();
-    assert.equal(await page.evaluate(() => document.body.dataset.gameScarf), "on");
+    await page.waitForFunction(() => document.body.dataset.gameScarf === "on");
 
     await buy(page, "glasses");
     assert.equal((await wallet(page)).coins, 450);
@@ -118,6 +116,30 @@ try {
       assert.equal(animation, "none", "Reduced motion must disable victory particles");
     }
     assert.deepEqual(errors, [], "Page errors: " + errors.join(", "));
+    await context.close();
+  }
+
+  // Two tabs buying the same item cannot debit twice with Web Locks.
+  {
+    const context = await browser.newContext();
+    const one = await context.newPage(), two = await context.newPage();
+    await enter(one);
+    await enter(two);
+    await seed(one, 1);
+    if (await one.evaluate(() => Boolean(navigator.locks?.request))) {
+      const outcomes = await Promise.all([
+        one.evaluate(() => window.sdelanoGame.buyItem("scarf")),
+        two.evaluate(() => window.sdelanoGame.buyItem("scarf"))
+      ]);
+      assert.equal(outcomes.filter(x => x.success).length, 1, "Exactly one concurrent purchase");
+      assert.equal((await wallet(one)).coins, 0);
+      assert.equal((await wallet(one)).purchases.length, 1);
+    } else {
+      const first = await one.evaluate(() => window.sdelanoGame.buyItem("scarf"));
+      const repeat = await two.evaluate(() => window.sdelanoGame.buyItem("scarf"));
+      assert.equal(first.success, true);
+      assert.equal(repeat.success, false);
+    }
     await context.close();
   }
 
