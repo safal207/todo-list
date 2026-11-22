@@ -70,7 +70,9 @@ await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.1/+es
 
 try {
   await page.goto(origin, {waitUntil:"domcontentloaded"});
-  await page.locator("#welcome-start").click();
+  await page.evaluate(() => {
+  if (document.querySelector("#welcome")?.open) document.querySelector("#welcome-start")?.click();
+});
   await page.locator("#cloud-sync summary").waitFor({state:"visible",timeout:8000});
   await page.locator("#cloud-sync summary").click();
   await page.locator("#cloud-account").getByText("tester@example.com").waitFor({state:"visible",timeout:8000});
@@ -93,6 +95,39 @@ try {
   const uploaded = await page.evaluate(() => structuredClone(window.__cloudMock.row));
   assert.equal(uploaded.snapshot.tasks[0].title, "Приватная задача");
   assert.equal(uploaded.revision, 1);
+  assert.equal(uploaded.snapshot.version, 1, "Task-only cloud sync stays v1 until wallet consent");
+
+  // Wallet opt-in is distinct from the task-upload consent.
+  await page.evaluate(() => {
+    const key = "sdelano.game.v1", wallet = JSON.parse(localStorage.getItem(key));
+    const now = Date.now(), date = new Date(now);
+    const day = [date.getFullYear(), String(date.getMonth()+1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")].join("-");
+    wallet.grants.push({ key: "task:cloud-wallet-fixture", day, at: now, xp: 10, coins: 5 });
+    localStorage.setItem(key, JSON.stringify(wallet));
+    dispatchEvent(new Event("sdelano:game-changed"));
+  });
+  assert.equal(await page.evaluate(() => window.__cloudMock.row.snapshot.version), 1);
+  page.once("dialog", d => d.accept());
+  await page.locator("#cloud-wallet-toggle").click();
+  await page.waitForFunction(() => window.__cloudMock.row?.snapshot?.version === 2,
+    { timeout: 10000 });
+  const uploadedWallet = await page.evaluate(() => structuredClone(window.__cloudMock.row.snapshot.game));
+  assert.equal(uploadedWallet.grants.filter(g => g.key === "task:cloud-wallet-fixture").length, 1);
+  assert.equal((await page.evaluate(() => window.sdelanoGame.inspect())).coins, 5);
+  assert.match(await page.locator("#cloud-wallet-toggle").textContent(), /включена/);
+
+  // Adopt a remote-only wallet reward when local still equals the common baseline.
+  await page.evaluate(() => {
+    const row = window.__cloudMock.row, wallet = row.snapshot.game;
+    const prior = wallet.grants.at(-1);
+    wallet.grants.push({ ...prior, key: "task:cloud-remote-bonus", at: prior.at + 1 });
+    row.revision++;
+  });
+  await page.locator("#cloud-sync-now").click();
+  await page.waitForFunction(() => window.sdelanoGame.inspect().coins === 10);
+  assert.equal(await page.evaluate(() => window.__cloudMock.row.snapshot.game.grants.length), 2);
+
   assert.equal(await page.locator("#cloud-sync-now").textContent(), "Синхронизировать сейчас");
 
   // Another device added a distinct task to the cloud; merge both.
