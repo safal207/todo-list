@@ -131,7 +131,7 @@ try {
     await fallbackPage.route("**/assets/fox-evolution-stages.webp", route => route.abort());
     await fallbackPage.goto(origin + "/", { waitUntil: "networkidle" });
     await fallbackPage.waitForFunction(() => document.body.dataset.foxArt === "fallback");
-    const fallback = await fallbackPage.locator(".fox-evolution-core").first().evaluate(el => ({
+    const fallback = await fallbackPage.locator(".mini-hero .fox-evolution-core").evaluate(el => ({
       oldImageVisible: getComputedStyle(el.querySelector("img")).opacity,
       oldImageLoaded: el.querySelector("img").complete && el.querySelector("img").naturalWidth > 0,
       spriteHidden: getComputedStyle(el, "::before").opacity
