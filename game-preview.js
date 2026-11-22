@@ -65,14 +65,15 @@
   });
 
   window.addEventListener("sdelano:reward-earned", event => {
-    const { xp: gainedXP, coins: gainedCoins } = event.detail;
+    const { xp: gainedXP, coins: gainedCoins, levelUp } = event.detail;
     refresh();
     celebrate();
-    status.textContent = "Получено +" + gainedXP + " XP и +" + gainedCoins + " монет!";
+    status.textContent = levelUp ? "Новый уровень " + levelUp + "! +" + gainedXP + " XP, +" + gainedCoins + " монет" :
+      "Получено +" + gainedXP + " XP и +" + gainedCoins + " монет!";
     // The existing task-complete sound plays first.
     if (rewardTimer !== null) clearTimeout(rewardTimer);
     rewardTimer = setTimeout(() => {
-      window.taskFeedback?.play("coins");
+      window.taskFeedback?.play(levelUp ? "level" : "coins");
       rewardTimer = null;
     }, 250);
   });
