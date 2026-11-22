@@ -86,6 +86,7 @@ jobs:
           node tests/game-economy.mjs
           node tests/game-focus.mjs
           node tests/game-shop.mjs
+          node tests/game-wallet-sync.mjs
           node tests/first-visit.mjs
           node tests/pilot-results.mjs
           node tests/task-edit.mjs
