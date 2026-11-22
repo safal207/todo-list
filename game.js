@@ -69,11 +69,11 @@
     // Optional cosmetics preserve compatibility with older v1 wallets.
     if (state.purchases !== undefined) {
       if (!Array.isArray(state.purchases) || state.purchases.length > CATALOG.length)
-        throw new Error("Список покупок повреждён.");
+        throw new Error("История игровых покупок повреждена.");
       const purchased = new Set();
       for (const purchase of state.purchases) {
         if (!plain(purchase) || !shopItem(purchase.id) || purchased.has(purchase.id) ||
-            !integer(purchase.coins) || purchase.coins < 1 || purchase.coins > 10000 ||
+            !integer(purchase.coins) || purchase.coins !== shopItem(purchase.id)?.price ||
             !integer(purchase.at)) throw new Error("История игровых покупок повреждена.");
         purchased.add(purchase.id);
       }
