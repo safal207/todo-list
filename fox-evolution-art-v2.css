@@ -1,0 +1,88 @@
+/* Fox Evolution v2: four approved, distinct life-stage illustrations.
+ * A single transparent WebP atlas (192x768, 4 frames of 192x192) reduces
+ * requests. Keep the original fox as a visible fallback until preloaded. */
+.fox-evolution-core::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  opacity: 0;
+  background-image: url("assets/fox-evolution-stages.webp");
+  background-size: 100% 400%;
+  background-repeat: no-repeat;
+  background-position: 50% 0%;
+  pointer-events: none;
+}
+.fox-evolution-figure[data-fox-stage="cub"] .fox-evolution-core::before { background-position: 50% 0%; }
+.fox-evolution-figure[data-fox-stage="student"] .fox-evolution-core::before { background-position: 50% 33.3333%; }
+.fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-core::before { background-position: 50% 66.6667%; }
+.fox-evolution-figure[data-fox-stage="master"] .fox-evolution-core::before { background-position: 50% 100%; }
+body[data-fox-art="ready"] .fox-evolution-core::before { opacity: 1; }
+body[data-fox-art="ready"] .fox-evolution-core img { opacity: 0; }
+body[data-fox-art="ready"] .fox-evolution-tail,
+body[data-fox-art="ready"] .fox-evolution-crest { display: none; }
+
+/* The four drawings already grow anatomically within identical canvases.
+ * Do not magnify a grown head beyond the available mobile frame. */
+body[data-fox-art="ready"] .fox-evolution-figure .fox-evolution-core,
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="student"] .fox-evolution-core,
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-core,
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="master"] .fox-evolution-core {
+  transform: none;
+}
+body[data-fox-art="ready"] .fox-evolution-figure .fox-evolution-halo {
+  inset: 10%;
+  border-color: #e5b37370;
+  background: radial-gradient(circle at 48% 52%, #ffe8b050, transparent 77%);
+  box-shadow: none;
+}
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="master"] .fox-evolution-halo {
+  border-color: #d49b5375;
+  box-shadow: 0 0 10px #ecae5761;
+}
+
+/* Cosmetic overlays are independent of stage and stay owned/equipped.
+ * Face/neck anchor points compensate for the anatomical differences. */
+body[data-fox-art="ready"] .fox-evolution-figure .game-fox-glasses {
+  z-index: 3;
+  left: 28%; top: 47%; width: 46%; height: 12%;
+}
+body[data-fox-art="ready"] .fox-evolution-figure .game-fox-scarf {
+  z-index: 3;
+  left: 40%; top: 65%; width: 34%; height: 8%;
+}
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="student"] .game-fox-glasses {
+  left: 51%; top: 42%; width: 31%; height: 10%;
+}
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="student"] .game-fox-scarf {
+  left: 55%; top: 58%; width: 28%; height: 8%;
+}
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="hero"] .game-fox-glasses {
+  left: 63%; top: 35%; width: 30%; height: 9%;
+}
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="hero"] .game-fox-scarf {
+  left: 64%; top: 49%; width: 27%; height: 8%;
+}
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="master"] .game-fox-glasses {
+  left: 63%; top: 29%; width: 29%; height: 9%;
+}
+body[data-fox-art="ready"] .fox-evolution-figure[data-fox-stage="master"] .game-fox-scarf {
+  left: 61%; top: 44%; width: 30%; height: 8%;
+}
+
+/* A compact portrait can be slightly taller without stealing task space. */
+body[data-fox-art="ready"] .fox-evolution-portrait {
+  width: 3.7rem;
+  height: 3.7rem;
+}
+@media (max-width: 350px) {
+  body[data-fox-art="ready"] .fox-evolution-portrait {
+    width: 3.25rem; height: 3.25rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-fox-art="ready"] .fox-evolution-core::before {
+    transition: none !important;
+    animation: none !important;
+  }
+}
