@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="brand-flavor.css?v=1">
 <link rel="stylesheet" href="fox-evolution.css?v=1">
 <link rel="stylesheet" href="fox-evolution-art-v2.css?v=1">
-<link rel="stylesheet" href="fox-ceremony.css?v=1">
+<link rel="stylesheet" href="fox-ceremony.css?v=31">
 <style>
 .phone-qa-banner{margin:.55rem 0 .9rem;padding:.8rem 1rem;border:1.5px dashed #bb8548;border-radius:.85rem;background:#fff5df;color:#664126;font-size:.84rem;line-height:1.45}
 .phone-qa-panel{padding:.85rem;margin-top:1rem;border:1.5px solid #e0b680;border-radius:.9rem;background:#fffaf0}
@@ -87,28 +87,32 @@ window.taskFeedback={
       if(!Type)return;
       if(!audio)audio=new Type();
       if(audio.state==="suspended")void audio.resume();
-      const base={tap:520,complete:700,coins:990,xp:800,level:1150,reward:910}[kind]||520;
-      const length=kind==="level"?.35:.14;
-      const oscillator=audio.createOscillator(),gain=audio.createGain();
+      const base={tap:520,complete:700,coins:990,xp:800,reward:910}[kind]||520;
+      const notes=kind==="level"
+        ? [[560,0,.12],[730,.13,.15],[910,.28,.17]]
+        : [[base,0,.14]];
       const t=audio.currentTime;
-      oscillator.type="sine";
-      oscillator.frequency.setValueAtTime(base,t);
-      oscillator.frequency.linearRampToValueAtTime(base*1.24,t+length*.8);
-      gain.gain.setValueAtTime(.0001,t);
-      gain.gain.exponentialRampToValueAtTime(.035,t+.015);
-      gain.gain.exponentialRampToValueAtTime(.0001,t+length);
-      oscillator.connect(gain).connect(audio.destination);
-      oscillator.start(t);oscillator.stop(t+length+.01);
+      for(const [frequency,delay,length] of notes){
+        const oscillator=audio.createOscillator(),gain=audio.createGain();
+        oscillator.type="sine";
+        oscillator.frequency.setValueAtTime(frequency,t+delay);
+        if(kind!=="level")oscillator.frequency.linearRampToValueAtTime(frequency*1.24,t+delay+length*.8);
+        gain.gain.setValueAtTime(.0001,t+delay);
+        gain.gain.exponentialRampToValueAtTime(kind==="level"?.022:.035,t+delay+.018);
+        gain.gain.exponentialRampToValueAtTime(.0001,t+delay+length);
+        oscillator.connect(gain).connect(audio.destination);
+        oscillator.start(t+delay);oscillator.stop(t+delay+length+.01);
+      }
     }catch{/* Audio never blocks the page. */}
   }
 };
 })();
 </script>
-<script src="game-preview.js?v=2" defer></script>
+<script src="game-preview.js?v=31" defer></script>
 <script src="game-juice.js?v=1" defer></script>
 <script src="fox-evolution.js?v=1" defer></script>
 <script src="fox-evolution-art-v2.js?v=1" defer></script>
-<script src="fox-ceremony.js?v=1" defer></script>
+<script src="fox-ceremony.js?v=31" defer></script>
 <script src="fox-phone-preview.js?v=1" defer></script>
 <script src="fox-phone-feedback.js?v=1" defer></script>
 </head>
@@ -214,7 +218,7 @@ window.taskFeedback={
 <button id="phone-qa-complete" type="button" class="add-button">Выполнить дело · +20 XP</button>
 <button id="phone-qa-again" type="button" class="phone-qa-secondary">Повторить</button>
 </div>
-<p id="phone-qa-result" class="phone-qa-result" role="status" aria-live="polite">Нажми кнопку и оцени эффект.</p>
+<p id="phone-qa-result" class="phone-qa-result" role="status" aria-live="polite">Нажми кнопку и оцени более плавный переход.</p>
 </div>
 <div id="phone-qa-sample" class="phone-qa-card"><span class="phone-qa-check" aria-hidden="true">○</span><span>Один полезный шаг — сделано!</span></div>
 <details class="phone-review" id="phone-qa-review">
