@@ -138,6 +138,7 @@ jobs:
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
+          node tests/focus-clock-e2e.mjs
           node tests/game-shop.mjs
           node tests/game-wallet-sync.mjs
           node tests/release-mobile-journey.mjs
