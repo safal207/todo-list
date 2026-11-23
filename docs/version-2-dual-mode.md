@@ -20,3 +20,5 @@ Independent Draft candidate based directly on stable main, not on a merge of PR 
 - No changes to main or GitHub Pages until owner authorizes release. PR #50 is a separate integrated code reference, not a merge prerequisite.
 
 Source game commit: dea287e805cb62821fe25075786eee411c7d1546, PR #50 CI 3/3 success.
+
+Preview-safe navigation: links point to explicit index.html files. GitHub Pages also serves the folder aliases / and /v2/, but third-party raw preview hosts may not resolve directory URLs. User data is shared only when BOTH modes are served from the SAME origin, never between preview and production.

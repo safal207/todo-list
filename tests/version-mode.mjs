@@ -8,7 +8,7 @@ const browser = await ({ chromium, firefox, webkit })[engine].launch({
   headless: true, executablePath: process.env.SDELANO_QA_EXECUTABLE
 });
 const root = "http://127.0.0.1:8765/";
-const v2 = root + "v2/";
+const v2 = root + "v2/index.html";
 const tasksKey = "todo-list.tasks.v1";
 async function dismissWelcome(page) {
   await page.evaluate(() => {
@@ -95,7 +95,7 @@ try {
 
       // Explicit Classic switch must not remove coins or reset tasks.
       await page.locator('a[data-mode-target="classic"]').click();
-      await page.waitForURL(/\/\?classic=1$/);
+      await page.waitForURL(/\/index\.html\?classic=1$/);
       await dismissWelcome(page);
       assert.equal(await mode(page), "classic");
       assert.equal(await page.locator("#game-preview").count(), 0);
@@ -126,7 +126,7 @@ try {
       await page.goto(root, { waitUntil: "domcontentloaded" });
       await page.waitForURL(v2);
       await page.locator('a[data-mode-target="classic"]').click();
-      await page.waitForURL(/\/\?classic=1$/);
+      await page.waitForURL(/\/index\.html\?classic=1$/);
       assert.equal(await mode(page), "classic");
       await page.goto(root, { waitUntil: "networkidle" });
       assert.equal(await mode(page), "classic",

@@ -16,7 +16,7 @@
     if (mode === "game") localStorage.setItem(key, "game");
   } catch { /* Denied localStorage does not block regular links. */ }
   if (mode === "classic" && chosen === "game" && !explicitClassic) {
-    location.replace(new URL("v2/", location.href));
+    location.replace(new URL("v2/index.html", location.href));
     return;
   }
   nav.querySelectorAll("a[data-mode-target]").forEach(link => {
