@@ -33,6 +33,8 @@ try {
         assert.equal(await page.locator("#fox-evolution-notice").isVisible(), false);
         assert.equal(await page.locator("a[aria-current=page]").getAttribute("data-preview-stage"), choice);
         assert.equal(await page.locator("#phone-qa-complete").isEnabled(), true);
+        assert.match(await page.locator(".phone-qa-sample-label").textContent(),
+          /ожидает выполнения/, "An unfinished demo task must never look already completed");
         const info = await page.evaluate(() => ({
           xp: window.sdelanoGame.inspect().xp,
           coins: window.sdelanoGame.inspect().coins,
@@ -68,6 +70,8 @@ try {
         if (width === 390) assert.equal(remaining.particles, 0);
         else assert.equal(remaining.particles, 6, 'Stage reveal uses six gentle sparks');
         assert.equal(await page.locator("#phone-qa-complete").isDisabled(), true);
+        assert.match(await page.locator(".phone-qa-sample-label").textContent(),
+          /сделано!/, "Only an actual completion may mark the example task done");
         await page.waitForTimeout(width === 390 ? 100 : 1050);
         await page.screenshot({
           path: "artifacts/fox-phone-preview-" + engine + "-" + width + "-" + choice + ".png",
