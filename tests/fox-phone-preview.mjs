@@ -79,7 +79,7 @@ try {
         });
       }
       await page.locator("#phone-qa-again").click();
-      await page.waitForFunction(() => window.sdelanoGame.inspect().coins === 0);
+      await page.waitForFunction(() => window.sdelanoGame?.inspect?.()?.coins === 0);
       assert.deepEqual(await page.evaluate(() => Object.keys(localStorage)), []);
       assert.deepEqual(errors, [], errors.join(" | "));
       console.log("Fox phone QA passed:", engine, width);
