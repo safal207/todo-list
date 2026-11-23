@@ -132,6 +132,7 @@ jobs:
           node tests/fox-phone-feedback.mjs
           node tests/fox-smooth-v31.mjs
           node tests/fox-microreactions.mjs
+          node tests/fox-microreactions-integration.mjs
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs
