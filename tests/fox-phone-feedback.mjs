@@ -44,8 +44,10 @@ try {
         "Only one question should take vertical space on a phone");
       assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 1 из 5/);
       await page.locator('input[name="review-look"][value="5"]').check();
-      assert.equal(await page.locator("#phone-review-copy").isDisabled(), true,
-        "Review must follow a real visible transformation");
+      assert.equal(await page.locator("#phone-review-copy").isEnabled(), true,
+        "Users who already watched the animation can share rated feedback without replaying");
+      assert.match(await page.locator("#phone-review-status").textContent(),
+        /Превращение в этой вкладке ещё не запускалось/);
       await page.locator("#phone-qa-complete").click();
       assert.equal(await page.locator("#phone-review-copy").isEnabled(), true,
         "At least one completed stage and one score may be copied");
@@ -61,6 +63,20 @@ try {
       await page.locator("#phone-review-prev").click();
       assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 4 из 5/);
       await page.locator("#phone-review-next").click();
+      assert.equal(await page.locator("#phone-review-next").textContent(), "Завершить оценку");
+      await page.locator("#phone-review-next").click();
+      assert.equal(await page.locator("#phone-review-finish").isVisible(), true,
+        "Last question must visibly finish the review");
+      assert.match(await page.locator("#phone-review-finish-text").textContent(), /3 из 5/);
+      assert.equal(await page.locator(".phone-review-field:visible").count(), 0,
+        "Completion must replace question navigation instead of stopping abruptly");
+      assert.equal(await page.locator(".phone-review-nav").isVisible(), false);
+      await page.locator("#phone-review-edit").click();
+      assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 1 из 5/);
+      assert.equal(await page.locator('input[name="review-look"][value="5"]').isChecked(), true);
+      for (let i = 0; i < 4; i++) await page.locator("#phone-review-next").click();
+      await page.locator("#phone-review-next").click();
+      assert.equal(await page.locator("#phone-review-finish").isVisible(), true);
       await page.locator("#phone-review-note").fill("Искры красивые, но размер можно увеличить.");
       const minTapHeight = await page.locator('.phone-review-field:not([hidden]) .phone-review-scale label span').first()
         .evaluate(el => el.getBoundingClientRect().height);
@@ -83,6 +99,7 @@ try {
       await page.locator("#phone-review-copy").click();
       const text = await page.locator("#phone-review-output").inputValue();
       assert.match(text, /Fox Evolution v3 — отзыв/);
+      assert.match(text, /Просмотр в этой вкладке: да/);
       assert.match(text, new RegExp("Открытая стадия: " + label));
       assert.match(text, /Внешний вид и размер: 5\/5/);
       assert.match(text, /Золотая вспышка: 4\/5/);
