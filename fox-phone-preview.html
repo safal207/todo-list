@@ -56,6 +56,11 @@
 .phone-review textarea:focus-visible{outline:3px solid #7144a5;outline-offset:2px}
 .phone-review button{min-height:44px;margin-top:.65rem}
 .phone-review button:disabled{opacity:.6;cursor:not-allowed}
+.phone-review-finish{margin:.5rem 0;padding:.8rem .75rem;border:1.5px solid #b88a47;border-radius:.75rem;background:linear-gradient(115deg,#fff0c1,#ffdf99);color:#5b321a}
+.phone-review-finish strong{display:block;font-size:.96rem;line-height:1.3}
+.phone-review-finish p{margin:.2rem 0 .55rem;color:#73451f;font-size:.82rem}
+.phone-review-finish[hidden],.phone-review-edit[hidden]{display:none!important}
+.phone-review-edit{border:1.5px solid #b68a55;border-radius:.65rem;background:#fff9e9;padding:.4rem .8rem;color:#663c22;font-weight:800}
 .phone-review-status{font-size:.8rem;color:#714326;min-height:1.5em;margin:.55rem 0 0!important}
 .phone-review-output-label{display:block;margin-top:.55rem;font-size:.8rem;font-weight:800}
 .phone-review-output[hidden],.phone-review-output-label[hidden]{display:none!important}
@@ -277,6 +282,11 @@ window.taskFeedback={
 <button id="phone-review-prev" class="phone-review-prev" type="button" hidden>Назад</button>
 <button id="phone-review-next" type="button">Следующий вопрос</button>
 </div>
+<section id="phone-review-finish" class="phone-review-finish" aria-label="Завершение оценки" hidden>
+  <strong>Готово! Оценка завершена.</strong>
+  <p id="phone-review-finish-text">Теперь отзыв можно скопировать или отправить через меню телефона.</p>
+  <button type="button" class="phone-review-edit" id="phone-review-edit">Изменить оценки</button>
+</section>
 <label for="phone-review-note" class="phone-review-note">Что улучшить? (необязательно)</label>
 <textarea id="phone-review-note" autocomplete="off" maxlength="240" rows="3" placeholder="Например: искры слишком яркие. Не вводи личные данные."></textarea>
 <button type="button" id="phone-review-copy" class="add-button" disabled>Скопировать отзыв</button>
