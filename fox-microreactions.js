@@ -23,7 +23,11 @@
     priorXp = wallet.xp;
     if (actualDelta < xp || wallet.xp < xp) return;
     // v3.1 growth ceremony owns stage-unlock events; do not layer effects.
-    if (evolution.stageForXp(wallet.xp - xp).id !== evolution.stageForXp(wallet.xp).id) return;
+    if (evolution.stageForXp(wallet.xp - xp).id !== evolution.stageForXp(wallet.xp).id) {
+      // A real stage unlock must cancel any preceding nod immediately.
+      clear();
+      return;
+    }
     if (document.hidden || reduced.matches || !fox.getClientRects().length) return;
     if (stopTimer !== null) return; // No interruptions or queued loops.
     fox.classList.add(CLASS);
@@ -31,6 +35,7 @@
   }
   window.addEventListener("sdelano:reward-earned", earned);
   window.addEventListener("sdelano:focus-earned", earned);
+  window.addEventListener("sdelano:fox-evolved", clear);
   window.addEventListener("storage", event => {
     if (event.key === game.key || event.key === null) {
       priorXp = game.inspect().xp;

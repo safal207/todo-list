@@ -37,6 +37,7 @@ on:
       - "fox-ceremony.css"
       - "fox-ceremony.js"
       - "fox-microreactions.js"
+      - "fox-micro-phone-preview.js"
       - "fox-microreactions.css"
       - "invite/index.html"
       - "tests/*.mjs"
@@ -133,6 +134,7 @@ jobs:
           node tests/fox-smooth-v31.mjs
           node tests/fox-microreactions.mjs
           node tests/fox-microreactions-integration.mjs
+          node tests/fox-micro-phone-preview.mjs
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs

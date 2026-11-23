@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="fox-evolution.css?v=1">
 <link rel="stylesheet" href="fox-evolution-art-v2.css?v=1">
 <link rel="stylesheet" href="fox-ceremony.css?v=31">
+<link rel="stylesheet" href="fox-microreactions.css?v=1">
 <style>
 .phone-qa-banner{margin:.55rem 0 .9rem;padding:.8rem 1rem;border:1.5px dashed #bb8548;border-radius:.85rem;background:#fff5df;color:#664126;font-size:.84rem;line-height:1.45}
 .phone-qa-panel{padding:.85rem;margin-top:1rem;border:1.5px solid #e0b680;border-radius:.9rem;background:#fffaf0}
@@ -127,7 +128,9 @@ window.taskFeedback={
 <script src="fox-evolution.js?v=1" defer></script>
 <script src="fox-evolution-art-v2.js?v=1" defer></script>
 <script src="fox-ceremony.js?v=31" defer></script>
+<script src="fox-microreactions.js?v=1" defer></script>
 <script src="fox-phone-preview.js?v=1" defer></script>
+<script src="fox-micro-phone-preview.js?v=1" defer></script>
 <script src="fox-phone-feedback.js?v=1" defer></script>
 </head>
 <body>
@@ -137,7 +140,7 @@ window.taskFeedback={
 <button type="button" class="feedback-toggle" id="feedback-toggle" aria-pressed="true">Отклик: вкл</button>
 <p class="storage-note">Только демоверсия</p>
 </header>
-<p class="phone-qa-banner"><strong>Телефонная проверка Fox Evolution v3.</strong> Нажми «Выполнить дело», чтобы увидеть реальное оформление открытия возраста. Это изолированное демо: здесь нет входа, настоящих задач, записи XP или монет. Не вводи личную информацию.</p>
+<p class="phone-qa-banner"><strong>Телефонная проверка Fox Evolution v3.1 и микрореакций.</strong> Нажми «Завершён фокус» для короткого кивка и «Выполнить дело» для взросления. Это изолированное демо: здесь нет входа, настоящих задач, записи XP или монет. Не вводи личную информацию.</p>
     <section id="game-preview" class="game-preview" aria-label="Игровые ресурсы">
       <button id="game-preview-toggle" class="game-preview-toggle" type="button" aria-expanded="false" aria-controls="game-preview-details">
         <span class="game-preview-caption"><strong>Награды</strong><small>LVL <span id="game-level-chip">1</span></small></span>
@@ -234,6 +237,12 @@ window.taskFeedback={
 </div>
 <p id="phone-qa-result" class="phone-qa-result" role="status" aria-live="polite">Нажми кнопку и оцени более плавный переход.</p>
 </div>
+<section class="phone-qa-panel" aria-labelledby="phone-micro-heading">
+  <h2 id="phone-micro-heading">Микрореакция после полезного шага</h2>
+  <p class="phone-qa-hint">Сначала проверь короткий кивок после подтверждённого фокуса. Это имитация уже завершённых 15 минут: +5 XP только в памяти демостраницы, без записи задач, XP или монет на устройстве. Звука у кивка нет.</p>
+  <button id="phone-qa-micro" class="phone-qa-secondary" type="button" style="width:100%;min-height:48px">Завершён фокус · +5 XP (демо)</button>
+  <p id="phone-qa-micro-result" class="phone-qa-result" role="status" aria-live="polite">После нажатия лисёнок один раз слегка кивнёт. Для повторения нажми «Повторить» выше.</p>
+</section>
 <div id="phone-qa-sample" class="phone-qa-card"><span class="phone-qa-check" aria-hidden="true">○</span><span class="phone-qa-sample-label">Демо-задача: ожидает выполнения</span></div>
 <details class="phone-review" id="phone-qa-review">
 <summary>Оценить превращение · 1–5</summary>
@@ -303,7 +312,7 @@ window.taskFeedback={
 </section>
 </div>
 </main>
-<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». После оценки нажми «Скопировать отзыв» или выбери «Поделиться через телефон». Отправка возможна только после твоего выбора. Самостоятельно демо ничего не отправляет. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
+<p class="phone-qa-footer">Проверь на телефоне: приятен ли кивок, не мешает ли он вводить задачи, читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». После оценки нажми «Скопировать отзыв» или выбери «Поделиться через телефон». Отправка возможна только после твоего выбора. Самостоятельно демо ничего не отправляет. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
 </div>
 </body>
 </html>
