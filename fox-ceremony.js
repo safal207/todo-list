@@ -12,17 +12,20 @@
   let burst = null;
   let burstTimer = null;
   let latestStage = null;
+  let previousArt = null;
 
   function clearBurst() {
     if (burstTimer !== null) clearTimeout(burstTimer);
     burstTimer = null;
     burst?.remove();
     burst = null;
+    previousArt?.remove();
+    previousArt = null;
     hero.classList.remove("fox-ceremony--cheer");
   }
 
   function celebrate(event) {
-    const { stage, name, level } = event.detail || {};
+    const { stage, name, level, from } = event.detail || {};
     if (!allowed.has(stage) || typeof name !== "string" ||
         !Number.isSafeInteger(level) || level < 3) return;
     const actual = window.sdelanoFoxEvolution.stageForLevel(
@@ -56,21 +59,33 @@
     clearBurst();
     if (reduced.matches || document.hidden) return;
 
-    // A contained, non-interactive joy burst: never covers the task form.
+    // Smoothly dissolve the previous painted age into the actual new one.
+    // The approved WebP atlas remains the single art source.
+    const core = hero.querySelector(".fox-evolution-figure .fox-evolution-core");
+    if (core && document.body.dataset.foxArt === "ready" &&
+        ["cub", "student", "hero"].includes(from)) {
+      previousArt = document.createElement("span");
+      previousArt.className = "fox-ceremony-previous";
+      previousArt.dataset.from = from;
+      previousArt.setAttribute("aria-hidden", "true");
+      core.append(previousArt);
+    }
+
+    // Less visual competition with real work: six small warm sparks.
     burst = document.createElement("span");
     burst.className = "fox-ceremony-sparks";
     burst.setAttribute("aria-hidden", "true");
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 6; i++) {
       const sparkle = document.createElement("span");
       sparkle.textContent = i % 2 ? "✧" : "✦";
-      sparkle.style.setProperty("--fox-spark-left", (14 + i * 9) + "%");
-      sparkle.style.setProperty("--fox-spark-delay", (i * 47) + "ms");
-      sparkle.style.setProperty("--fox-spark-drift", ((i % 2 ? -1 : 1) * (11 + i * 3)) + "px");
+      sparkle.style.setProperty("--fox-spark-left", (17 + i * 13) + "%");
+      sparkle.style.setProperty("--fox-spark-delay", (i * 30) + "ms");
+      sparkle.style.setProperty("--fox-spark-drift", ((i % 2 ? -1 : 1) * (6 + i * 2)) + "px");
       burst.append(sparkle);
     }
     hero.append(burst);
     hero.classList.add("fox-ceremony--cheer");
-    burstTimer = setTimeout(clearBurst, 1650);
+    burstTimer = setTimeout(clearBurst, 1050);
   }
 
   window.addEventListener("sdelano:fox-evolved", celebrate);

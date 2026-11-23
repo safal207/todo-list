@@ -9,8 +9,67 @@
   const status = document.querySelector("#phone-review-status");
   const output = document.querySelector("#phone-review-output");
   const outputLabel = document.querySelector("#phone-review-output-label");
+  const progress = document.querySelector("#phone-review-step");
+  const prevButton = document.querySelector("#phone-review-prev");
+  const nextButton = document.querySelector("#phone-review-next");
+  const shareButton = document.querySelector("#phone-review-share");
+  const finishBanner = document.querySelector("#phone-review-finish");
+  const finishText = document.querySelector("#phone-review-finish-text");
+  const editButton = document.querySelector("#phone-review-edit");
+  const nav = document.querySelector(".phone-review-nav");
+  const actions = document.querySelector("#phone-review-actions");
+  const fields = [...panel.querySelectorAll(".phone-review-field")];
   if (!demo || !complete || !panel || !copyButton || !note || !status ||
-      !output || !outputLabel) return;
+      !output || !outputLabel || !progress || !prevButton || !nextButton ||
+      !shareButton || !finishBanner || !finishText || !editButton || !nav || !actions ||
+      fields.length !== 5) return;
+  let activeQuestion = 0;
+  let finished = false;
+  shareButton.hidden = typeof navigator.share !== "function";
+  function showQuestion() {
+    fields.forEach((field, index) => {
+      field.hidden = finished || index !== activeQuestion;
+    });
+    progress.textContent = "Вопрос " + (activeQuestion + 1) + " из " + fields.length;
+    progress.hidden = finished;
+    nav.hidden = finished;
+    actions.hidden = !finished;
+    finishBanner.hidden = !finished;
+    prevButton.hidden = activeQuestion === 0;
+    nextButton.hidden = false;
+    nextButton.textContent = activeQuestion === fields.length - 1
+      ? "Завершить оценку" : "Следующий вопрос";
+    if (finished) {
+      const count = [...panel.querySelectorAll(".phone-review-field input:checked")].length;
+      finishText.textContent = count > 0
+        ? "Выставлено оценок: " + count + " из 5. Скопируй отзыв или выбери «Поделиться через телефон»."
+        : "Оценок пока нет. Нажми «Изменить оценки», чтобы поставить хотя бы одну.";
+    }
+  }
+  prevButton.addEventListener("click", () => {
+    activeQuestion = Math.max(0, activeQuestion - 1);
+    showQuestion();
+  });
+  nextButton.addEventListener("click", () => {
+    if (activeQuestion === fields.length - 1) {
+      finished = true;
+      showQuestion();
+      update();
+      finishBanner.scrollIntoView({
+        block: "nearest",
+        behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+      });
+      return;
+    }
+    activeQuestion = Math.min(fields.length - 1, activeQuestion + 1);
+    showQuestion();
+  });
+  editButton.addEventListener("click", () => {
+    finished = false;
+    activeQuestion = 0;
+    showQuestion();
+    update();
+  });
 
   const questions = Object.freeze([
     ["look", "Внешний вид и размер"],
@@ -27,14 +86,17 @@
     return panel.querySelector('input[name="review-' + name + '"]:checked')?.value || null;
   }
   function reviewReady() {
-    return complete.disabled && questions.some(([key]) => selected(key) !== null);
+    // Ratings can be copied even when the demo was already watched on
+    // another device or page. Mark an unplayed demo explicitly in the text.
+    return questions.some(([key]) => selected(key) !== null);
   }
   function update() {
     copyButton.disabled = !reviewReady();
+    shareButton.disabled = !reviewReady();
     if (copyButton.disabled) {
-      status.textContent = complete.disabled ?
-        "Поставь хотя бы одну оценку. Остальные вопросы можно пропустить." :
-        "Сначала посмотри превращение и поставь хотя бы одну оценку.";
+      status.textContent = "Поставь хотя бы одну оценку, чтобы скопировать отзыв.";
+    } else if (!complete.disabled) {
+      status.textContent = "Оценки готовы. Превращение в этой вкладке ещё не запускалось — можешь посмотреть его или сразу скопировать отзыв.";
     } else {
       status.textContent = "Готово к копированию. Отзыв никуда не отправится автоматически.";
     }
@@ -44,7 +106,8 @@
 
   function formatReview() {
     const lines = ["Fox Evolution v3 — отзыв о мобильном демо",
-      "Открытая стадия: " + stageNames[demo.chosen]];
+      "Открытая стадия: " + stageNames[demo.chosen],
+      "Просмотр в этой вкладке: " + (complete.disabled ? "да" : "не запускался")];
     for (const [key, label] of questions) {
       const score = selected(key);
       lines.push(label + ": " + (score ? score + "/5" : "не оценено"));
@@ -60,6 +123,20 @@
   note.addEventListener("input", () => {
     output.hidden = true;
     outputLabel.hidden = true;
+  });
+
+  shareButton.addEventListener("click", async () => {
+    if (!reviewReady() || typeof navigator.share !== "function") return;
+    try {
+      // Native share sheet only from an explicit user gesture. No default
+      // recipient or automatic post: the user chooses the destination.
+      await navigator.share({ title: "Сделано · Fox Evolution", text: formatReview() });
+      status.textContent = "Меню телефона закрыто. Отправка зависит только от твоего выбора.";
+    } catch (error) {
+      status.textContent = error?.name === "AbortError"
+        ? "Поделиться отменено. Отзыв не отправлен автоматически."
+        : "Не удалось открыть меню. Используй «Скопировать отзыв».";
+    }
   });
 
   copyButton.addEventListener("click", async () => {
@@ -93,6 +170,9 @@
   });
 
   function resetVoluntaryReview() {
+    activeQuestion = 0;
+    finished = false;
+    showQuestion();
     for (const radio of panel.querySelectorAll('input[type="radio"]')) radio.checked = false;
     note.value = "";
     output.value = "";

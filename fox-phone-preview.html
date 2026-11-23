@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="brand-flavor.css?v=1">
 <link rel="stylesheet" href="fox-evolution.css?v=1">
 <link rel="stylesheet" href="fox-evolution-art-v2.css?v=1">
-<link rel="stylesheet" href="fox-ceremony.css?v=1">
+<link rel="stylesheet" href="fox-ceremony.css?v=31">
 <style>
 .phone-qa-banner{margin:.55rem 0 .9rem;padding:.8rem 1rem;border:1.5px dashed #bb8548;border-radius:.85rem;background:#fff5df;color:#664126;font-size:.84rem;line-height:1.45}
 .phone-qa-panel{padding:.85rem;margin-top:1rem;border:1.5px solid #e0b680;border-radius:.9rem;background:#fffaf0}
@@ -38,6 +38,15 @@
 .phone-review-body p{font-size:.79rem;line-height:1.45;color:#815535;margin:.1rem 0 .8rem}
 .phone-review-field{border:0;padding:0;margin:0 0 .9rem;min-width:0}
 .phone-review-field legend{font-size:.85rem;font-weight:800;color:#67371d;margin:0 0 .36rem}
+.phone-review-field[hidden],.phone-review-share[hidden],.phone-review-prev[hidden]{display:none!important}
+.phone-review-step{font-size:.8rem;font-weight:800;color:#794621;margin:.2rem 0 .7rem!important}
+.phone-review-nav{display:flex;gap:.45rem;align-items:center;justify-content:space-between;margin:0 0 .8rem}
+.phone-review-nav[hidden],.phone-review-step[hidden]{display:none!important}
+.phone-review-actions[hidden]{display:none!important}
+.phone-review-nav button{min-height:44px;flex:1;border:1.5px solid #c28a53;border-radius:.65rem;background:#fff0d3;color:#693818;font-weight:800;margin:0}
+.phone-review-nav button:focus-visible{outline:3px solid #7144a5;outline-offset:2px}
+.phone-review-share{display:block;width:100%;border:1.5px solid #bf8950;border-radius:.7rem;background:#fff2d8;color:#683a20;font-weight:800}
+
 .phone-review-scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.45rem}
 .phone-review-scale label{position:relative;min-width:0;cursor:pointer}
 .phone-review-scale input{position:absolute;opacity:0;inset:0;width:100%;height:100%;cursor:pointer}
@@ -49,6 +58,11 @@
 .phone-review textarea:focus-visible{outline:3px solid #7144a5;outline-offset:2px}
 .phone-review button{min-height:44px;margin-top:.65rem}
 .phone-review button:disabled{opacity:.6;cursor:not-allowed}
+.phone-review-finish{margin:.5rem 0;padding:.8rem .75rem;border:1.5px solid #b88a47;border-radius:.75rem;background:linear-gradient(115deg,#fff0c1,#ffdf99);color:#5b321a}
+.phone-review-finish strong{display:block;font-size:.96rem;line-height:1.3}
+.phone-review-finish p{margin:.2rem 0 .55rem;color:#73451f;font-size:.82rem}
+.phone-review-finish[hidden],.phone-review-edit[hidden]{display:none!important}
+.phone-review-edit{border:1.5px solid #b68a55;border-radius:.65rem;background:#fff9e9;padding:.4rem .8rem;color:#663c22;font-weight:800}
 .phone-review-status{font-size:.8rem;color:#714326;min-height:1.5em;margin:.55rem 0 0!important}
 .phone-review-output-label{display:block;margin-top:.55rem;font-size:.8rem;font-weight:800}
 .phone-review-output[hidden],.phone-review-output-label[hidden]{display:none!important}
@@ -87,28 +101,32 @@ window.taskFeedback={
       if(!Type)return;
       if(!audio)audio=new Type();
       if(audio.state==="suspended")void audio.resume();
-      const base={tap:520,complete:700,coins:990,xp:800,level:1150,reward:910}[kind]||520;
-      const length=kind==="level"?.35:.14;
-      const oscillator=audio.createOscillator(),gain=audio.createGain();
+      const base={tap:520,complete:700,coins:990,xp:800,reward:910}[kind]||520;
+      const notes=kind==="level"
+        ? [[560,0,.12],[730,.13,.15],[910,.28,.17]]
+        : [[base,0,.14]];
       const t=audio.currentTime;
-      oscillator.type="sine";
-      oscillator.frequency.setValueAtTime(base,t);
-      oscillator.frequency.linearRampToValueAtTime(base*1.24,t+length*.8);
-      gain.gain.setValueAtTime(.0001,t);
-      gain.gain.exponentialRampToValueAtTime(.035,t+.015);
-      gain.gain.exponentialRampToValueAtTime(.0001,t+length);
-      oscillator.connect(gain).connect(audio.destination);
-      oscillator.start(t);oscillator.stop(t+length+.01);
+      for(const [frequency,delay,length] of notes){
+        const oscillator=audio.createOscillator(),gain=audio.createGain();
+        oscillator.type="sine";
+        oscillator.frequency.setValueAtTime(frequency,t+delay);
+        if(kind!=="level")oscillator.frequency.linearRampToValueAtTime(frequency*1.24,t+delay+length*.8);
+        gain.gain.setValueAtTime(.0001,t+delay);
+        gain.gain.exponentialRampToValueAtTime(kind==="level"?.022:.035,t+delay+.018);
+        gain.gain.exponentialRampToValueAtTime(.0001,t+delay+length);
+        oscillator.connect(gain).connect(audio.destination);
+        oscillator.start(t+delay);oscillator.stop(t+delay+length+.01);
+      }
     }catch{/* Audio never blocks the page. */}
   }
 };
 })();
 </script>
-<script src="game-preview.js?v=2" defer></script>
+<script src="game-preview.js?v=31" defer></script>
 <script src="game-juice.js?v=1" defer></script>
 <script src="fox-evolution.js?v=1" defer></script>
 <script src="fox-evolution-art-v2.js?v=1" defer></script>
-<script src="fox-ceremony.js?v=1" defer></script>
+<script src="fox-ceremony.js?v=31" defer></script>
 <script src="fox-phone-preview.js?v=1" defer></script>
 <script src="fox-phone-feedback.js?v=1" defer></script>
 </head>
@@ -214,13 +232,14 @@ window.taskFeedback={
 <button id="phone-qa-complete" type="button" class="add-button">Выполнить дело · +20 XP</button>
 <button id="phone-qa-again" type="button" class="phone-qa-secondary">Повторить</button>
 </div>
-<p id="phone-qa-result" class="phone-qa-result" role="status" aria-live="polite">Нажми кнопку и оцени эффект.</p>
+<p id="phone-qa-result" class="phone-qa-result" role="status" aria-live="polite">Нажми кнопку и оцени более плавный переход.</p>
 </div>
-<div id="phone-qa-sample" class="phone-qa-card"><span class="phone-qa-check" aria-hidden="true">○</span><span>Один полезный шаг — сделано!</span></div>
+<div id="phone-qa-sample" class="phone-qa-card"><span class="phone-qa-check" aria-hidden="true">○</span><span class="phone-qa-sample-label">Демо-задача: ожидает выполнения</span></div>
 <details class="phone-review" id="phone-qa-review">
 <summary>Оценить превращение · 1–5</summary>
 <div class="phone-review-body">
-<p>После превращения поставь оценки. Можно оценить только то, что заметил: остальные пункты необязательны. <strong>5 — отлично.</strong> Для «Не отвлекает» 5 означает «совсем не мешает задачам».</p>
+<p>Оцени от 1 до 5. Вопросы можно пропускать. <strong>5 — отлично</strong>; для «Не отвлекает» 5 означает «совсем не мешает».</p>
+<p id="phone-review-step" class="phone-review-step" role="status" aria-live="polite">Вопрос 1 из 5</p>
 <fieldset class="phone-review-field" data-review-question="look">
 <legend>Внешний вид и размер</legend><div class="phone-review-scale" role="group" aria-label="Внешний вид и размер: оценка от 1 до 5">
 <label><input type="radio" autocomplete="off" name="review-look" value="1"><span>1</span></label>
@@ -261,18 +280,30 @@ window.taskFeedback={
 <label><input type="radio" autocomplete="off" name="review-focus" value="4"><span>4</span></label>
 <label><input type="radio" autocomplete="off" name="review-focus" value="5"><span>5</span></label>
 </div></fieldset>
+<div class="phone-review-nav" aria-label="Переключение вопросов">
+<button id="phone-review-prev" class="phone-review-prev" type="button" hidden>Назад</button>
+<button id="phone-review-next" type="button">Следующий вопрос</button>
+</div>
+<section id="phone-review-finish" class="phone-review-finish" aria-label="Завершение оценки" hidden>
+  <strong>Готово! Оценка завершена.</strong>
+  <p id="phone-review-finish-text">Теперь отзыв можно скопировать или отправить через меню телефона.</p>
+  <button type="button" class="phone-review-edit" id="phone-review-edit">Изменить оценки</button>
+</section>
+<div id="phone-review-actions" class="phone-review-actions" hidden>
 <label for="phone-review-note" class="phone-review-note">Что улучшить? (необязательно)</label>
 <textarea id="phone-review-note" autocomplete="off" maxlength="240" rows="3" placeholder="Например: искры слишком яркие. Не вводи личные данные."></textarea>
 <button type="button" id="phone-review-copy" class="add-button" disabled>Скопировать отзыв</button>
+<button id="phone-review-share" class="phone-review-share" type="button" hidden disabled>Поделиться через телефон</button>
 <p id="phone-review-status" class="phone-review-status" role="status" aria-live="polite">Сначала посмотри превращение и поставь хотя бы одну оценку.</p>
 <label id="phone-review-output-label" class="phone-review-output-label" for="phone-review-output" hidden>Текст отзыва — выдели и скопируй вручную:</label>
 <textarea id="phone-review-output" autocomplete="off" class="phone-review-output" rows="8" readonly hidden></textarea>
+</div>
 </div>
 </details>
 </section>
 </div>
 </main>
-<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». После оценки нажми «Скопировать отзыв» и вставь текст в наш чат. Самостоятельно демо ничего не отправляет. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
+<p class="phone-qa-footer">Проверь на телефоне: читается ли новый возраст, приятны ли звук и вспышка, не закрывает ли салют кнопки. В настройках телефона можно проверить «Уменьшение движения». После оценки нажми «Скопировать отзыв» или выбери «Поделиться через телефон». Отправка возможна только после твоего выбора. Самостоятельно демо ничего не отправляет. <a href="https://github.com/safal207/todo-list/pull/45" rel="noopener noreferrer">Исходный PR #45</a>.</p>
 </div>
 </body>
 </html>

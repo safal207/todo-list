@@ -73,9 +73,21 @@
     // The existing task-complete sound plays first.
     rewardTimers.forEach(clearTimeout);
     rewardTimers = [];
-    if (gainedCoins > 0) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("coins"), 170));
-    if (gainedXP > 0) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("xp"), 420));
-    if (levelUp) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("level"), 710));
+    const evolution = window.sdelanoFoxEvolution;
+    const wallet = game.inspect();
+    const newStage = evolution && wallet.available && Number.isSafeInteger(gainedXP) &&
+      gainedXP > 0 && wallet.xp >= gainedXP &&
+      evolution.stageForXp(wallet.xp).id !==
+      evolution.stageForXp(wallet.xp - gainedXP).id;
+    if (newStage && levelUp) {
+      // One soft age-unlock chime after task completion, not three competing
+      // coin / XP / level melodies. Normal reward sounds stay unchanged.
+      rewardTimers.push(setTimeout(() => window.taskFeedback?.play("level"), 390));
+    } else {
+      if (gainedCoins > 0) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("coins"), 170));
+      if (gainedXP > 0) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("xp"), 420));
+      if (levelUp) rewardTimers.push(setTimeout(() => window.taskFeedback?.play("level"), 710));
+    }
   });
   window.addEventListener("sdelano:game-error", event => {
     panel.classList.add("game-preview--unavailable");

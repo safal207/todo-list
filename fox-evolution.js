@@ -106,7 +106,7 @@
       notice.hidden = true;
       for (const figure of figures) figure.classList.remove("fox-evolution--grown");
       timer = null;
-    }, 3400);
+    }, 2800);
     // Presentation-only signal, emitted solely for an actual newly earned
     // stage. Consumers must not mutate XP, tasks, purchases or wallet.
     window.dispatchEvent(new CustomEvent("sdelano:fox-evolved", {
