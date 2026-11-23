@@ -36,6 +36,9 @@ on:
       - "fox-phone-feedback.js"
       - "fox-ceremony.css"
       - "fox-ceremony.js"
+      - "fox-microreactions.js"
+      - "fox-micro-phone-preview.js"
+      - "fox-microreactions.css"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -73,6 +76,8 @@ on:
       - "fox-phone-feedback.js"
       - "fox-ceremony.css"
       - "fox-ceremony.js"
+      - "fox-microreactions.js"
+      - "fox-microreactions.css"
       - "game.js"
       - "focus.js"
       - "shop.js"
@@ -127,6 +132,9 @@ jobs:
           node tests/fox-phone-preview.mjs
           node tests/fox-phone-feedback.mjs
           node tests/fox-smooth-v31.mjs
+          node tests/fox-microreactions.mjs
+          node tests/fox-microreactions-integration.mjs
+          node tests/fox-micro-phone-preview.mjs
           node tests/brand-flavor.mjs
           node tests/game-economy.mjs
           node tests/game-focus.mjs

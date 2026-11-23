@@ -14,7 +14,7 @@
     reopen: [[630, 0, 0.08]],
     remove: [[330, 0, 0.11]],
     coins: [[880, 0, 0.08], [1220, 0.08, 0.13]],
-    xp: [[560, 0, 0.09], [750, 0.08, 0.11], [960, 0.18, 0.14]],
+    xp: [[590, 0, 0.09], [790, 0.085, 0.11], [1030, 0.19, 0.145]],
     energy: [[390, 0, 0.10], [590, 0.09, 0.12], [780, 0.18, 0.13]],
     reward: [[660, 0, 0.08], [880, 0.08, 0.10], [1175, 0.18, 0.15]],
     level: [[560, 0, 0.12], [730, 0.13, 0.15], [910, 0.28, 0.17]]
@@ -33,7 +33,7 @@
         oscillator.type = ["complete", "coins", "reward", "level"].includes(kind) ? "sine" : "triangle";
         oscillator.frequency.setValueAtTime(frequency, time + delay);
         gain.gain.setValueAtTime(0.0001, time + delay);
-        gain.gain.exponentialRampToValueAtTime(kind === "level" ? 0.022 : 0.045, time + delay + 0.018);
+        gain.gain.exponentialRampToValueAtTime(kind === "level" ? 0.022 : kind === "xp" ? 0.051 : 0.045, time + delay + 0.018);
         gain.gain.exponentialRampToValueAtTime(0.0001, time + delay + length);
         oscillator.connect(gain).connect(context.destination);
         oscillator.start(time + delay);
