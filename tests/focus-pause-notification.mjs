@@ -18,7 +18,8 @@ try {
         const history = { permissionRequests: 0, registrations: 0, notifications: [], closed: 0 };
         window.__pauseAlertsQA = history;
         const fake = {
-          permission: "default",
+          permission: localStorage.getItem("sdelano.focus.pause-alerts.v1") === "on"
+            ? "granted" : "default",
           requestPermission() {
             history.permissionRequests++;
             this.permission = "granted";
@@ -91,6 +92,27 @@ try {
       assert.equal(await page.evaluate(() => window.__pauseAlertsQA.notifications.length), 1,
         "Repeated visibilitychange must not send another notification");
 
+      await page.evaluate(() => {
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+
+      // A reload with stored opt-in must pre-register the worker before
+      // backgrounding again, without prompting for permission a second time.
+      await page.reload({ waitUntil: "networkidle" });
+      await page.locator("#game-preview-toggle").click();
+      await page.waitForFunction(() => window.__pauseAlertsQA.registrations === 1);
+      assert.equal(await toggle.getAttribute("aria-pressed"), "true");
+      assert.equal(await page.evaluate(() => window.__pauseAlertsQA.permissionRequests), 0);
+      assert.equal(await page.locator("#game-focus-resume").isVisible(), true,
+        "Reload must keep a paused session paused");
+      await page.locator("#game-focus-resume").click();
+      await page.evaluate(() => {
+        Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+      await page.waitForFunction(() => window.__pauseAlertsQA.notifications.length === 1);
+      assert.equal(await page.evaluate(() => window.__pauseAlertsQA.permissionRequests), 0);
       await page.evaluate(() => {
         Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
         document.dispatchEvent(new Event("visibilitychange"));

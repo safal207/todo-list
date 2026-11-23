@@ -164,6 +164,16 @@
     }
   });
   showAlertSettings();
+  // The browser may suspend a backgrounded page before an asynchronous
+  // worker registration finishes. After a prior explicit opt-in, prepare
+  // the existing notification worker while the tab is still visible.
+  // This never requests permission or sends a notification by itself.
+  if (alertsOn && supported() &&
+      window.Notification.permission === "granted") {
+    void getNotificationRegistration().catch(() => {
+      showAlertSettings("Браузер пока не готов показывать уведомления о паузе.");
+    });
+  }
 
   function refreshEnergy() {
     const data = game.inspect();
