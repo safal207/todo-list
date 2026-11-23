@@ -42,6 +42,7 @@
 .phone-review-step{font-size:.8rem;font-weight:800;color:#794621;margin:.2rem 0 .7rem!important}
 .phone-review-nav{display:flex;gap:.45rem;align-items:center;justify-content:space-between;margin:0 0 .8rem}
 .phone-review-nav[hidden],.phone-review-step[hidden]{display:none!important}
+.phone-review-actions[hidden]{display:none!important}
 .phone-review-nav button{min-height:44px;flex:1;border:1.5px solid #c28a53;border-radius:.65rem;background:#fff0d3;color:#693818;font-weight:800;margin:0}
 .phone-review-nav button:focus-visible{outline:3px solid #7144a5;outline-offset:2px}
 .phone-review-share{display:block;width:100%;border:1.5px solid #bf8950;border-radius:.7rem;background:#fff2d8;color:#683a20;font-weight:800}
@@ -237,7 +238,7 @@ window.taskFeedback={
 <details class="phone-review" id="phone-qa-review">
 <summary>Оценить превращение · 1–5</summary>
 <div class="phone-review-body">
-<p>После превращения поставь оценки. Можно оценить только то, что заметил: остальные пункты необязательны. <strong>5 — отлично.</strong> Для «Не отвлекает» 5 означает «совсем не мешает задачам».</p>
+<p>Оцени от 1 до 5. Вопросы можно пропускать. <strong>5 — отлично</strong>; для «Не отвлекает» 5 означает «совсем не мешает».</p>
 <p id="phone-review-step" class="phone-review-step" role="status" aria-live="polite">Вопрос 1 из 5</p>
 <fieldset class="phone-review-field" data-review-question="look">
 <legend>Внешний вид и размер</legend><div class="phone-review-scale" role="group" aria-label="Внешний вид и размер: оценка от 1 до 5">
@@ -288,6 +289,7 @@ window.taskFeedback={
   <p id="phone-review-finish-text">Теперь отзыв можно скопировать или отправить через меню телефона.</p>
   <button type="button" class="phone-review-edit" id="phone-review-edit">Изменить оценки</button>
 </section>
+<div id="phone-review-actions" class="phone-review-actions" hidden>
 <label for="phone-review-note" class="phone-review-note">Что улучшить? (необязательно)</label>
 <textarea id="phone-review-note" autocomplete="off" maxlength="240" rows="3" placeholder="Например: искры слишком яркие. Не вводи личные данные."></textarea>
 <button type="button" id="phone-review-copy" class="add-button" disabled>Скопировать отзыв</button>
@@ -295,6 +297,7 @@ window.taskFeedback={
 <p id="phone-review-status" class="phone-review-status" role="status" aria-live="polite">Сначала посмотри превращение и поставь хотя бы одну оценку.</p>
 <label id="phone-review-output-label" class="phone-review-output-label" for="phone-review-output" hidden>Текст отзыва — выдели и скопируй вручную:</label>
 <textarea id="phone-review-output" autocomplete="off" class="phone-review-output" rows="8" readonly hidden></textarea>
+</div>
 </div>
 </details>
 </section>
