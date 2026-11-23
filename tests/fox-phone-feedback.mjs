@@ -43,6 +43,8 @@ try {
       assert.equal(await page.locator(".phone-review-field:visible").count(), 1,
         "Only one question should take vertical space on a phone");
       assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 1 из 5/);
+      assert.equal(await page.locator("#phone-review-actions").isVisible(), false,
+        "Comment and share controls must not crowd the individual question");
       await page.locator('input[name="review-look"][value="5"]').check();
       assert.equal(await page.locator("#phone-review-copy").isEnabled(), true,
         "Users who already watched the animation can share rated feedback without replaying");
@@ -67,11 +69,15 @@ try {
       await page.locator("#phone-review-next").click();
       assert.equal(await page.locator("#phone-review-finish").isVisible(), true,
         "Last question must visibly finish the review");
+      assert.equal(await page.locator("#phone-review-actions").isVisible(), true,
+        "Copy, comment and share are available at completion");
       assert.match(await page.locator("#phone-review-finish-text").textContent(), /3 из 5/);
       assert.equal(await page.locator(".phone-review-field:visible").count(), 0,
         "Completion must replace question navigation instead of stopping abruptly");
       assert.equal(await page.locator(".phone-review-nav").isVisible(), false);
       await page.locator("#phone-review-edit").click();
+      assert.equal(await page.locator("#phone-review-actions").isVisible(), false,
+        "Editing hides the finish-only controls again");
       assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 1 из 5/);
       assert.equal(await page.locator('input[name="review-look"][value="5"]').isChecked(), true);
       for (let i = 0; i < 4; i++) await page.locator("#phone-review-next").click();
