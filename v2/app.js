@@ -1,0 +1,1362 @@
+"use strict";
+
+const STORAGE_KEY = "todo-list.tasks.v1";
+const TASK_HISTORY_KEY = "sdelano.tasks.history.v1";
+const FIRST_WIN_KEY = "sdelano.first-win.v1";
+const THREE_STEPS_KEY = "sdelano.three-steps.v1";
+const MILESTONE_RECORD_KEY = "sdelano.milestone.record.v1";
+const BREAK_KEY = "sdelano.break.v1";
+const MILESTONE_GOALS = [1, 3, 5, 10];
+const RETURN_AFTER_MS = 24 * 60 * 60 * 1000;
+const clock = window.taskClock;
+const feedback = window.taskFeedback;
+const analytics = window.sdelanoAnalytics;
+let needsTaskMigration = false;
+let needsRecovery = false;
+let unsavedTasks = false;
+let savedTaskSnapshot = null;
+let taskStorageReadable = true;
+const clockUpdates = new Map();
+const form = document.querySelector("#task-form");
+const titleInput = document.querySelector("#task-title");
+const timerHint = document.querySelector("#timer-hint");
+const completionHint = document.querySelector("#completion-hint")?.textContent.trim();
+const list = document.querySelector("#tasks");
+const template = document.querySelector("#task-template");
+const emptyState = document.querySelector("#empty-state");
+const filteredEmpty = document.querySelector("#filtered-empty");
+const filteredMessage = document.querySelector("#filtered-message");
+const filterGroup = document.querySelector("#filter-group");
+const filterButtons = [...filterGroup.querySelectorAll("button[data-filter]")];
+const sampleButton = document.querySelector("#sample-button");
+const clearFilterButton = document.querySelector("#clear-filter");
+const progressPanel = document.querySelector("#progress-panel");
+const progressToggle = document.querySelector("#progress-toggle");
+const progressDetails = document.querySelector("#progress-details");
+const completedToggle = document.querySelector("#completed-toggle");
+const completedToggleLabel = document.querySelector("#completed-toggle-label");
+const progress = document.querySelector("#progress");
+const percentage = document.querySelector("#percentage");
+const summary = document.querySelector("#progress-summary");
+const milestoneRecordLabel = document.querySelector("#milestone-record");
+const milestoneSteps = [...document.querySelectorAll("#milestone-track li[data-goal]")];
+const milestoneNextProgress = document.querySelector("#milestone-next-progress");
+const milestoneNextLabel = document.querySelector("#milestone-next-label");
+const firstStepGuide = document.querySelector("#first-step-guide");
+const firstStepLabel = document.querySelector("#first-step-label");
+const firstStepTitle = document.querySelector("#first-step-title");
+const firstStepDetail = document.querySelector("#first-step-detail");
+const firstStepCta = document.querySelector("#first-step-cta");
+const firstWinCard = document.querySelector("#first-win-card");
+const firstWinDetail = document.querySelector("#first-win-detail");
+const firstWinNext = document.querySelector("#first-win-next");
+const firstWinShare = document.querySelector("#first-win-share");
+const firstWinDismiss = document.querySelector("#first-win-dismiss");
+const threeStepsCard = document.querySelector("#three-steps-card");
+const threeStepsNext = document.querySelector("#three-steps-next");
+const threeStepsShare = document.querySelector("#three-steps-share");
+const threeStepsDismiss = document.querySelector("#three-steps-dismiss");
+const shareProgressButton = document.querySelector("#share-progress");
+const nextStep = document.querySelector("#next-step");
+const nextDetail = document.querySelector("#next-detail");
+const nextAction = document.querySelector("#next-action");
+const nextActionButton = document.querySelector("#next-action-button");
+const nextBreak = document.querySelector("#next-break");
+const storageNote = document.querySelector("#storage-note");
+const storageWarning = document.querySelector("#storage-warning");
+const feedbackToggle = document.querySelector("#feedback-toggle");
+let activeFilter = "all";
+let completedExpanded = false;
+const taskPanel = document.querySelector(".task-panel");
+const pendingChanges = new Set();
+
+function setProgressExpanded(expanded) {
+  progressDetails.hidden = !expanded;
+  progressToggle.setAttribute("aria-expanded", String(expanded));
+}
+
+progressToggle.addEventListener("click", () => {
+  feedback.play("tap");
+  setProgressExpanded(progressDetails.hidden);
+});
+
+completedToggle.addEventListener("click", () => {
+  feedback.play("tap");
+  const expanding = activeFilter === "active" || !completedExpanded;
+  completedExpanded = expanding;
+  if (expanding && activeFilter === "active") activeFilter = "all";
+  updateList();
+});
+
+const unavailableMessage = storageWarning.textContent;
+const recoveryMessage = "Не удалось прочитать весь список. При сохранении оставим копию исходных данных.";
+
+function setStorageWarning(visible, message = unavailableMessage) {
+  if (visible) storageWarning.textContent = message;
+  storageNote.hidden = visible;
+  storageWarning.hidden = !visible;
+}
+
+function readTaskSnapshot() {
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    taskStorageReadable = false;
+    setStorageWarning(true);
+    return savedTaskSnapshot;
+  }
+}
+
+function newTaskId() {
+  return Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-");
+}
+
+function decodeTasks(raw) {
+  savedTaskSnapshot = raw;
+  needsTaskMigration = false;
+  needsRecovery = false;
+  if (raw === null) return [];
+  let stored;
+  try { stored = JSON.parse(raw); } catch { /* Preserve the original on the next save. */ }
+  if (!Array.isArray(stored)) {
+    needsRecovery = true;
+    setStorageWarning(true, recoveryMessage);
+    return [];
+  }
+  const reservedIds = new Set(stored.map(task => task?.id));
+  const ids = new Set();
+  const valid = [];
+  for (const [index, task] of stored.entries()) {
+    if (typeof task?.title !== "string" || typeof task.done !== "boolean") {
+      needsRecovery = true;
+      continue;
+    }
+    const normalized = clock.normalize(task);
+    if (typeof task.id !== "string" || !task.id || ids.has(task.id)) {
+      // Two tabs opening the same old list must assign the same row identities.
+      let id = "legacy-" + index;
+      while (reservedIds.has(id)) id += "-";
+      normalized.id = id;
+    }
+    ids.add(normalized.id);
+    if (normalized.id !== task.id || normalized.elapsedMs !== task.elapsedMs ||
+        normalized.startedAt !== task.startedAt || normalized.doneAt !== task.doneAt) {
+      needsTaskMigration = true;
+    }
+    valid.push(normalized);
+  }
+  setStorageWarning(needsRecovery, recoveryMessage);
+  return valid;
+}
+
+const tasks = decodeTasks(readTaskSnapshot());
+
+function loadLastTaskActivity() {
+  const lastTaskTime = tasks.reduce((latest, task) =>
+    Math.max(latest, task.startedAt ?? 0, task.doneAt ?? 0), 0);
+  try {
+    const history = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
+    const lastAction = Array.isArray(history) ? history.at(-1)?.at : null;
+    return Number.isFinite(lastAction) ? Math.max(lastTaskTime, lastAction) : lastTaskTime;
+  } catch {
+    return lastTaskTime;
+  }
+}
+let lastTaskActivity = loadLastTaskActivity();
+
+function saveAchievement(key, value) {
+  if (!taskStorageReadable) return;
+  try {
+    if (localStorage.getItem(key) === value) return;
+    localStorage.setItem(key, value);
+    window.dispatchEvent(new Event("sdelano:achievements-changed"));
+  }
+  catch { /* Keep the achievement in memory for this session. */ }
+}
+
+// Do not award "first victory" again to returning or legacy users. The
+// history check also covers a completed task which was reopened or deleted.
+function hadFirstWinBefore() {
+  if (milestoneRecord >= 1 || tasks.some((task) => task.done)) {
+    saveAchievement(FIRST_WIN_KEY, "1");
+    return true;
+  }
+  try {
+    if (localStorage.getItem(FIRST_WIN_KEY) === "1") return true;
+    const history = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
+    return Array.isArray(history) && history.some((event) => event?.action === "done");
+  } catch {
+    return false;
+  }
+}
+let milestoneRecord = loadMilestoneRecord();
+
+// Count three separate completed tasks, not three toggles of one checkbox.
+// The stored award survives reopened/deleted tasks and is never replayed.
+function hadThreeStepsBefore() {
+  if (milestoneRecord >= 3 || tasks.filter((task) => task.done).length >= 3) {
+    saveAchievement(THREE_STEPS_KEY, "1");
+    return true;
+  }
+  try {
+    return localStorage.getItem(THREE_STEPS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+let threeStepsAchieved = hadThreeStepsBefore();
+let firstWinAchieved = threeStepsAchieved || hadFirstWinBefore();
+let firstWinVisible = false;
+let threeStepsVisible = false;
+let recentCompletion = null;
+let onBreak = false;
+try {
+  onBreak = firstWinAchieved && sessionStorage.getItem(BREAK_KEY) === "1";
+} catch { /* The break can still be used in memory. */ }
+
+// Keep a personal best: reopening or deleting a task should not take away
+// achievements. Count distinct currently finished rows, never toggle events.
+function loadMilestoneRecord() {
+  try {
+    const value = Number(localStorage.getItem(MILESTONE_RECORD_KEY));
+    return Number.isSafeInteger(value) && value >= 0 && value <= 1000000 ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveTasks() {
+  if (!taskStorageReadable) return;
+  try {
+    // A quota failure must never replace the original with a partial list.
+    if (needsRecovery) {
+      localStorage.setItem(STORAGE_KEY + ".recovery." + newTaskId(), savedTaskSnapshot);
+      needsRecovery = false;
+    }
+    const raw = JSON.stringify(tasks);
+    localStorage.setItem(STORAGE_KEY, raw);
+    savedTaskSnapshot = raw;
+    needsTaskMigration = false;
+    unsavedTasks = false;
+    setStorageWarning(false);
+    window.dispatchEvent(new Event("sdelano:tasks-changed"));
+    return true;
+  } catch {
+    unsavedTasks = true;
+    setStorageWarning(true);
+    return false;
+  }
+}
+
+function syncStoredTasks() {
+  if (!taskStorageReadable) return;
+  const raw = readTaskSnapshot();
+  if (raw === savedTaskSnapshot) return;
+  if (unsavedTasks) {
+    // Retain this tab's unsaved edits and the other tab's newer saved list.
+    taskStorageReadable = false;
+    setStorageWarning(true);
+    return;
+  }
+  const focused = document.activeElement;
+  const focusedId = focused?.closest("li.task")?.dataset.taskId;
+  const focusDelete = focused?.classList.contains("delete-button");
+  const focusEditButton = focused?.classList.contains("edit-button");
+  const focusEditInput = focused?.classList.contains("task-edit-input");
+  // Preserve an unsaved draft when another tab changes the task list.
+  const editingRow = list.querySelector('li.task[data-editing="true"]');
+  const editingId = editingRow?.dataset.taskId;
+  const editingDraft = editingRow?.querySelector(".task-edit-input").value;
+  const editingOriginalTitle = editingRow?.querySelector(".task-edit-form").dataset.originalTitle;
+  const fresh = decodeTasks(raw);
+  tasks.length = 0;
+  list.replaceChildren();
+  clockUpdates.clear();
+  for (const task of fresh) {
+    tasks.push(task);
+    appendTask(task);
+  }
+  firstWinVisible = false;
+  threeStepsVisible = false;
+  recentCompletion = null;
+  if (!tasks.length) activeFilter = "all";
+  milestoneRecord = Math.max(milestoneRecord, loadMilestoneRecord());
+  threeStepsAchieved ||= hadThreeStepsBefore();
+  firstWinAchieved ||= threeStepsAchieved || hadFirstWinBefore();
+  lastTaskActivity = loadLastTaskActivity();
+  updateProgress();
+  updateList();
+  let editorRestored = false;
+  if (editingId) {
+    const editingIndex = tasks.findIndex(task => task.id === editingId);
+    const newRow = editingIndex >= 0 ? list.children[editingIndex] : null;
+    if (newRow && !newRow.hidden) {
+      openTaskEditor(newRow, editingDraft, editingOriginalTitle);
+      editorRestored = true;
+    }
+  }
+  if (focusedId && !(focusedId === editingId && focusEditInput && editorRestored)) {
+    const index = tasks.findIndex(task => task.id === focusedId);
+    const row = index >= 0 ? list.children[index] : null;
+    const next = row && !row.hidden ?
+      row.querySelector(focusDelete ? ".delete-button" :
+        focusEditButton ? ".edit-button" : ".task-checkbox") :
+      filterButtons.find(button => tasks.length && button.dataset.filter === activeFilter) ?? titleInput;
+    next.focus({ preventScroll: true });
+  }
+}
+
+function changeTasks(action) {
+  const apply = () => { syncStoredTasks(); action(); };
+  let locks;
+  try { locks = navigator.locks; } catch { /* Some embedded views deny storage APIs. */ }
+  if (!taskStorageReadable || !locks) {
+    apply();
+    return;
+  }
+  // Re-read under the same origin lock in every tab, including during migration.
+  const commit = () => {
+    if (!pendingChanges.delete(commit)) return;
+    try { apply(); }
+    finally { if (!pendingChanges.size) taskPanel.removeAttribute("aria-busy"); }
+  };
+  pendingChanges.add(commit);
+  taskPanel.setAttribute("aria-busy", "true");
+  let entered = false;
+  void locks.request(STORAGE_KEY, () => {
+    entered = true;
+    commit();
+  }).catch(error => {
+    if (entered) throw error;
+    commit(); // A browser that denies locks can still edit the local list.
+  });
+}
+
+// Navigation can cancel a queued lock before the browser dispatches its callback.
+window.addEventListener("pagehide", () => {
+  for (const commit of pendingChanges) commit();
+});
+
+function renderFeedbackToggle() {
+  const enabled = feedback.isEnabled();
+  feedbackToggle.setAttribute("aria-pressed", String(enabled));
+  feedbackToggle.textContent = enabled ? "Отклик: вкл" : "Отклик: выкл";
+}
+renderFeedbackToggle();
+feedbackToggle.addEventListener("click", () => {
+  feedback.setEnabled(!feedback.isEnabled());
+  renderFeedbackToggle();
+});
+
+function clearCompletion() {
+  firstWinVisible = false;
+  threeStepsVisible = false;
+  recentCompletion = null;
+  if (onBreak) setBreak(false);
+}
+
+function setBreak(active) {
+  onBreak = active;
+  try {
+    if (active) sessionStorage.setItem(BREAK_KEY, "1");
+    else sessionStorage.removeItem(BREAK_KEY);
+  } catch { /* Keep the current state in memory. */ }
+}
+
+// Viral referral: share aggregate counts only, with a recipient-facing CTA.
+const SHARE_URL = "https://safal207.github.io/todo-list/invite/";
+const shareDialog = document.querySelector("#share-dialog");
+const shareClose = document.querySelector("#share-close");
+const shareNative = document.querySelector("#share-native");
+const shareCopy = document.querySelector("#share-copy");
+const shareTelegram = document.querySelector("#share-telegram");
+const shareWhatsApp = document.querySelector("#share-whatsapp");
+const shareReadyText = document.querySelector("#share-ready-text");
+const shareImageNative = document.querySelector("#share-image-native");
+const shareManual = document.querySelector("#share-manual");
+const shareFeedback = document.querySelector("#share-feedback");
+const shareEmptyAction = document.querySelector("#share-empty-action");
+const shareActions = document.querySelector("#share-actions");
+const shareCreateTask = document.querySelector("#share-create-task");
+const sharePercent = document.querySelector("#share-preview-percentage");
+const shareSummary = document.querySelector("#share-preview-summary");
+const sharedAchievement = document.querySelector("#shared-achievement");
+const sharedHeading = document.querySelector("#shared-achievement-heading");
+const sharedDetail = document.querySelector("#shared-achievement-detail");
+const sharedStart = document.querySelector("#shared-start");
+const sharePosterPreview = document.querySelector("#share-poster-preview");
+const shareImageDownload = document.querySelector("#share-image-download");
+let preparedShare = null;
+let preparedPosterFile = null;
+let posterPreviewURL = null;
+let posterRequest = 0;
+
+function syncImageShareButton() {
+  let supported = false;
+  try {
+    supported = Boolean(preparedPosterFile &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [preparedPosterFile] }));
+  } catch { /* Some WebViews throw from canShare. Download remains available. */ }
+  shareImageNative.hidden = !supported;
+}
+
+function resetPosterPreview() {
+  if (posterPreviewURL) URL.revokeObjectURL(posterPreviewURL);
+  posterPreviewURL = null;
+  preparedPosterFile = null;
+  sharePosterPreview.src = "assets/share-step-1-v2.jpg";
+  sharePosterPreview.alt = "ШАГ: запиши первую задачу — твой ход!";
+  shareImageDownload.href = "assets/share-step-1-v2.jpg";
+  shareImageDownload.download = "sdelano-shag-1.jpg";
+  shareImageDownload.textContent = "Скачать общий постер";
+  syncImageShareButton();
+}
+
+function usePersonalPoster(file, data) {
+  if (posterPreviewURL) URL.revokeObjectURL(posterPreviewURL);
+  posterPreviewURL = URL.createObjectURL(file);
+  preparedPosterFile = file;
+  sharePosterPreview.src = posterPreviewURL;
+  sharePosterPreview.alt = "ШАГ: выполнено " + data.done + " из " + data.total +
+    " задач, " + data.percent + "%. Твой ход — запиши первую задачу.";
+  shareImageDownload.href = posterPreviewURL;
+  shareImageDownload.download = file.name;
+  shareImageDownload.textContent = "Скачать карточку JPG";
+  syncImageShareButton();
+}
+
+// Prepare before tapping Share: Web Share requires a user gesture, and an
+// asynchronous image generation inside the click can lose transient activation.
+async function preparePersonalPoster(data, request) {
+  try {
+    const file = await window.achievementPoster.create({ done: data.done, total: data.total });
+    if (request !== posterRequest) return; // Do not attach a stale result.
+    usePersonalPoster(file, data);
+  } catch {
+    if (request !== posterRequest) return;
+    // A real image remains shareable on devices without canvas JPEG support.
+    try {
+      const response = await fetch("assets/share-step-1-v2.jpg");
+      if (!response.ok) return;
+      const blob = await response.blob();
+      if (request !== posterRequest) return;
+      preparedPosterFile = new File([blob], "sdelano-shag-1.jpg", { type: "image/jpeg" });
+      syncImageShareButton();
+      shareFeedback.textContent = "Персональная картинка недоступна. Можно отправить общий постер.";
+    } catch {
+      shareFeedback.textContent = "Картинка недоступна. Поделись ссылкой или текстом.";
+    }
+  }
+}
+
+function progressShareData() {
+  const total = tasks.length;
+  const done = tasks.reduce((sum, task) => sum + Number(task.done), 0);
+  const percent = total ? Math.floor(done * 100 / total) : 0;
+  const text = `В «Сделано» готово ${done} из ${total} дел (${percent}%). Твой ход! Запиши задачу.`;
+  const link = new URL(SHARE_URL);
+  link.searchParams.set("r", `${done}-${total}`);
+  return { title: "Мой результат — Сделано", text, url: link.toString(), percent, done, total };
+}
+
+function closeShareDialog() {
+  if (typeof shareDialog.close === "function" && shareDialog.open) shareDialog.close();
+  else shareDialog.removeAttribute("open");
+}
+
+function openShareDialog() {
+  analytics?.track("share_opened");
+  feedback.play("tap");
+  shareFeedback.textContent = "";
+  shareManual.open = false;
+  const request = ++posterRequest;
+  resetPosterPreview();
+  preparedShare = tasks.length > 0 ? progressShareData() : null;
+  if (preparedShare) void preparePersonalPoster(preparedShare, request);
+  const { percent = 0, done = 0, total = 0 } = preparedShare ?? {};
+  sharePercent.textContent = `${percent}%`;
+  shareSummary.textContent = `Выполнено ${done} из ${total}`;
+  shareEmptyAction.hidden = Boolean(preparedShare);
+  shareActions.hidden = !preparedShare;
+  if (preparedShare) {
+    const readyText = `${preparedShare.text}\n\n${preparedShare.url}`;
+    shareReadyText.value = readyText;
+    shareNative.hidden = typeof navigator.share !== "function";
+    const telegramLink = new URL("https://t.me/share/url");
+    telegramLink.searchParams.set("url", preparedShare.url);
+    telegramLink.searchParams.set("text", preparedShare.text);
+    shareTelegram.href = telegramLink.toString();
+    const whatsAppLink = new URL("https://wa.me/");
+    whatsAppLink.searchParams.set("text", readyText);
+    shareWhatsApp.href = whatsAppLink.toString();
+  }
+  if (typeof shareDialog.showModal === "function") shareDialog.showModal();
+  else shareDialog.setAttribute("open", "");
+  shareClose.focus();
+}
+
+shareProgressButton.addEventListener("click", openShareDialog);
+shareClose.addEventListener("click", closeShareDialog);
+shareCreateTask.addEventListener("click", () => {
+  feedback.play("tap");
+  closeShareDialog();
+  titleInput.scrollIntoView({ block: "center" });
+  titleInput.focus({ preventScroll: true });
+});
+shareDialog.addEventListener("click", (event) => {
+  if (event.target === shareDialog) closeShareDialog();
+});
+shareNative.addEventListener("click", async () => {
+  if (!preparedShare || typeof navigator.share !== "function") return;
+  analytics?.track("share_action");
+  feedback.play("tap");
+  try {
+    await navigator.share({
+      title: preparedShare.title, text: preparedShare.text, url: preparedShare.url
+    });
+    shareFeedback.textContent = "Ссылка передана в меню отправки.";
+  } catch (error) {
+    shareFeedback.textContent = error?.name === "AbortError" ? "Отправка отменена." :
+      "Системная отправка недоступна. Выбери Telegram, WhatsApp или скопируй текст.";
+  }
+});
+shareImageNative.addEventListener("click", async () => {
+  if (!preparedShare || !preparedPosterFile || typeof navigator.share !== "function") return;
+  analytics?.track("share_action");
+  feedback.play("tap");
+  // Include the URL in text for services which drop the separate 'url' field
+  // when sharing a media file as a Telegram photo/caption.
+  const attachment = {
+    title: "Сделано — твой ход!",
+    text: `${preparedShare.text}\n\n${preparedShare.url}`,
+    files: [preparedPosterFile]
+  };
+  try {
+    await navigator.share(attachment);
+    shareFeedback.textContent = "Изображение передано в меню отправки.";
+  } catch (error) {
+    shareFeedback.textContent = error?.name === "AbortError" ? "Отправка отменена." :
+      "Браузер не передал фото. Скачай картинку ниже и прикрепи её в Telegram.";
+  }
+});
+
+shareCopy.addEventListener("click", async () => {
+  if (!preparedShare) return;
+  analytics?.track("share_action");
+  feedback.play("tap");
+  const text = shareReadyText.value;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      shareFeedback.textContent = "Приглашение и ссылка скопированы!";
+      return;
+    }
+  } catch { /* Clipboard permission can be denied by some WebViews. */ }
+  shareManual.open = true;
+  shareReadyText.focus();
+  shareReadyText.select();
+  try {
+    if (document.execCommand("copy")) {
+      shareFeedback.textContent = "Приглашение и ссылка скопированы!";
+      return;
+    }
+  } catch { /* Keep the text selected for manual copying. */ }
+  shareFeedback.textContent = "Текст выделен. Выбери «Копировать» в меню телефона.";
+});
+for (const provider of [shareTelegram, shareWhatsApp]) {
+  provider.addEventListener("click", () => {
+    analytics?.track("share_action");
+    feedback.play("tap");
+  });
+}
+shareImageDownload.addEventListener("click", () => analytics?.track("share_action"));
+
+// Links contain a snapshot, never the sender's task names or private storage.
+function initSharedAchievement() {
+  const params = new URLSearchParams(location.search);
+  const parseCount = (value) => /^\d{1,4}$/.test(value ?? "") ? Number(value) : NaN;
+  const done = parseCount(params.get("done"));
+  const total = parseCount(params.get("total"));
+  if (params.get("share") !== "1" || !Number.isInteger(total) ||
+      total < 1 || total > 9999 || !Number.isInteger(done) || done > total) return;
+  const percent = Math.floor(done * 100 / total);
+  sharedHeading.textContent = `У друга уже ${percent}% дел закрыто. Твой ход!`;
+  sharedDetail.textContent = `${done} из ${total} задач выполнено. Запиши свою первую задачу — отсчёт начнётся сразу. Сделаешь дело — увидишь результат.`;
+  sharedAchievement.hidden = false;
+  analytics?.openReferral();
+}
+sharedStart.addEventListener("click", () => {
+  analytics?.startReferral();
+  feedback.play("tap");
+  titleInput.scrollIntoView({ block: "center", behavior: "smooth" });
+  titleInput.focus({ preventScroll: true });
+});
+// Ten-person research mode is opt-in by invitation; it never changes task data.
+const pilotInvite = new URLSearchParams(location.search).get("pilot");
+const pilotNewUser = savedTaskSnapshot === null && !tasks.length && !firstWinAchieved && !lastTaskActivity;
+analytics?.startPilot(pilotInvite, pilotNewUser);
+const pilotNote = document.querySelector("#pilot-note");
+if (pilotNote) pilotNote.hidden = !analytics?.pilotSummary();
+analytics?.track("task_list_viewed");
+initSharedAchievement();
+if (sharedAchievement.hidden && new URLSearchParams(location.search).get("utm_source") === "progress_share") {
+  analytics?.startReferral();
+}
+
+function recordTaskActivity(action) {
+  lastTaskActivity = Date.now();
+  if (!taskStorageReadable) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(TASK_HISTORY_KEY) ?? "[]");
+    const history = Array.isArray(saved) ? saved.slice(-299)
+      .filter(event => typeof event?.action === "string" && Number.isFinite(event.at))
+      .map(({ action, at }) => ({ action, at })) : [];
+    history.push({ action, at: lastTaskActivity });
+    localStorage.setItem(TASK_HISTORY_KEY, JSON.stringify(history));
+  } catch { /* The list is usable with unavailable history. */ }
+}
+
+function renderFirstStep(returning) {
+  firstStepGuide.hidden = firstWinAchieved;
+  firstWinCard.hidden = !firstWinVisible;
+  if (firstWinAchieved) return;
+  if (returning) {
+    firstStepLabel.textContent = "ТВОЯ ЗАДАЧА";
+    firstStepTitle.textContent = "Продолжи своё дело";
+    firstStepDetail.textContent = "Поставь галочку, когда закончишь.";
+    firstStepCta.textContent = "К задаче";
+    return;
+  }
+  const hasTask = tasks.length > 0;
+  firstStepLabel.textContent = hasTask ? "МИССИЯ 2 ИЗ 2" : "МИССИЯ 1 ИЗ 2";
+  firstStepTitle.textContent = hasTask ? "Закрой первую задачу" : "Запиши одно небольшое дело";
+  firstStepDetail.textContent = hasTask ?
+    "Поставь галочку, когда закончишь." :
+    "Например, собрать рюкзак.";
+  firstStepCta.textContent = hasTask ? "Перейти к задаче" : "Записать первый шаг";
+}
+
+firstStepCta.addEventListener("click", () => {
+  feedback.play("tap");
+  if (tasks.length === 0) {
+    titleInput.focus();
+    return;
+  }
+  // The unfinished checkbox might be hidden under the Done filter.
+  if (activeFilter === "done") {
+    activeFilter = "all";
+    updateList();
+  }
+  list.querySelector(".task-checkbox:not(:checked)")?.focus();
+});
+firstWinNext.addEventListener("click", () => {
+  firstWinVisible = false;
+  updateProgress();
+  focusNextStep();
+});
+firstWinShare.addEventListener("click", openShareDialog);
+
+threeStepsNext.addEventListener("click", () => {
+  threeStepsVisible = false;
+  updateProgress();
+  focusNextStep();
+});
+threeStepsShare.addEventListener("click", openShareDialog);
+
+for (const button of [firstWinDismiss, threeStepsDismiss, nextBreak]) {
+  button?.addEventListener("click", () => {
+    feedback.play("tap");
+    clearCompletion();
+    setBreak(true);
+    updateProgress();
+    nextActionButton.focus();
+  });
+}
+
+function renderMilestones(completed) {
+  const currentBest = Math.max(completed,
+    firstWinAchieved ? 1 : 0,
+    threeStepsAchieved ? 3 : 0);
+  if (currentBest > milestoneRecord) {
+    milestoneRecord = currentBest;
+    saveAchievement(MILESTONE_RECORD_KEY, String(milestoneRecord));
+  }
+
+  const nextGoal = MILESTONE_GOALS.find((goal) => milestoneRecord < goal);
+  for (const item of milestoneSteps) {
+    const goal = Number(item.dataset.goal);
+    const earned = milestoneRecord >= goal;
+    item.classList.toggle("is-earned", earned);
+    item.classList.toggle("is-next", nextGoal === goal);
+    const goalWord = goal === 1 ? "шаг" : goal === 3 ? "шага" : "шагов";
+    item.setAttribute("aria-label", goal + " " + goalWord + ": " +
+      (earned ? "достигнуто" : nextGoal === goal ? "следующая цель" : "впереди"));
+    if (goal === nextGoal) item.setAttribute("aria-current", "step");
+    else item.removeAttribute("aria-current");
+  }
+
+  milestoneRecordLabel.textContent = `Рекорд списка — ${milestoneRecord}`;
+  milestoneNextProgress.hidden = nextGoal === undefined;
+  if (nextGoal === undefined) {
+    milestoneNextLabel.textContent = "Все 4 этапа открыты.";
+    return;
+  }
+  milestoneNextProgress.max = nextGoal;
+  milestoneNextProgress.value = completed;
+  const remaining = nextGoal - completed;
+  const units = remaining === 1 ? "дело" : remaining <= 4 ? "дела" : "дел";
+  milestoneNextLabel.textContent = `До отметки ${nextGoal} — ещё ${remaining} ${units}.`;
+}
+
+// Context-aware continuation: never create or complete a task without a click.
+function focusNextStep() {
+  feedback.play("tap");
+  const nextTask = tasks.find((task) => !task.done);
+  if (!nextTask) {
+    titleInput.scrollIntoView({ block: "center", behavior: "auto" });
+    titleInput.focus({ preventScroll: true });
+    return;
+  }
+  // Completed-only filters may hide the very task we want to suggest.
+  if (activeFilter === "done") {
+    activeFilter = "active";
+    updateList();
+  }
+  const index = tasks.indexOf(nextTask);
+  const row = list.children[index];
+  const checkbox = row?.querySelector(".task-checkbox");
+  if (!checkbox) return;
+  checkbox.scrollIntoView({ block: "center", behavior: "auto" });
+  checkbox.focus({ preventScroll: true });
+}
+nextActionButton.addEventListener("click", () => {
+  if (recentCompletion || onBreak) {
+    clearCompletion();
+    updateProgress();
+  }
+  focusNextStep();
+});
+
+function updateProgress() {
+  const total = tasks.length;
+  const completed = tasks.filter((task) => task.done).length;
+  const ratio = total > 0 ? Math.floor((completed * 100) / total) : 0;
+  const status = `Выполнено ${completed} из ${total}`;
+
+  if (total === 0) {
+    progressPanel.dataset.stage = "first";
+  } else if (completed === total) {
+    progressPanel.dataset.stage = "done";
+  } else {
+    progressPanel.dataset.stage = "working";
+  }
+
+  // Show one completion card with the action that matches the remaining list.
+  nextAction.hidden = !firstWinAchieved || firstWinVisible || threeStepsVisible;
+  nextAction.toggleAttribute("data-completion", recentCompletion !== null);
+  nextAction.toggleAttribute("data-break", onBreak);
+  const justCompleted = Boolean(firstWinVisible || threeStepsVisible || recentCompletion);
+  if (nextBreak) nextBreak.hidden = !justCompleted;
+  const pending = tasks.find((task) => !task.done);
+  const rewardAction = pending ? "К следующему делу" : "Записать ещё одно дело";
+  firstWinNext.textContent = rewardAction;
+  threeStepsNext.textContent = rewardAction;
+  if (timerHint) {
+    timerHint.toggleAttribute("data-completion", justCompleted);
+    if (justCompleted) {
+      timerHint.textContent = pending ?
+        `Отличная работа! Готово ${completed} из ${total}.` :
+        "Все дела сделаны! Прогресс 100%.";
+    } else {
+      timerHint.textContent = pending ?
+        (completionHint ?? "После галочки покажем следующее дело.") : "Таймер начнётся сразу.";
+    }
+  }
+  const returning = Boolean(pending && lastTaskActivity > 0 &&
+    Date.now() - lastTaskActivity >= RETURN_AFTER_MS);
+  if (onBreak) {
+    nextStep.textContent = "Передышка";
+    nextDetail.textContent = "Что помогло тебе закончить дело?";
+    nextActionButton.textContent = pending ? "Вернуться к делу" : "К списку задач";
+  } else if (recentCompletion) {
+    nextStep.textContent = recentCompletion.heading;
+    nextDetail.textContent = recentCompletion.elapsedMs >= 1000 ?
+      "Дело было открыто " + clock.humanText(recentCompletion.elapsedMs) + "." :
+      "Ещё одно дело готово.";
+    nextActionButton.textContent = rewardAction;
+  } else if (pending) {
+    nextStep.textContent = returning ? "Продолжи своё дело" : "В работе";
+    nextDetail.textContent = "Следующее дело — «" + pending.title + "».";
+    nextActionButton.textContent = returning ? "К задаче" : "Перейти к следующей задаче";
+  } else {
+    nextStep.textContent = total > 0 ? "Все дела закрыты!" : "Новый день — новый шаг";
+    nextDetail.textContent = total > 0 ?
+      "Если есть ещё дело, запиши его. Никакой спешки." :
+      "Готов к следующему делу? Запиши его, когда захочешь.";
+    nextActionButton.textContent = "Записать новую задачу";
+  }
+
+  shareProgressButton.title = total === 0 ? "Открой и начни первую задачу" :
+    "Поделиться результатом и пригласить друга";
+  progress.value = ratio;
+  percentage.textContent = `${ratio}%`;
+  if (summary.textContent !== status) {
+    summary.textContent = status;
+  }
+  renderFirstStep(returning);
+  threeStepsCard.hidden = !threeStepsVisible;
+  renderMilestones(completed);
+}
+
+function updateList() {
+  for (const button of filterButtons) {
+    button.setAttribute("aria-pressed", String(button.dataset.filter === activeFilter));
+  }
+
+  const completed = tasks.filter((task) => task.done).length;
+  const showCompleted = activeFilter === "done" || (activeFilter === "all" && completedExpanded);
+  let visibleCount = 0;
+  for (const row of list.children) {
+    const done = row.querySelector(".task-checkbox").checked;
+    row.hidden = done ? !showCompleted : activeFilter === "done";
+    if (!row.hidden) visibleCount += 1;
+  }
+
+  list.hidden = visibleCount === 0;
+  filterGroup.hidden = tasks.length === 0;
+  emptyState.hidden = tasks.length > 0;
+  completedToggle.hidden = completed === 0 || activeFilter === "done";
+  completedToggle.setAttribute("aria-expanded", String(activeFilter === "all" && completedExpanded));
+  completedToggleLabel.textContent = activeFilter === "all" && completedExpanded ?
+    `Свернуть выполненные · ${completed}` : `Показать выполненные · ${completed}`;
+  filteredEmpty.hidden = tasks.length === 0 || visibleCount > 0 ||
+    (completed > 0 && activeFilter === "all");
+  if (!filteredEmpty.hidden) {
+    filteredMessage.textContent = activeFilter === "done" ?
+      "Выполненных задач пока нет" : "Все задачи выполнены";
+  }
+}
+
+function visibleNeighborCheckbox(row) {
+  const rows = [...list.children];
+  const index = rows.indexOf(row);
+  const neighbor = rows.slice(index + 1).find((item) => !item.hidden)
+    ?? rows.slice(0, index).reverse().find((item) => !item.hidden);
+  return neighbor?.querySelector(".task-checkbox");
+}
+
+function focusAfterRemoval(neighbor) {
+  const selectedFilter = filterButtons.find((button) => button.dataset.filter === activeFilter);
+  const fallback = tasks.length > 0 ? selectedFilter : titleInput;
+  (neighbor ?? fallback ?? titleInput).focus();
+}
+
+function openTaskEditor(row, draft, originalTitle) {
+  const other = list.querySelector('li.task[data-editing="true"]');
+  if (other && other !== row) closeTaskEditor(other, false);
+  const form = row.querySelector(".task-edit-form");
+  const input = form.querySelector(".task-edit-input");
+  const title = row.querySelector(".task-title").textContent;
+  form.dataset.originalTitle = originalTitle ?? title;
+  input.value = draft ?? title;
+  input.setCustomValidity("");
+  row.querySelector(".task-label").hidden = true;
+  row.querySelector(".edit-button").hidden = true;
+  row.querySelector(".delete-button").hidden = true;
+  form.hidden = false;
+  row.dataset.editing = "true";
+  input.focus({ preventScroll: true });
+  if (draft === undefined) input.select();
+}
+
+function closeTaskEditor(row, restoreFocus = true) {
+  if (!row?.isConnected) return;
+  row.querySelector(".task-label").hidden = false;
+  row.querySelector(".edit-button").hidden = false;
+  row.querySelector(".delete-button").hidden = false;
+  const form = row.querySelector(".task-edit-form");
+  form.hidden = true;
+  delete form.dataset.originalTitle;
+  delete row.dataset.editing;
+  form.querySelector(".task-edit-input").setCustomValidity("");
+  if (restoreFocus) row.querySelector(".edit-button").focus({ preventScroll: true });
+}
+
+function appendTask(task) {
+  const row = template.content.firstElementChild.cloneNode(true);
+  const checkbox = row.querySelector(".task-checkbox");
+  const editButton = row.querySelector(".edit-button");
+  const editForm = row.querySelector(".task-edit-form");
+  const editInput = row.querySelector(".task-edit-input");
+  const cancelButton = row.querySelector(".task-edit-cancel");
+  const deleteButton = row.querySelector(".delete-button");
+  const timeLabel = row.querySelector(".task-clock");
+  const updateClock = () => {
+    const display = clock.display(task);
+    if (timeLabel.textContent !== display) timeLabel.textContent = display;
+  };
+  clockUpdates.set(task, updateClock);
+  row.classList.toggle("task-finished", task.done);
+  updateClock();
+
+  row.querySelector(".task-title").textContent = task.title;
+  checkbox.setAttribute("aria-label", task.title);
+  checkbox.checked = task.done;
+  editButton.setAttribute("aria-label", `Изменить название задачи «${task.title}»`);
+  editButton.title = "Изменить название";
+  deleteButton.setAttribute("aria-label", `Удалить задачу «${task.title}»`);
+  deleteButton.title = "Удалить задачу";
+
+  row.dataset.taskId = task.id;
+  editButton.addEventListener("click", () => {
+    feedback.play("tap");
+    openTaskEditor(row);
+  });
+  cancelButton.addEventListener("click", () => {
+    feedback.play("tap");
+    closeTaskEditor(row);
+  });
+  editInput.addEventListener("input", () => editInput.setCustomValidity(""));
+  editInput.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    event.preventDefault();
+    closeTaskEditor(row);
+  });
+  editForm.addEventListener("submit", event => {
+    event.preventDefault();
+    const nextTitle = editInput.value.trim();
+    if (!nextTitle || nextTitle.length > 200) {
+      editInput.setCustomValidity("Название должно содержать от 1 до 200 символов.");
+      editInput.reportValidity();
+      return;
+    }
+    const expectedTitle = editForm.dataset.originalTitle;
+    changeTasks(() => {
+      const index = tasks.findIndex(entry => entry.id === task.id);
+      if (index < 0) return; // Deleted in another tab: never resurrect a task.
+      const current = tasks[index];
+      const currentRow = list.children[index];
+      if (current.title !== expectedTitle) {
+        const currentForm = currentRow.querySelector(".task-edit-form");
+        const currentInput = currentForm.querySelector(".task-edit-input");
+        currentForm.dataset.originalTitle = current.title;
+        currentInput.setCustomValidity("Задача изменена в другой вкладке. Проверь название и введи его снова.");
+        currentInput.reportValidity();
+        return;
+      }
+      if (current.title !== nextTitle) {
+        current.title = nextTitle; // Preserve ID, completion, timestamps and timer.
+        currentRow.querySelector(".task-title").textContent = nextTitle;
+        currentRow.querySelector(".task-checkbox").setAttribute("aria-label", nextTitle);
+        const currentEdit = currentRow.querySelector(".edit-button");
+        currentEdit.setAttribute("aria-label", `Изменить название задачи «${nextTitle}»`);
+        currentRow.querySelector(".delete-button").setAttribute("aria-label", `Удалить задачу «${nextTitle}»`);
+        saveTasks();
+        recordTaskActivity("edited");
+        updateProgress();
+      }
+      closeTaskEditor(currentRow);
+    });
+  });
+  checkbox.addEventListener("change", () => {
+    const checked = checkbox.checked;
+    const keyboardFocus = checkbox.matches(":focus-visible");
+    changeTasks(() => {
+      const index = tasks.findIndex(entry => entry.id === task.id);
+      if (index < 0) return;
+      const current = tasks[index];
+      const currentRow = list.children[index];
+      currentRow.querySelector(".task-checkbox").checked = checked;
+      if (current.done !== checked) toggleTask(current, currentRow, checked, keyboardFocus);
+    });
+  });
+  deleteButton.addEventListener("click", () => changeTasks(() => {
+    const index = tasks.findIndex(entry => entry.id === task.id);
+    if (index >= 0) removeTask(tasks[index], list.children[index]);
+  }));
+  list.append(row);
+  return checkbox;
+}
+
+function toggleTask(task, row, checked, keyboardFocus) {
+  const now = Date.now();
+  const newFirstWin = checked && !firstWinAchieved;
+  let newThreeSteps = false;
+  clearCompletion();
+  if (checked) {
+    clock.finish(task, now);
+    analytics?.taskCompleted(task.createdFromInvite === true);
+    const completedNow = tasks.filter((entry) => entry.done).length;
+    activeFilter = completedNow < tasks.length ? "active" : "done";
+    newThreeSteps = !threeStepsAchieved && completedNow >= 3;
+    feedback.play("complete");
+    row.classList.remove("task-celebrate");
+    void row.offsetWidth;
+    row.classList.add("task-celebrate");
+    if (newThreeSteps) {
+      threeStepsAchieved = true;
+      threeStepsVisible = true;
+      saveAchievement(THREE_STEPS_KEY, "1");
+    } else if (newFirstWin) {
+      firstWinAchieved = true;
+      firstWinVisible = true;
+      if (firstWinDetail) {
+        firstWinDetail.textContent = task.elapsedMs >= 1000 ?
+          "Дело было открыто " + clock.humanText(task.elapsedMs) + "." :
+          "Твоё первое дело готово.";
+      }
+      saveAchievement(FIRST_WIN_KEY, "1");
+    } else {
+      const milestone = MILESTONE_GOALS.includes(completedNow) && completedNow > milestoneRecord;
+      recentCompletion = {
+        heading: milestone ? completedNow + " дел сделано!" : "Сделано!",
+        elapsedMs: task.elapsedMs
+      };
+    }
+  } else {
+    clock.reopen(task, now);
+    feedback.play("reopen");
+    row.classList.remove("task-celebrate");
+  }
+  row.classList.toggle("task-finished", task.done);
+  clockUpdates.get(task)();
+  const persisted = saveTasks();
+  if (checked && persisted) window.sdelanoGame?.awardTask(task.id, now);
+  recordTaskActivity(task.done ? "done" : "reopen");
+  updateProgress();
+  if (newFirstWin || newThreeSteps) setProgressExpanded(true);
+  updateList();
+  if (task.done) {
+    focusAfterRemoval(list.querySelector(".task-checkbox:not(:checked)"));
+    if (!keyboardFocus && matchMedia("(max-width: 47rem)").matches) {
+      timerHint?.scrollIntoView({ block: "nearest", behavior: "auto" });
+    }
+  } else if (row.hidden) {
+    focusAfterRemoval(visibleNeighborCheckbox(row));
+  }
+}
+
+function removeTask(task, row) {
+  feedback.play("remove");
+  clearCompletion();
+  const neighbor = visibleNeighborCheckbox(row);
+  clockUpdates.delete(task);
+  tasks.splice(tasks.indexOf(task), 1);
+  row.remove();
+  saveTasks();
+  recordTaskActivity("delete");
+  updateProgress();
+  if (tasks.length === 0) {
+    activeFilter = "all";
+  }
+  updateList();
+  focusAfterRemoval(neighbor);
+}
+
+function addTask(title) {
+  const task = clock.create(title);
+  task.id = newTaskId();
+  if (analytics?.taskCreated()) task.createdFromInvite = true;
+  feedback.play("add");
+  clearCompletion();
+  tasks.push(task);
+  const checkbox = appendTask(task);
+  if (activeFilter === "done") {
+    activeFilter = "all";
+  }
+  saveTasks();
+  recordTaskActivity("created");
+  updateProgress();
+  updateList();
+  return checkbox;
+}
+
+sampleButton.addEventListener("click", () => changeTasks(() => addTask("Запланировать главное дело").focus()));
+
+for (const button of filterButtons) {
+  button.addEventListener("click", () => {
+    feedback.play("tap");
+    activeFilter = button.dataset.filter;
+    if (activeFilter === "all") completedExpanded = true;
+    updateList();
+  });
+}
+
+clearFilterButton?.addEventListener("click", () => {
+  feedback.play("tap");
+  activeFilter = "all";
+  completedExpanded = true;
+  updateList();
+  filterButtons.find((button) => button.dataset.filter === activeFilter)?.focus();
+});
+
+titleInput.addEventListener("input", () => titleInput.setCustomValidity(""));
+titleInput.addEventListener("pointerdown", () => feedback.play("tap"));
+
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const title = titleInput.value.trim();
+
+  if (!title) {
+    titleInput.setCustomValidity("Введите название задачи.");
+    titleInput.reportValidity();
+    return;
+  }
+
+  changeTasks(() => addTask(title));
+  form.reset();
+  titleInput.focus();
+});
+
+// Private, opt-in backups: JSON is downloaded or read locally, never uploaded.
+const backup = window.sdelanoBackup;
+const backupDownload = document.querySelector("#backup-download");
+const backupFile = document.querySelector("#backup-file");
+const backupPreview = document.querySelector("#backup-preview");
+const backupPreviewSummary = document.querySelector("#backup-preview-summary");
+const backupImport = document.querySelector("#backup-import");
+const backupCancel = document.querySelector("#backup-cancel");
+const backupStatus = document.querySelector("#backup-status");
+let stagedBackup = null;
+let backupSelection = 0;
+
+function reportBackup(message, error = false) {
+  backupStatus.textContent = message;
+  backupStatus.dataset.error = String(error);
+}
+
+function clearBackupSelection() {
+  backupSelection += 1;
+  stagedBackup = null;
+  backupPreview.hidden = true;
+  backupFile.value = "";
+}
+
+backupDownload.addEventListener("click", () => {
+  try {
+    if (pendingChanges.size) {
+      reportBackup("Сохранение задачи ещё выполняется. Попробуй скачать копию снова.", true);
+      return;
+    }
+    syncStoredTasks();
+    const json = backup.createPortable(tasks, {
+      firstWin: firstWinAchieved,
+      threeSteps: threeStepsAchieved,
+      record: milestoneRecord
+    }, window.sdelanoGame.exportWallet());
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date();
+    const stamp = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")].join("-");
+    link.href = url;
+    link.download = "sdelano-backup-" + stamp + ".json";
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    reportBackup("Копия подготовлена. Файл содержит названия твоих задач — не публикуй его.");
+  } catch (error) {
+    reportBackup(error.message || "Не удалось создать копию.", true);
+  }
+});
+
+backupFile.addEventListener("change", async () => {
+  const selection = ++backupSelection;
+  backupPreview.hidden = true;
+  stagedBackup = null;
+  const file = backupFile.files?.[0];
+  if (!file) {
+    reportBackup("");
+    return;
+  }
+  if (file.size > backup.maxBytes) {
+    reportBackup("Файл слишком большой: максимум 2 МБ.", true);
+    return;
+  }
+  try {
+    const parsed = backup.parse(await file.text());
+    if (selection !== backupSelection) return;
+    stagedBackup = parsed;
+    syncStoredTasks();
+    const plan = backup.plan(tasks, parsed.tasks);
+    backupPreviewSummary.textContent = "В копии: " + parsed.tasks.length +
+      " задач. Новых для добавления: " + plan.added.length +
+      ". Уже есть в списке: " + plan.skipped +
+      ". Действующие задачи не будут удалены. " +
+      (parsed.game ? "Игровой кошелёк, покупки и энергия будут перенесены безопасно." :
+        "Это старая копия: игровые награды из неё не восстановятся.");
+    backupPreview.hidden = false;
+    reportBackup("Файл проверен. Нажми «Добавить задачи из копии», чтобы восстановить список.");
+  } catch (error) {
+    if (selection === backupSelection) reportBackup(error.message || "Не удалось прочитать файл.", true);
+  }
+});
+
+backupCancel.addEventListener("click", () => {
+  clearBackupSelection();
+  reportBackup("Восстановление отменено. Текущий список не изменён.");
+});
+
+backupImport.addEventListener("click", () => {
+  if (!stagedBackup) return;
+  const selected = stagedBackup;
+  backupImport.disabled = true;
+  changeTasks(() => {
+    backupImport.disabled = false;
+    if (!taskStorageReadable || needsRecovery || unsavedTasks) {
+      reportBackup("Сохранение в браузере недоступно. Копия не применена, текущие данные не изменены.", true);
+      return;
+    }
+    const plan = backup.plan(tasks, selected.tasks);
+    // Never import a different nonempty wallet over earned coins or purchases.
+    let plannedWallet = null;
+    try {
+      if (selected.game) plannedWallet = window.sdelanoGame.planWalletImport(selected.game);
+    } catch (error) {
+      reportBackup(error.message || "Не удалось объединить игровые кошельки.", true);
+      return;
+    }
+    if (plan.added.length || plannedWallet) {
+      const combined = [...tasks, ...plan.added];
+      let raw;
+      // Save both snapshots before mutating the UI, with best-effort rollback.
+      // The task and wallet keys are separate localStorage records.
+      const oldTasks = localStorage.getItem(STORAGE_KEY);
+      const oldWallet = localStorage.getItem(window.sdelanoGame.key);
+      try {
+        raw = JSON.stringify(combined);
+        if (plan.added.length) localStorage.setItem(STORAGE_KEY, raw);
+        if (plannedWallet) window.sdelanoGame.restoreWallet(selected.game);
+      } catch {
+        try {
+          if (oldTasks === null) localStorage.removeItem(STORAGE_KEY);
+          else localStorage.setItem(STORAGE_KEY, oldTasks);
+          if (oldWallet === null) localStorage.removeItem(window.sdelanoGame.key);
+          else localStorage.setItem(window.sdelanoGame.key, oldWallet);
+        } catch { /* Warn and preserve as much data as the browser allows. */ }
+        window.dispatchEvent(new Event("sdelano:game-changed"));
+        reportBackup("Не хватает места или обнаружен конфликт кошелька. Копия не применена; проверь данные перед повтором.", true);
+        return;
+      }
+      if (plan.added.length) {
+        savedTaskSnapshot = raw;
+        needsTaskMigration = false;
+        unsavedTasks = false;
+        tasks.push(...plan.added);
+        // Imported completed tasks without local grants must not mint rewards.
+        window.sdelanoGame?.excludeCompleted(plan.added.filter(task => task.done).map(task => task.id));
+        plan.added.forEach(appendTask);
+      }
+    }
+    const importedRecord = selected.achievements.record;
+    milestoneRecord = Math.max(milestoneRecord, importedRecord);
+    threeStepsAchieved ||= selected.achievements.threeSteps || importedRecord >= 3;
+    firstWinAchieved ||= selected.achievements.firstWin || threeStepsAchieved ||
+      importedRecord >= 1 || tasks.some(task => task.done);
+    saveAchievement(MILESTONE_RECORD_KEY, String(milestoneRecord));
+    if (firstWinAchieved) saveAchievement(FIRST_WIN_KEY, "1");
+    if (threeStepsAchieved) saveAchievement(THREE_STEPS_KEY, "1");
+    firstWinVisible = false;
+    threeStepsVisible = false;
+    recentCompletion = null;
+    if (activeFilter === "done" && plan.added.some(task => !task.done)) activeFilter = "all";
+    lastTaskActivity = loadLastTaskActivity();
+    updateProgress();
+    updateList();
+    clearBackupSelection();
+    reportBackup("Восстановлено: " + plan.added.length +
+      " задач. Уже существующих: " + plan.skipped +
+      (selected.game ? ". Игровые монеты, XP, энергия и покупки перенесены." :
+        ". Это копия v1: игровые ресурсы не изменены.") +
+      " Прогресс и таймеры сохранены.");
+    window.dispatchEvent(new Event("sdelano:tasks-changed"));
+    backupDownload.focus({ preventScroll: true });
+  });
+});
+
+tasks.forEach(appendTask);
+updateProgress();
+updateList();
+if (needsTaskMigration && !needsRecovery) {
+  changeTasks(() => { if (needsTaskMigration && !needsRecovery) saveTasks(); });
+}
+window.addEventListener("storage", event => {
+  if (event.key === STORAGE_KEY || event.key === null) syncStoredTasks();
+});
+window.addEventListener("sdelano:cloud-applied", () => {
+  syncStoredTasks(); // The writing tab does not receive a storage event.
+});
+
+function greetFirstVisit() {
+  const dialog = document.querySelector("#welcome");
+  if (typeof dialog.showModal !== "function" || !taskStorageReadable || needsRecovery) return;
+
+  // A new tab is a new visit. A refresh within the same tab is not a new visit.
+  // Do not interrupt people arriving through a referral link.
+  const url = new URL(location.href);
+  const invited = !sharedAchievement.hidden || url.searchParams.get("utm_source") === "progress_share";
+  const preview = url.searchParams.get("welcome") === "1" && !invited;
+  if (preview) {
+    url.searchParams.delete("welcome");
+    history.replaceState(history.state, "", url);
+  }
+  if (invited || (document.activeElement && document.activeElement !== document.body)) return;
+
+  const visitKey = "sdelano.welcome.session.v2";
+  try {
+    if (!preview && sessionStorage.getItem(visitKey) === "1") return;
+    sessionStorage.setItem(visitKey, "1");
+  } catch {
+    // Some private or embedded browsers block storage. The greeting still works.
+  }
+
+  const returning = tasks.length > 0 || firstWinAchieved || lastTaskActivity > 0;
+  const start = document.querySelector("#welcome-start");
+  const heading = document.querySelector("#page-heading");
+  if (returning) {
+    document.querySelector("#welcome-title").textContent = "С возвращением!";
+    document.querySelector("#welcome-detail").textContent = "Лисёнок рядом. Продолжим с одного дела?";
+    start.textContent = "К моим делам";
+  }
+
+  function enter(inputRequested) {
+    if (!dialog.open) return;
+    dialog.close();
+    const next = returning && inputRequested ?
+      (list.querySelector(".task-checkbox:not(:checked)") ?? titleInput) :
+      (inputRequested ? titleInput : heading);
+    next.focus({ preventScroll: true });
+  }
+  dialog.showModal();
+  start.addEventListener("click", () => enter(true), { once: true });
+  dialog.addEventListener("cancel", event => {
+    event.preventDefault();
+    enter(false);
+  }, { once: true });
+  const timer = setTimeout(() => enter(false), returning ? 2100 : 2600);
+  dialog.addEventListener("close", () => clearTimeout(timer), { once: true });
+  // Do not replay the greeting after restoring a tab from back-forward cache.
+  window.addEventListener("pagehide", () => {
+    clearTimeout(timer);
+    if (dialog.open) dialog.close();
+  }, { once: true });
+}
+greetFirstVisit();
+
+function updateClocks() {
+  if (document.hidden) return;
+  for (const [task, update] of clockUpdates) {
+    if (!task.done) update();
+  }
+}
+setInterval(updateClocks, 1000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    updateClocks();
+    updateProgress();
+  }
+});

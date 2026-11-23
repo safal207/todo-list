@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#fff4df">
+  <title>Результаты пилота — Сделано</title>
+  <link rel="stylesheet" href="../../styles.css?v=pilot-1">
+  <link rel="stylesheet" href="../../brand-flavor.css?v=1">
+  <script src="../../pilot-results.js?v=2" defer></script>
+  <style>
+    .research { max-width: 59rem; padding: clamp(1rem, 4vw, 2rem); margin: 0 auto; }
+    .research header { display:flex; align-items:center; justify-content:space-between; gap:.8rem; flex-wrap:wrap; margin-bottom:1.3rem; }
+    .research h1 { font-size:clamp(1.9rem,5vw,2.8rem); line-height:1.12; margin:.5rem 0; }
+    .research h2 { font-size:1.22rem; line-height:1.35; margin-bottom:.7rem; }
+    .research p { margin-bottom:.65rem; }
+    .research .back { font-weight:800; color:var(--plum); }
+    .research .section { border:2px solid var(--ink); border-radius:1.1rem; background:var(--card); padding:clamp(1rem,3vw,1.5rem); margin-bottom:1rem; }
+    .research .kicker { letter-spacing:.08em; font-weight:850; font-size:.78rem; color:#624275; text-transform:uppercase; }
+    .research .muted { color:var(--muted); font-size:.87rem; }
+    .research .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,11.5rem),1fr)); gap:.7rem; margin-top:1rem; }
+    .research .metric { padding:1rem; border-radius:.85rem; background:#fff0d3; border:1px solid #debd92; }
+    .research .metric strong { display:block; font-size:clamp(1.55rem,4vw,2.05rem); font-weight:850; font-variant-numeric:tabular-nums; line-height:1.15; }
+    .research .metric span { display:block; font-weight:750; font-size:.88rem; margin-top:.25rem; }
+    .research .metric small { display:block; color:#655370; margin-top:.2rem; line-height:1.4; }
+    .research label { display:block; font-weight:800; margin-bottom:.45rem; }
+    .research textarea { display:block; width:100%; font:inherit; resize:vertical; border:1px solid #94829c; background:white; color:var(--ink); padding:.8rem; border-radius:.75rem; min-height:9rem; }
+    .research textarea:focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
+    .research .actions { display:flex; flex-wrap:wrap; gap:.55rem; margin-top:.8rem; }
+    .research button { padding:.7rem .9rem; min-height:2.9rem; background:var(--sun); border:2px solid var(--ink); border-radius:.7rem; color:var(--ink); font:inherit; font-weight:800; }
+    .research button.secondary { background:white; }
+    .research .feedback { min-height:1.5rem; color:var(--plum); font-weight:750; margin:.8rem 0 0; }
+    .research .feedback.error { color:#ac251c; }
+    .research .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr)); gap:.65rem; list-style:none; padding:0; margin-top:.8rem; }
+    .research .person { border:1px solid #d8c2e0; border-radius:.75rem; padding:.85rem; background:#fffcf6; min-width:0; }
+    .research .person strong { font-size:1.15rem; }
+    .research .person span { display:block; font-size:.88rem; margin-top:.2rem; }
+    .research .person small { display:block; color:var(--muted); margin-top:.35rem; overflow-wrap:anywhere; }
+    .research .person .pending { color:#6e5274; }
+    .research .footer { font-size:.85rem; color:var(--muted); margin-top:1rem; }
+    .research [hidden] { display:none !important; }
+    @media(max-width:370px) { .research .actions button { width:100%; } .research .section { padding:.9rem; } }
+  </style>
+</head>
+<body>
+<main class="research">
+  <header>
+    <div><p class="kicker">Сделано · исследование</p><h1>Результаты 10 тестов</h1></div>
+    <a class="back" href="../">Страница участника</a>
+  </header>
+  <section class="section" aria-labelledby="summary-title">
+    <h2 id="summary-title">Первые результаты</h2>
+    <p class="muted">Только отчёты, которые участники прислали добровольно. Неполученный отчёт не означает провал. Оценки — субъективное впечатление, а не доказательство формирования привычки.</p>
+    <div class="metrics">
+      <div class="metric"><strong id="reports-count">0/10</strong><span>Отчёты получены</span><small>Уникальные коды T01–T10</small></div>
+      <div class="metric"><strong id="created-rate">—</strong><span>Создали задачу</span><small id="created-denominator">Среди новых участников с отчётом</small></div>
+      <div class="metric"><strong id="completed-rate">—</strong><span>Первая победа</span><small id="completed-denominator">Среди новых участников с отчётом</small></div>
+      <div class="metric"><strong id="d1-rate">—</strong><span>Вернулись на D1</span><small id="d1-denominator">Среди новых участников с известным D1</small></div>
+      <div class="metric"><strong id="ease-score">—</strong><span>Легко начать</span><small id="ease-denominator">Оценка от 1 до 5, только ответившие</small></div>
+      <div class="metric"><strong id="delight-score">—</strong><span>Приятность награды</span><small id="delight-denominator">Оценка от 1 до 5 после выполненного дела</small></div>
+    </div>
+    <p id="quality-note" class="muted" style="margin-top:.8rem">Пока нет данных.</p>
+  </section>
+  <section class="section" aria-labelledby="import-title">
+    <h2 id="import-title">Добавить отчёты</h2>
+    <p>Вставь текст из кнопки «Скопировать обезличенный отчёт». Можно вставить несколько отчётов подряд. Повторный код обновит предыдущий результат, не создавая второго участника.</p>
+    <label for="reports-input">Тексты отчётов</label>
+    <textarea id="reports-input" placeholder="Тест «Сделано» / анонимный результат&#10;Код: T01&#10;Новый пользователь: да&#10;Создал задачу: да&#10;Завершил задачу: да&#10;Вернулся на следующий календарный день: проверим завтра&#10;Лёгкость начала (1–5): 4&#10;Приятность награды (1–5): 5&#10;Комментарий (добровольно): нет" spellcheck="false"></textarea>
+    <div class="actions">
+      <button type="button" id="import-reports">Добавить к результатам</button>
+      <button type="button" class="secondary" id="copy-results">Скопировать сводку</button>
+      <button type="button" class="secondary" id="clear-results">Очистить результаты</button>
+    </div>
+    <p id="import-feedback" class="feedback" role="status" aria-live="polite"></p>
+    <label for="results-export" id="export-label" hidden>Текст сводки для ручного копирования</label>
+    <textarea id="results-export" readonly hidden></textarea>
+  </section>
+  <section class="section" aria-labelledby="people-title">
+    <h2 id="people-title">Участники</h2>
+    <ul id="participants" class="grid" aria-label="Все 10 исследовательских кодов"></ul>
+    <p class="footer">Все результаты хранятся в localStorage этого браузера. Нет общей базы и автоматической синхронизации. Проценты и средние оценки описывают только полученные добровольные отчёты. Это не достоверная конверсия всех приглашённых и не доказательство улучшения удержания.</p>
+  </section>
+</main>
+</body>
+</html>

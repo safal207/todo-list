@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#fff7e7">
+  <title>Твой ход! ШАГ 1 — запиши задачу | Сделано</title>
+  <meta name="description" content="Друг делится своим прогрессом. Твой ход: запиши одну задачу, включи таймер и поставь первую галочку. Жми и делай!">
+  <link rel="canonical" href="https://safal207.github.io/todo-list/invite/">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ru_RU">
+  <meta property="og:site_name" content="Сделано">
+  <meta property="og:url" content="https://safal207.github.io/todo-list/invite/">
+  <meta property="og:title" content="ТВОЙ ХОД! ШАГ 1 — ЗАПИШИ ЗАДАЧУ">
+  <meta property="og:description" content="Друг уже начал. Тебе понадобится одна задача и одна галочка. Время пошло — жми и делай!">
+  <meta property="og:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
+  <meta property="og:image:secure_url" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. ЖМИ И ДЕЛАЙ!">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
+  <meta name="twitter:title" content="ТВОЙ ХОД! ШАГ 1 — ЗАПИШИ ЗАДАЧУ">
+  <meta name="twitter:description" content="Друг уже начал. Жми и делай!">
+  <style>
+    :root { color-scheme: light; font-family: system-ui,-apple-system,Arial,sans-serif; color:#2c1922; background:#fff7e7; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:1.2rem; }
+    main { max-width:38rem; margin:0 auto; }
+    .brand { display:flex; align-items:center; gap:.5rem; font-size:1.45rem; font-weight:900; margin-bottom:1rem; }
+    .mark { display:grid; place-items:center; width:2.6rem; height:2.6rem; border-radius:.65rem; color:white; background:#e4402b; font-size:1.8rem; }
+    article { padding:1rem; border:2px solid #2c1922; border-radius:1rem; background:#fffdf7; box-shadow:0 .35rem 0 #2c1922; }
+    /* Never crop or magnify the share poster in Telegram's in-app browser. */
+    .poster-frame { display:flex; justify-content:center; width:100%; min-width:0; overflow:hidden; border-radius:.65rem; background:#fff2d9; }
+    .poster-frame img {
+      display:block;
+      width:100%;
+      max-width:100%;
+      height:auto;
+      max-height:min(35vh, 300px);
+      aspect-ratio:auto;
+      object-fit:contain;
+      object-position:center;
+    }
+    h1 { margin:.9rem 0 .55rem; font-size:clamp(1.65rem,6vw,2.35rem); line-height:1.12; letter-spacing:-.035em; }
+    .stat { margin:.55rem 0; font-size:1.05rem; font-weight:750; }
+    .cta { display:block; margin:1.1rem 0 .5rem; padding:1rem; border:2px solid #2c1922; border-radius:.75rem; background:#ffcb48; color:#2c1922; text-align:center; font-size:1.1rem; font-weight:900; text-decoration:none; box-shadow:0 .2rem 0 #2c1922; }
+    .cta:hover { background:#ffdd80; }
+    .privacy { font-size:.78rem; color:#675455; line-height:1.4; }
+    a:focus-visible { outline:3px solid #246bbd; outline-offset:4px; }
+    @media(max-width:400px) { body { padding:.65rem; } article { padding:.75rem; } }
+  </style>
+</head>
+<body>
+<main>
+  <header class="brand"><span class="mark" aria-hidden="true">✓</span> Сделано.</header>
+  <article>
+    <div class="poster-frame">
+      <img src="../assets/share-step-1-v2.jpg" alt="ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Жми и делай!" width="1200" height="630" fetchpriority="high">
+    </div>
+    <h1>Твой ход. Запиши одну задачу!</h1>
+    <p id="friend-score" class="stat">Друг поделился результатом в «Сделано».</p>
+    <a id="start-own" class="cta" href="../?utm_source=progress_share&amp;utm_medium=referral&amp;utm_campaign=telegram_invite_v1">Начать задачу</a>
+    <p class="privacy">Твой список будет только у тебя.</p>
+  </article>
+</main>
+<script src="../analytics.js"></script>
+<script>
+  "use strict";
+  const analytics = window.sdelanoAnalytics;
+  analytics?.track("invite_viewed");
+  analytics?.openReferral();
+  document.querySelector("#start-own").addEventListener("click", () => analytics?.startReferral());
+  const params = new URLSearchParams(location.search);
+  const result = /^(\d{1,4})-(\d{1,4})$/.exec(params.get("r") ?? "");
+  const number = (value) => /^\d{1,4}$/.test(value ?? "") ? Number(value) : NaN;
+  const done = number(result?.[1] ?? params.get("done"));
+  const total = number(result?.[2] ?? params.get("total"));
+  if (Number.isInteger(total) && total > 0 && total <= 9999 &&
+      Number.isInteger(done) && done >= 0 && done <= total) {
+    const percent = Math.floor(done * 100 / total);
+    document.querySelector("#friend-score").textContent =
+      "У друга готово " + done + " из " + total + " задач (" + percent + "%).";
+  }
+</script>
+</body>
+</html>

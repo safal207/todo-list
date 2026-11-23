@@ -1,0 +1,6 @@
+/* Isolated v1/v2 mode control. Does not change task/game mechanics. */
+.version-switch { display: inline-flex; align-items: center; gap: .125rem; flex: none; padding: .15rem; border: 1px solid #d7c7bb; border-radius: 999px; background: #fffdfa; }
+.version-switch a { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: .34rem .58rem; border-radius: 999px; font-size: .76rem; line-height: 1.1; font-weight: 800; white-space: nowrap; color: #543b54; text-decoration: none; }
+.version-switch a[aria-current="page"] { background: #2c1922; color: white; }
+.version-switch a:not([aria-current="page"]):hover { background: #f0e8d8; }
+.version-switch a:focus-visible { outline: 3px solid #7955c8; outline-offset: 2px; }
