@@ -1,0 +1,25 @@
+/* Earned-action microreaction only. No idle behavior or task overlay. */
+@keyframes sdelano-fox-micro-nod {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  38% { transform: translateY(-2px) rotate(-1.2deg); }
+  72% { transform: translateY(0) rotate(.35deg); }
+}
+@keyframes sdelano-fox-micro-halo {
+  0%, 100% { filter: brightness(1); }
+  45% { filter: brightness(1.12); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .mini-hero .fox-evolution-figure.fox-microreaction--nod {
+    animation: sdelano-fox-micro-nod .54s ease-out both;
+    transform-origin: 50% 85%;
+  }
+  .mini-hero .fox-microreaction--nod .fox-evolution-halo {
+    animation: sdelano-fox-micro-halo .54s ease-out both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mini-hero .fox-microreaction--nod,
+  .mini-hero .fox-microreaction--nod .fox-evolution-halo {
+    animation: none !important;
+  }
+}
