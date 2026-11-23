@@ -21,6 +21,9 @@ on:
       - "effects.js"
       - "invite/index.html"
       - "tests/*.mjs"
+      - "v2/**"
+      - "mode-switch.js"
+      - "mode-switch.css"
       - ".github/workflows/qa-smoke.yml"
   push:
     branches:
@@ -78,6 +81,7 @@ jobs:
           node tests/backup-restore.mjs
           node tests/cloud-sync.mjs
           node tests/cloud-integration.mjs
+          node tests/version-mode.mjs
       - name: Upload visual snapshots
         if: always()
         uses: actions/upload-artifact@v4

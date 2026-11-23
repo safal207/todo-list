@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
+    <meta name="theme-color" content="#fff4df">
+    <title>Хватит кормить задачи «завтраками». Сделано!</title>
+    <link rel="canonical" href="https://safal207.github.io/todo-list/v2/">
+
+    <!-- These tags form the link preview in Telegram, WhatsApp and social feeds. -->
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="ru_RU">
+    <meta property="og:site_name" content="Сделано">
+    <meta property="og:url" content="https://safal207.github.io/todo-list/v2/">
+    <meta property="og:title" content="Хватит кормить задачи «завтраками». Сделано!">
+    <meta property="og:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
+    <!-- Stable, publicly accessible JPEG used in Telegram/WhatsApp and social link cards. -->
+    <meta property="og:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
+    <meta property="og:image:secure_url" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="https://safal207.github.io/todo-list/assets/share-step-1-v2.jpg">
+    <meta name="twitter:image:alt" content="Сделано. ШАГ 1 — ЗАПИШИ ЗАДАЧУ. Время пошло. Жми и делай!">
+    <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
+    <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
+    <link rel="stylesheet" href="styles.css?v=cloud-1">
+    <link rel="stylesheet" href="../mode-switch.css?v=1">
+    <link rel="stylesheet" href="game-preview.css?v=pause-alert-1">
+    <link rel="stylesheet" href="game-juice.css?v=1">
+    <link rel="stylesheet" href="brand-flavor.css?v=1">
+    <link rel="stylesheet" href="fox-evolution.css?v=1">
+    <link rel="stylesheet" href="fox-evolution-art-v2.css?v=1">
+    <link rel="stylesheet" href="fox-ceremony.css?v=31">
+    <link rel="stylesheet" href="fox-microreactions.css?v=1">
+    <script src="../mode-switch.js?v=1" defer></script>
+    <script src="clock.js?v=open-time" defer></script>
+    <script src="effects.js?v=31" defer></script>
+    <script src="game.js?v=5" defer></script>
+    <script src="game-preview.js?v=31" defer></script>
+    <script src="focus.js?v=pause-alert-1" defer></script>
+    <script src="shop.js?v=1" defer></script>
+    <script src="game-juice.js?v=1" defer></script>
+    <script src="fox-evolution.js?v=31" defer></script>
+    <script src="fox-evolution-art-v2.js?v=1" defer></script>
+    <script src="fox-ceremony.js?v=31" defer></script>
+    <script src="fox-microreactions.js?v=1" defer></script>
+    <script src="share-poster.js" defer></script>
+    <script src="analytics.js?v=pilot-1" defer></script>
+    <script src="backup.js?v=2" defer></script>
+    <script src="cloud-config.js?v=1" defer></script>
+    <script src="cloud-merge.js?v=2" defer></script>
+    <script src="app.js?v=wallet-2" defer></script>
+    <script src="cloud-sync.js?v=2" defer></script>
+  </head>
+  <body>
+    <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
+      <div class="welcome-art" aria-hidden="true">
+        <span class="welcome-spark"><i></i></span>
+        <span class="welcome-fox"><img src="assets/fox-mascot.webp" width="144" height="144" alt=""></span>
+        <span class="welcome-heart">♥</span>
+      </div>
+      <h2 id="welcome-title">Сделаем!</h2>
+      <p id="welcome-detail">С какого дела начнём?</p>
+      <button type="button" id="welcome-start" class="add-button">Записать дело</button>
+    </dialog>
+    <div class="workspace">
+      <header class="site-header">
+        <div class="wordmark"><span class="brand-icon" aria-hidden="true"></span> Сделано<span class="wordmark-period">.</span></div>
+        <button id="feedback-toggle" class="feedback-toggle" type="button" aria-pressed="true" title="Включить или выключить звук и вибрацию">Отклик: вкл</button>
+        <p id="storage-note" class="storage-note"><span aria-hidden="true"></span> Сохраняется в браузере</p>
+        <p id="storage-warning" class="storage-warning" role="status" hidden>Сохранение недоступно. Изменения могут исчезнуть после обновления страницы.</p>
+        <nav class="version-switch" aria-label="Версия приложения" data-app-version="game">
+          <a href="../index.html?classic=1" data-mode-target="classic" aria-label="Классическая версия 1.0">1.0 · Классика</a>
+          <a href="index.html" data-mode-target="game" aria-current="page">2.0</a>
+        </nav>
+      </header>
+
+    <!-- Real XP, coin and energy economy; focus is opt-in and does not block tasks. -->
+    <section id="game-preview" class="game-preview" aria-label="Игровые ресурсы">
+      <button id="game-preview-toggle" class="game-preview-toggle" type="button" aria-expanded="false" aria-controls="game-preview-details">
+        <span class="game-preview-caption"><strong>Награды</strong><small>LVL <span id="game-level-chip">1</span></small></span>
+        <span class="game-preview-resources">
+          <span id="game-coins" class="game-resource game-resource--coins" aria-label="Монеты: 0">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-coin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff5a4"/><stop offset=".46" stop-color="#ffc32f"/><stop offset="1" stop-color="#e77908"/></linearGradient></defs><circle cx="22" cy="22" r="20" fill="#ad610d"/><circle cx="22" cy="20" r="18" fill="url(#sdelano-coin)" stroke="#fff2a2" stroke-width="2"/><circle cx="22" cy="20" r="13.6" fill="none" stroke="#bc7011" stroke-width="1.4"/><circle cx="15.4" cy="17.2" r="2.5" fill="#a55c0b"/><circle cx="21" cy="13.8" r="2.5" fill="#a55c0b"/><circle cx="27" cy="16.1" r="2.5" fill="#a55c0b"/><path d="M15.5 24.5c1-4.8 4-7 6.5-7s6 3 7 7c1.2 4.5-3.2 6.3-6.8 4.4-3.2-1.6-7.7.2-6.7-4.4Z" fill="#a55c0b"/><path d="M9 13c4-6 9-7 13-7" fill="none" stroke="#fff5c4" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span class="game-resource-amount">0</span>
+          </span>
+          <span id="game-xp" class="game-resource game-resource--xp" aria-label="Опыт: 0 XP">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-crystal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a5faff"/><stop offset=".48" stop-color="#6086fc"/><stop offset="1" stop-color="#9d50ee"/></linearGradient></defs><path d="M22 2 35 13l-3 21-10 8-11-8-3-21Z" fill="url(#sdelano-crystal)" stroke="#e0f7ff" stroke-width="2"/><path d="M22 2v40M8 13l14 8 13-8M11 34l11-13 10 13" stroke="#d7f7ff" stroke-opacity=".65" stroke-width="1.4" fill="none"/><path d="M22 2 8 13l14 8Z" fill="#d3feff" fill-opacity=".55"/><path d="M22 21 35 13l-3 21Z" fill="#473bd4" fill-opacity=".28"/></svg>
+            </span>
+            <span class="game-resource-amount">0 <small>XP</small></span>
+          </span>
+          <span id="game-energy" class="game-resource game-resource--energy" aria-label="Энергия: 5 из 5">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-energy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8ff77"/><stop offset=".55" stop-color="#72eb68"/><stop offset="1" stop-color="#18bd9b"/></linearGradient></defs><path d="M25 2 8 24h13l-3 18 19-27H24Z" fill="url(#sdelano-energy)" stroke="#e9ffcb" stroke-width="2" stroke-linejoin="round"/><path d="M25 8 14 22h12" stroke="#fffbc0" stroke-opacity=".8" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            </span>
+            <span class="game-resource-amount">5/5</span>
+          </span>
+        </span>
+        <span class="game-preview-chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div id="game-preview-details" class="game-preview-details" hidden>
+        <div class="game-preview-about">
+          <span class="fox-evolution-figure fox-evolution-portrait" data-fox-stage="cub" aria-hidden="true">
+            <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+            <span class="fox-evolution-core">
+              <img src="assets/fox-mascot.webp" alt="" width="52" height="52" loading="lazy">
+              <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+            </span>
+            <span class="fox-evolution-crest"></span>
+          </span>
+          <div>
+            <strong>Награды за реальные дела</strong>
+            <p>Сделал дело — получи монеты и XP. Фокус добавляет опыт, а энергия восстанавливается со временем.</p>
+          </div>
+        </div>
+        <div class="game-level-details"><span id="game-level-label">Уровень 1</span><span id="game-level-counter">0 / 100 XP</span></div>
+        <progress id="game-level-progress" class="game-level-progress" max="100" value="0" aria-label="Опыт к следующему уровню"></progress>
+        <section class="fox-evolution-card" aria-label="Рост лисёнка">
+          <div class="fox-evolution-card-heading">
+            <strong>Лисёнок растёт с тобой</strong>
+            <span id="fox-evolution-stage" class="fox-evolution-stage">Малыш · LVL 1</span>
+          </div>
+          <ol class="fox-evolution-roadmap" aria-label="Четыре стадии взросления">
+            <li class="fox-evolution-milestone" data-stage="cub" data-unlocked="true" data-current="true" aria-current="step">Малыш</li>
+            <li class="fox-evolution-milestone" data-stage="student" data-unlocked="false" data-current="false">Ученик</li>
+            <li class="fox-evolution-milestone" data-stage="hero" data-unlocked="false" data-current="false">Герой</li>
+            <li class="fox-evolution-milestone" data-stage="master" data-unlocked="false" data-current="false">Мастер</li>
+          </ol>
+          <p id="fox-evolution-next" class="fox-evolution-next">До «Ученика» — ещё 250 XP</p>
+          <progress id="fox-evolution-progress" class="fox-evolution-progress" value="0" max="250" aria-label="Прогресс роста лисёнка до стадии Ученик"></progress>
+        </section>
+        <section id="game-focus" class="game-focus" aria-label="Фокус-сессия на 15 минут">
+          <div class="game-focus-heading"><strong>Фокус · 15 минут</strong><span id="game-energy-next">Полный заряд</span></div>
+          <label class="game-energy-caption" for="game-energy-progress">Заряд для фокуса · 1 единица за 60 минут</label>
+          <progress id="game-energy-progress" class="game-energy-progress" value="5" max="5" aria-label="Запас энергии"></progress>
+          <div class="game-focus-meter">
+            <span id="game-focus-timer" class="game-focus-timer" role="timer" aria-label="Оставшееся время">15:00</span>
+            <div class="game-focus-meter-copy"><strong>+5 XP за сессию</strong><span>Максимум 3 бонуса в день</span></div>
+          </div>
+          <progress id="game-focus-progress" class="game-focus-progress" value="0" max="900000" aria-label="Прогресс фокус-сессии"></progress>
+          <div class="game-focus-actions">
+            <button id="game-focus-start" type="button">Начать фокус</button>
+            <button id="game-focus-pause" type="button" hidden>Пауза</button>
+            <button id="game-focus-resume" type="button" hidden>Продолжить</button>
+            <button id="game-focus-claim" type="button" hidden>Забрать +5 XP</button>
+            <button id="game-focus-cancel" type="button" class="game-focus-cancel" hidden>Отменить</button>
+          </div>
+          <p id="game-focus-status" class="game-focus-status" role="status" aria-live="polite">Вкладка должна оставаться открытой. При уходе таймер ставится на паузу.</p>
+          <div class="game-focus-alert-controls">
+            <button id="game-focus-alert-toggle" class="game-focus-alert-toggle" type="button" aria-pressed="false">Уведомление о паузе: выкл</button>
+            <p id="game-focus-alert-detail" class="game-focus-alert-detail" aria-live="polite">Необязательно: один сигнал с оставшимся временем, когда фокус встал на паузу.</p>
+          </div>
+          <p class="game-focus-note">При нулевой энергии список задач работает как обычно. Заряд списывается только при получении бонуса.</p>
+        </section>
+        <details id="game-shop" class="game-shop">
+          <summary><span>Магазин лисёнка</span><span id="game-shop-balance" class="game-shop-wallet">0 монет</span></summary>
+          <div class="game-shop-content">
+            <div class="game-shop-intro">
+              <span class="game-hero-fox game-shop-fox fox-evolution-figure" id="game-shop-fox" data-fox-stage="cub">
+                <span class="fox-evolution-halo" aria-hidden="true"></span><span class="fox-evolution-tail" aria-hidden="true"></span>
+                <span class="fox-evolution-core">
+                  <img src="assets/fox-mascot.webp" width="96" height="96" alt="Лисёнок" loading="lazy">
+                  <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span>
+                </span>
+                <span class="fox-evolution-crest" aria-hidden="true"></span>
+              </span>
+              <p>Выполняй настоящие дела и украшай своего лисёнка. Монеты игровые, все покупки — только за успехи в приложении.</p>
+            </div>
+            <ul class="game-shop-grid" aria-label="Предметы магазина">
+              <li class="game-shop-card" data-item="scarf">
+                <span class="game-shop-icon game-shop-icon--scarf" aria-hidden="true">🧣</span>
+                <span class="game-shop-name">Золотой шарфик</span>
+                <span class="game-shop-card-status">Цена: 50 монет</span>
+                <button class="game-shop-action" type="button">Купить · 50</button>
+              </li>
+              <li class="game-shop-card" data-item="glasses">
+                <span class="game-shop-icon game-shop-icon--glasses" aria-hidden="true">🕶️</span>
+                <span class="game-shop-name">Синие очки</span>
+                <span class="game-shop-card-status">Цена: 100 монет</span>
+                <button class="game-shop-action" type="button">Купить · 100</button>
+              </li>
+              <li class="game-shop-card" data-item="cosmic">
+                <span class="game-shop-icon game-shop-icon--cosmic" aria-hidden="true">🌌</span>
+                <span class="game-shop-name">Космическая тема</span>
+                <span class="game-shop-card-status">Цена: 150 монет</span>
+                <button class="game-shop-action" type="button">Купить · 150</button>
+              </li>
+              <li class="game-shop-card" data-item="sparkle">
+                <span class="game-shop-icon game-shop-icon--sparkle" aria-hidden="true">✨</span>
+                <span class="game-shop-name">Искры победы</span>
+                <span class="game-shop-card-status">Цена: 200 монет</span>
+                <button class="game-shop-action" type="button">Купить · 200</button>
+              </li>
+            </ul>
+            <p id="game-shop-message" class="game-shop-message" role="status" aria-live="polite">Выбирай награду за достигнутые цели. Купленные предметы остаются в коллекции.</p>
+            <p class="game-shop-note">Предмет покупается один раз, затем его можно надевать и снимать без дополнительных списаний.</p>
+          </div>
+        </details>
+        <button id="game-preview-try" class="game-preview-try" type="button">Послушать награду (демо)</button>
+        <p id="game-preview-feedback" class="game-preview-feedback" role="status" aria-live="polite"></p>
+      </div>
+      <p id="fox-evolution-notice" class="fox-evolution-notice" role="status" aria-live="polite" hidden></p>
+    </section>
+
+      <main>
+        <section id="shared-achievement" class="shared-achievement" aria-labelledby="shared-achievement-heading" hidden>
+          <span class="shared-kicker">Тебе бросили вызов</span>
+          <h2 id="shared-achievement-heading">Чей-то результат — твой повод начать!</h2>
+          <p id="shared-achievement-detail"></p>
+          <button id="shared-start" class="shared-start-button" type="button">Начать свои задачи</button>
+        </section>
+        <div class="board">
+          <section class="task-panel" aria-labelledby="page-heading">
+            <div class="mini-hero">
+              <div>
+                <p class="flavor-kicker">Дела со вкусом</p>
+                <h1 id="page-heading" tabindex="-1">Список задач</h1>
+                <p>Одно дело — одна победа. Прожарим?</p>
+              </div>
+              <span class="game-hero-fox fox-evolution-figure" data-fox-stage="cub" aria-hidden="true">
+                <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+                <span class="fox-evolution-core">
+                  <img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
+                  <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+                </span>
+                <span class="fox-evolution-crest"></span>
+              </span>
+            </div>
+            <form id="task-form">
+              <label for="task-title">Новая задача</label>
+              <div class="form-controls">
+                <input id="task-title" name="title" type="text" placeholder="Например, собрать рюкзак" maxlength="200" autocomplete="off" aria-describedby="timer-hint" required>
+                <button class="add-button" type="submit">Добавить задачу</button>
+              </div>
+            </form>
+            <div class="task-feedback">
+              <p id="timer-hint" class="timer-hint">Таймер начнётся сразу.</p>
+              <button id="next-break" class="task-break" type="button" hidden>Передохнуть</button>
+            </div>
+
+          <aside id="progress-panel" class="progress-panel" data-stage="first" aria-labelledby="progress-heading">
+            <button id="progress-toggle" class="progress-toggle" type="button" aria-expanded="false" aria-controls="progress-details">
+              <span id="progress-heading" class="progress-label">Прогресс списка</span>
+              <span id="percentage" class="percentage" aria-hidden="true">0%</span>
+              <span class="progress-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <progress id="progress" max="100" value="0" aria-label="Доля выполненных задач"></progress>
+            <div class="progress-meta">
+              <p id="progress-summary" class="progress-summary" role="status">Выполнено 0 из 0</p>
+            <div class="share-progress-block">
+              <button id="share-progress" aria-label="Поделиться прогрессом" class="share-progress-button" type="button" aria-haspopup="dialog" aria-controls="share-dialog" aria-describedby="share-progress-hint">
+                <span class="share-arrow" aria-hidden="true">↗</span>
+                Поделиться
+              </button>
+              <p id="share-progress-hint" class="share-progress-hint">Личные задачи останутся у тебя.</p>
+            </div>
+            </div>
+            <div id="progress-details" hidden>
+            <section id="first-step-guide" class="first-step-guide" aria-labelledby="first-step-title">
+              <p id="first-step-label" class="first-step-kicker">МИССИЯ 1 ИЗ 2</p>
+              <h3 id="first-step-title">Запиши одно небольшое дело</h3>
+              <p id="first-step-detail">Например, собрать рюкзак.</p>
+              <button id="first-step-cta" class="first-step-button" type="button">Записать первый шаг</button>
+            </section>
+            <section id="first-win-card" class="first-win-card" aria-labelledby="first-win-title" hidden>
+              <h3 id="first-win-title">Первый шаг сделан!</h3>
+              <p id="first-win-detail">Твоё первое дело готово.</p>
+              <div class="first-win-actions">
+                <button id="first-win-next" class="first-win-next" type="button">Записать ещё одно дело</button>
+                <button id="first-win-share" class="first-win-share" type="button">Поделиться победой</button>
+              </div>
+            </section>
+            <section id="three-steps-card" class="three-steps-card" aria-labelledby="three-steps-title" hidden>
+              <p class="three-steps-kicker">ДОСТИЖЕНИЕ ОТКРЫТО</p>
+              <div class="three-steps-number" aria-hidden="true">3</div>
+              <h3 id="three-steps-title">3 ШАГА СДЕЛАНО!</h3>
+              <p class="three-steps-description">Теперь твой рекорд — три готовых дела.</p>
+              <div class="three-steps-actions">
+                <button id="three-steps-next" class="three-steps-next" type="button">Следующий шаг</button>
+                <button id="three-steps-share" class="three-steps-share" type="button">Поделиться достижением</button>
+              </div>
+            </section>
+            <div id="next-action" class="next-action" hidden>
+              <p id="next-step">Следующий шаг</p>
+              <p id="next-detail">Выберите дело, которое хотите сделать первым.</p>
+              <button id="next-action-button" class="next-action-button" type="button">Продолжить</button>
+            </div>
+            <section class="milestone-roadmap" aria-labelledby="milestone-heading">
+              <div class="milestone-roadmap-heading">
+                <h3 id="milestone-heading">Достижения</h3>
+                <span class="milestone-record" id="milestone-record">Рекорд списка — 0</span>
+              </div>
+              <ol id="milestone-track" class="milestone-track" aria-label="Этапы достижений">
+                <li data-goal="1" aria-label="1 шаг: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">1</span><span class="milestone-label">СТАРТ</span>
+                </li>
+                <li data-goal="3" aria-label="3 шага: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">3</span><span class="milestone-label">РИТМ</span>
+                </li>
+                <li data-goal="5" aria-label="5 шагов: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">5</span><span class="milestone-label">ТЕМП</span>
+                </li>
+                <li data-goal="10" aria-label="10 шагов: ещё не достигнуто">
+                  <span class="milestone-mark" aria-hidden="true">10</span><span class="milestone-label">СЕРИЯ</span>
+                </li>
+              </ol>
+              <progress id="milestone-next-progress" class="milestone-next-progress" max="1" value="0" aria-label="Прогресс к следующему достижению"></progress>
+              <p id="milestone-next-label" class="milestone-next-label" role="status">До отметки 1 — ещё 1 дело.</p>
+            </section>
+            </div>
+          </aside>
+
+            <div class="task-section">
+              <div id="filter-group" class="filters" role="group" aria-label="Фильтр задач" hidden>
+                <button type="button" data-filter="all" aria-pressed="true">Все</button>
+                <button type="button" data-filter="active" aria-pressed="false">В работе</button>
+                <button type="button" data-filter="done" aria-pressed="false">Готово</button>
+              </div>
+              <p id="completion-hint" hidden>После галочки покажем следующее дело, а в конце — «Готово».</p>
+              <ul id="tasks" class="task-list" role="list"></ul>
+              <button id="completed-toggle" class="completed-toggle" type="button" aria-controls="tasks" aria-expanded="false" hidden>
+                <span id="completed-toggle-label">Показать выполненные · 0</span>
+                <span class="completed-chevron" aria-hidden="true">⌄</span>
+              </button>
+              <div id="empty-state" class="empty-state">
+                <span class="empty-icon brand-icon" aria-hidden="true"></span>
+                <div><p><strong>Задач пока нет</strong></p></div>
+                <button id="sample-button" class="outline-button" type="button">Добавить пример</button>
+              </div>
+              <p id="pilot-note" class="pilot-note" hidden>
+                Ты участвуешь в исследовании «Сделано». Счётчики хранятся только на этом устройстве.
+                <a href="pilot/">Посмотреть результат и отправить отзыв</a>
+              </p>
+              <div id="filtered-empty" class="filtered-empty" hidden>
+                <p id="filtered-message"></p>
+                <button id="clear-filter" class="outline-button" type="button">Показать все</button>
+              </div>
+
+              <details id="cloud-sync" class="backup-tools cloud-sync" hidden>
+                <summary>Синхронизация между устройствами</summary>
+                <div class="backup-content">
+                  <p>По желанию подключи облачный аккаунт. Задачи и их названия будут храниться в защищённой базе Supabase и доступны на твоих устройствах. Без входа всё остаётся только в браузере.</p>
+                  <div id="cloud-auth-actions">
+                    <label for="cloud-email">Электронная почта для входа</label>
+                    <input id="cloud-email" type="email" autocomplete="email" required placeholder="you@example.com">
+                    <button id="cloud-signin" class="backup-button" type="button">Получить ссылку для входа</button>
+                  </div>
+                  <div id="cloud-signed-in" hidden>
+                    <p>Аккаунт: <strong id="cloud-account"></strong></p>
+                    <div class="backup-preview">
+                      <button id="cloud-sync-now" class="backup-button" type="button">Синхронизировать сейчас</button>
+                      <button id="cloud-signout" class="backup-cancel" type="button">Выйти</button>
+                    </div>
+                  </div>
+                  <div class="backup-preview">
+                    <button id="cloud-wallet-toggle" class="backup-button" type="button" hidden>Включить перенос монет и магазина</button>
+                  </div>
+                  <p id="cloud-wallet-detail" class="backup-hint">Игровые ресурсы пока хранятся только на этом устройстве.</p>
+                  <p id="cloud-status" class="backup-status" role="status" aria-live="polite"></p>
+                  <p class="backup-hint">Нужен интернет. Если изменения на устройствах конфликтуют, синхронизация останавливается без перезаписи. Перед подключением сохрани резервную копию JSON.</p>
+                </div>
+              </details>
+              <details id="backup-tools" class="backup-tools">
+                <summary>Резервная копия задач</summary>
+                <div class="backup-content">
+                  <p>Полная копия v2 сохраняет задачи, достижения, монеты, XP, энергию и купленные предметы. Файл содержит личные названия задач — никому не передавай без необходимости.</p>
+                  <button id="backup-download" class="backup-button" type="button">Скачать полную копию (.json)</button>
+                  <label for="backup-file">Восстановить из файла</label>
+                  <input id="backup-file" type="file" accept=".json,application/json" aria-describedby="backup-file-hint">
+                  <p id="backup-file-hint" class="backup-hint">Поддерживаются копии v1 и v2. Задачи добавляются без дублей. Кошелёк v2 переносится только в пустую игровую коллекцию либо при точном совпадении: разные непустые кошельки не складываются.</p>
+                  <div id="backup-preview" class="backup-preview" hidden>
+                    <p id="backup-preview-summary"></p>
+                    <button id="backup-import" class="backup-button" type="button">Добавить задачи из копии</button>
+                    <button id="backup-cancel" class="backup-cancel" type="button">Отмена</button>
+                  </div>
+                  <p id="backup-status" class="backup-status" role="status" aria-live="polite"></p>
+                </div>
+              </details>
+            </div>
+          </section>
+
+
+        </div>
+      </main>
+    </div>
+
+    <template id="task-template">
+      <li class="task">
+        <label class="task-label">
+          <input class="task-checkbox" type="checkbox" aria-describedby="completion-hint">
+          <span class="task-copy"><span class="task-title"></span><span class="task-clock"></span></span>
+        </label>
+        <button class="edit-button" type="button"><span aria-hidden="true">✎</span></button>
+        <button class="delete-button" type="button"><span class="trash-icon" aria-hidden="true"></span></button>
+        <form class="task-edit-form" hidden>
+          <label class="task-edit-label">Название задачи
+            <input class="task-edit-input" type="text" maxlength="200" autocomplete="off" required>
+          </label>
+          <div class="task-edit-actions">
+            <button class="task-edit-save" type="submit">Сохранить</button>
+            <button class="task-edit-cancel" type="button">Отмена</button>
+          </div>
+        </form>
+      </li>
+    </template>
+    <dialog id="share-dialog" class="share-dialog" aria-labelledby="share-dialog-title" aria-describedby="share-dialog-description">
+      <div class="share-dialog-header">
+        <h2 id="share-dialog-title">Поделиться результатом</h2>
+        <button id="share-close" class="share-close" type="button" aria-label="Закрыть окно отправки">×</button>
+      </div>
+      <div class="share-score">
+        <strong id="share-preview-percentage">0%</strong>
+        <span id="share-preview-summary">Выполнено 0 из 0</span>
+      </div>
+      <p id="share-dialog-description" class="share-dialog-description">Отправь карточку и ссылку другу.</p>
+      <div id="share-empty-action" class="share-empty-action" hidden>
+        <p>Добавь первую задачу, чтобы поделиться прогрессом.</p>
+        <button id="share-create-task" class="share-primary" type="button">Записать задачу</button>
+      </div>
+      <div id="share-actions" class="share-actions">
+        <div class="share-photo-options">
+          <img id="share-poster-preview" class="share-personal-preview" src="assets/share-step-1-v2.jpg" width="1200" height="630" loading="lazy" alt="ШАГ: запиши первую задачу — твой ход!">
+          <button id="share-image-native" class="share-primary" type="button" hidden>Отправить карточку и ссылку</button>
+          <a id="share-image-download" class="share-photo-download" href="assets/share-step-1-v2.jpg" download="sdelano-shag-1.jpg">Скачать общий постер</a>
+        </div>
+        <button id="share-copy" class="share-copy-button" type="button">Скопировать текст и ссылку</button>
+        <button id="share-native" class="share-copy-button" type="button" hidden>Отправить только ссылку</button>
+        <div class="share-providers" role="group" aria-label="Отправить ссылку">
+          <a id="share-telegram" href="https://t.me/" target="_blank" rel="noopener noreferrer">Ссылка в Telegram</a>
+          <a id="share-whatsapp" href="https://wa.me/" target="_blank" rel="noopener noreferrer">Ссылка в WhatsApp</a>
+        </div>
+        <details id="share-manual" class="share-manual">
+          <summary>Показать текст и ссылку</summary>
+          <label class="share-field-label" for="share-ready-text">Текст для отправки вручную</label>
+          <textarea id="share-ready-text" class="share-ready-text" rows="5" readonly spellcheck="false"></textarea>
+        </details>
+      </div>
+      <p id="share-feedback" class="share-feedback" role="status" aria-live="polite"></p>
+    </dialog>
+  </body>
+</html>
