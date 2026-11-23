@@ -8,7 +8,8 @@ import { chromium } from "playwright";
 const origin = "http://127.0.0.1:8765";
 const tag = "sdelano-focus-paused";
 const browser = await chromium.launch({
-  headless: true, executablePath: process.env.SDELANO_QA_EXECUTABLE
+  headless: process.env.SDELANO_QA_HEADED !== "1",
+  executablePath: process.env.SDELANO_QA_EXECUTABLE
 });
 async function notes(page) {
   return page.evaluate(async tag => {
