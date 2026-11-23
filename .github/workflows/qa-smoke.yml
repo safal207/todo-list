@@ -142,6 +142,7 @@ jobs:
           node tests/game-focus.mjs
           node tests/focus-clock-e2e.mjs
           node tests/focus-pause-notification.mjs
+          if [ "$SDELANO_QA_ENGINE" = "chromium" ]; then node tests/focus-native-notification.mjs; fi
           node tests/game-shop.mjs
           node tests/game-wallet-sync.mjs
           node tests/release-mobile-journey.mjs
