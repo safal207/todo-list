@@ -14,8 +14,11 @@
   const cancelButton = document.querySelector("#game-focus-cancel");
   const claimButton = document.querySelector("#game-focus-claim");
   const status = document.querySelector("#game-focus-status");
+  const alertButton = document.querySelector("#game-focus-alert-toggle");
+  const alertDetail = document.querySelector("#game-focus-alert-detail");
   if (!game || !section || !energy || !energyNext || !timer || !startButton ||
-      !pauseButton || !resumeButton || !cancelButton || !claimButton || !status) return;
+      !pauseButton || !resumeButton || !cancelButton || !claimButton ||
+      !status || !alertButton || !alertDetail) return;
 
   const LIMIT = game.focusMs;
   let lastTick = null;
@@ -60,6 +63,103 @@
       String(seconds % 60).padStart(2, "0");
   }
 
+
+  // Local system notification on one earned-action session's auto-pause.
+  // No remote push, subscriptions, automatic permission prompts or reminders.
+  const ALERT_KEY = "sdelano.focus.pause-alerts.v1";
+  const ALERT_TAG = "sdelano-focus-paused";
+  const supported = () => window.isSecureContext &&
+    typeof window.Notification !== "undefined" && "serviceWorker" in navigator;
+  let alertsOn = false;
+  let notificationRegistration = null;
+  let notificationEpoch = 0;
+  try { alertsOn = localStorage.getItem(ALERT_KEY) === "on"; } catch {}
+
+  function showAlertSettings(message = "") {
+    const available = supported();
+    const denied = available && window.Notification.permission === "denied";
+    alertButton.disabled = !available || denied;
+    alertButton.setAttribute("aria-pressed", String(alertsOn && available && !denied));
+    alertButton.textContent = "Уведомление о паузе: " +
+      (alertsOn && available && !denied ? "вкл" : "выкл");
+    alertDetail.textContent = message || (!available
+      ? "Системные уведомления здесь недоступны; паузу и время покажем на странице."
+      : denied ? "Уведомления запрещены в настройках браузера."
+      : alertsOn ? "Один тихий сигнал при сворачивании — без повторных напоминаний."
+      : "Необязательно. Разрешение спросим только после нажатия.");
+  }
+
+  async function getNotificationRegistration() {
+    if (notificationRegistration?.active) return notificationRegistration;
+    const registration = await navigator.serviceWorker.register("./focus-pause-sw.js", {
+      scope: "./"
+    });
+    notificationRegistration = registration.active
+      ? registration : await navigator.serviceWorker.ready;
+    if (!notificationRegistration?.active) throw new Error("Worker not active");
+    return notificationRegistration;
+  }
+
+  function closePauseNotification() {
+    notificationEpoch++;
+    if (!notificationRegistration?.getNotifications) return;
+    void notificationRegistration.getNotifications({ tag: ALERT_TAG })
+      .then(items => items.forEach(item => item.close()))
+      .catch(() => {});
+  }
+
+  function alertOnAutoPause(id, left) {
+    if (!alertsOn || !supported() ||
+        window.Notification.permission !== "granted") return;
+    const epoch = ++notificationEpoch;
+    void (async () => {
+      const registration = await getNotificationRegistration();
+      if (epoch !== notificationEpoch || !document.hidden || !alertsOn ||
+          session?.id !== id || session.status !== "paused" ||
+          window.Notification.permission !== "granted") return;
+      await registration.showNotification("Фокус на паузе", {
+        body: "Осталось " + left + ". Продолжи, когда будет удобно.",
+        tag: ALERT_TAG, renotify: false, silent: true, requireInteraction: false,
+        icon: new URL("assets/fox-mascot.webp", document.baseURI).href
+      });
+    })().catch(() => { /* On-page status remains available. */ });
+  }
+
+  alertButton.addEventListener("click", async () => {
+    if (alertsOn) {
+      alertsOn = false;
+      try { localStorage.setItem(ALERT_KEY, "off"); } catch {}
+      closePauseNotification();
+      showAlertSettings();
+      return;
+    }
+    if (!supported() || window.Notification.permission === "denied") {
+      showAlertSettings("Браузер не разрешает уведомления. Фокус продолжит работать.");
+      return;
+    }
+    alertButton.disabled = true;
+    try {
+      // Request directly inside a click handler (required by mobile browsers).
+      const permission = window.Notification.permission === "granted"
+        ? "granted" : await window.Notification.requestPermission();
+      if (permission !== "granted") {
+        showAlertSettings("Разрешение не дано. Фокус работает без уведомлений.");
+        return;
+      }
+      await getNotificationRegistration();
+      alertsOn = true;
+      try { localStorage.setItem(ALERT_KEY, "on"); } catch {}
+      showAlertSettings();
+    } catch {
+      alertsOn = false;
+      showAlertSettings("Не удалось включить системные уведомления в этом браузере.");
+    } finally {
+      alertButton.disabled = !supported() ||
+        window.Notification.permission === "denied";
+    }
+  });
+  showAlertSettings();
+
   function refreshEnergy() {
     const data = game.inspect();
     energy.querySelector(".game-resource-amount").textContent = data.energy + "/" + data.maxEnergy;
@@ -93,7 +193,7 @@
     cancelButton.disabled = busy;
   }
 
-  function pause(reason) {
+  function pause(reason, autoPaused = false) {
     if (!session || session.status !== "running") return;
     advance();
     if (session.status === "running") {
@@ -101,8 +201,12 @@
       lastTick = null;
       saveSession();
     }
-    if (reason) status.textContent = reason;
+    const remaining = formatRemaining(LIMIT - session.elapsedMs);
+    if (reason) status.textContent = reason + " Осталось " + remaining + ".";
     render();
+    if (autoPaused && session.status === "paused") {
+      alertOnAutoPause(session.id, remaining);
+    }
   }
 
   function advance() {
@@ -124,6 +228,7 @@
 
   function resume() {
     if (!session || document.hidden) return;
+    closePauseNotification();
     session.status = "running";
     lastTick = performance.now();
     saveSession();
@@ -153,6 +258,7 @@
     if (busy) return;
     session = null;
     lastTick = null;
+    closePauseNotification();
     saveSession();
     status.textContent = "Сессия отменена. Энергия не списана.";
     window.taskFeedback?.play("tap");
@@ -167,6 +273,7 @@
     if (result.awarded) {
       session = null;
       lastTick = null;
+      closePauseNotification();
       saveSession();
       status.textContent = "Фокус завершён: +5 XP! Списана 1 энергия.";
       window.taskFeedback?.play("xp");
@@ -191,8 +298,8 @@
   });
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) pause("Сессия на паузе, пока вкладка скрыта.");
-    else { refreshEnergy(); render(); }
+    if (document.hidden) pause("Сессия на паузе, пока вкладка скрыта.", true);
+    else { closePauseNotification(); refreshEnergy(); render(); }
   });
   window.addEventListener("pagehide", () => {
     pause("Сессия сохранена. Возвращайся, когда будешь готов.");

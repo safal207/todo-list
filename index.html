@@ -28,7 +28,7 @@
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
     <link rel="stylesheet" href="styles.css?v=cloud-1">
-    <link rel="stylesheet" href="game-preview.css?v=4">
+    <link rel="stylesheet" href="game-preview.css?v=pause-alert-1">
     <link rel="stylesheet" href="game-juice.css?v=1">
     <link rel="stylesheet" href="brand-flavor.css?v=1">
     <link rel="stylesheet" href="fox-evolution.css?v=1">
@@ -39,7 +39,7 @@
     <script src="effects.js?v=31" defer></script>
     <script src="game.js?v=5" defer></script>
     <script src="game-preview.js?v=31" defer></script>
-    <script src="focus.js?v=1" defer></script>
+    <script src="focus.js?v=pause-alert-1" defer></script>
     <script src="shop.js?v=1" defer></script>
     <script src="game-juice.js?v=1" defer></script>
     <script src="fox-evolution.js?v=31" defer></script>
@@ -147,6 +147,10 @@
             <button id="game-focus-cancel" type="button" class="game-focus-cancel" hidden>Отменить</button>
           </div>
           <p id="game-focus-status" class="game-focus-status" role="status" aria-live="polite">Вкладка должна оставаться открытой. При уходе таймер ставится на паузу.</p>
+          <div class="game-focus-alert-controls">
+            <button id="game-focus-alert-toggle" class="game-focus-alert-toggle" type="button" aria-pressed="false">Уведомление о паузе: выкл</button>
+            <p id="game-focus-alert-detail" class="game-focus-alert-detail" aria-live="polite">Необязательно: один сигнал с оставшимся временем, когда фокус встал на паузу.</p>
+          </div>
           <p class="game-focus-note">При нулевой энергии список задач работает как обычно. Заряд списывается только при получении бонуса.</p>
         </section>
         <details id="game-shop" class="game-shop">

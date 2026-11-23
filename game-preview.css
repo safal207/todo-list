@@ -152,6 +152,12 @@
 .game-focus-actions button:disabled { cursor: wait; opacity: .6; }
 .game-focus-status { margin-top: .55rem; color: #395b4f; font-size: .82rem; font-weight: 700; }
 .game-focus-note { margin-top: .35rem; font-size: .74rem; line-height: 1.4; color: #695d71; }
+.game-focus-alert-controls { margin-top: .65rem; padding-top: .55rem; border-top: 1px solid #bfdccc; }
+.game-focus-alert-toggle { min-height: 44px; max-width: 100%; padding: .45rem .7rem; border: 1.5px solid #91aca3; border-radius: .65rem; background: #fff; color: #245b49; font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; }
+.game-focus-alert-toggle[aria-pressed="true"] { border-color: #347657; background: #def4e5; }
+.game-focus-alert-toggle:disabled { cursor: not-allowed; opacity: .72; }
+.game-focus-alert-toggle:focus-visible { outline: 3px solid #7552b3; outline-offset: 2px; }
+.game-focus-alert-detail { margin: .3rem 0 0; color: #4e6c60; font-size: .74rem; line-height: 1.4; }
 @media (prefers-reduced-motion: reduce) { .game-focus-actions button { transition: none; } }
 
 /* Fox shop: same original mascot, CSS-only accessory overlays and themes. */
