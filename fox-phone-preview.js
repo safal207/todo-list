@@ -40,6 +40,7 @@
     result.textContent = "Ура! В демо +20 XP и +10 монет. Рост: " +
       document.querySelector("#fox-evolution-stage")?.textContent + ".";
     document.querySelector("#phone-qa-sample .phone-qa-check").textContent = "✓";
+    document.querySelector("#phone-qa-sample .phone-qa-sample-label").textContent = "Один полезный шаг — сделано!";
     complete.disabled = true;
     complete.textContent = "Готово! Лисёнок вырос";
   });
