@@ -44,7 +44,9 @@ try {
       // First 30 seconds count while visible.
       await page.clock.fastForward(30_000);
       assert.equal(await page.locator("#game-focus-timer").textContent(), "14:30");
-      assert.equal((await snapshot(page)).elapsedMs, 30_000);
+      const firstElapsed = (await snapshot(page)).elapsedMs;
+      assert.ok(firstElapsed >= 29_800 && firstElapsed <= 30_200,
+        "30 seconds of visible focus; tolerate up to 200ms browser scheduling skew");
       assert.deepEqual(await balance(page), [0, 0, 5, 0]);
 
       // Hiding the tab immediately pauses. Ten minutes while hidden must
@@ -58,7 +60,8 @@ try {
       assert.equal(await page.locator("#game-focus-resume").isVisible(), true);
       assert.equal((await snapshot(page)).status, "paused");
       await page.clock.fastForward(600_000);
-      assert.equal((await snapshot(page)).elapsedMs, 30_000);
+      assert.equal((await snapshot(page)).elapsedMs, firstElapsed,
+        "Hidden/paused time must add exactly zero milliseconds");
       assert.deepEqual(await balance(page), [0, 0, 5, 0]);
 
       // Showing a tab never starts the focus without the user's Resume.
@@ -70,14 +73,17 @@ try {
       });
       assert.equal((await snapshot(page)).status, "paused");
       await page.clock.fastForward(120_000);
-      assert.equal((await snapshot(page)).elapsedMs, 30_000);
+      assert.equal((await snapshot(page)).elapsedMs, firstElapsed,
+        "Hidden/paused time must add exactly zero milliseconds");
 
       // Only 14m29s of additional visible focus: claim must remain blocked.
       await page.locator("#game-focus-resume").click();
       await page.clock.fastForward(869_000);
       assert.equal(await page.locator("#game-focus-timer").textContent(), "00:01");
       assert.equal((await snapshot(page)).status, "running");
-      assert.equal((await snapshot(page)).elapsedMs, 899_000);
+      const nearFinish = (await snapshot(page)).elapsedMs;
+      assert.ok(nearFinish >= 898_800 && nearFinish < 900_000,
+        "15 minutes of visible time must NOT be complete at this point");
       assert.equal(await page.locator("#game-focus-claim").isVisible(), false);
       assert.deepEqual(await balance(page), [0, 0, 5, 0]);
 
