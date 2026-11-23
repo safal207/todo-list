@@ -68,7 +68,10 @@
   // No remote push, subscriptions, automatic permission prompts or reminders.
   const ALERT_KEY = "sdelano.focus.pause-alerts.v1";
   const ALERT_TAG = "sdelano-focus-paused";
-  const supported = () => window.isSecureContext &&
+  // raw.githack.com and gist.githack.com host many unrelated projects.
+  // Never ask for origin-wide notification permission on shared previews.
+  const sharedPreviewHost = /^(?:raw|gist)\.githack\.com$/i.test(location.hostname);
+  const supported = () => !sharedPreviewHost && window.isSecureContext &&
     typeof window.Notification !== "undefined" && "serviceWorker" in navigator;
   let alertsOn = false;
   let notificationRegistration = null;
@@ -82,7 +85,9 @@
     alertButton.setAttribute("aria-pressed", String(alertsOn && available && !denied));
     alertButton.textContent = "Уведомление о паузе: " +
       (alertsOn && available && !denied ? "вкл" : "выкл");
-    alertDetail.textContent = message || (!available
+    alertDetail.textContent = message || (sharedPreviewHost
+      ? "В общем предпросмотре разрешения отключены ради безопасности. Проверь уведомление на собственном домене."
+      : !available
       ? "Системные уведомления здесь недоступны; паузу и время покажем на странице."
       : denied ? "Уведомления запрещены в настройках браузера."
       : alertsOn ? "Один тихий сигнал при сворачивании — без повторных напоминаний."
