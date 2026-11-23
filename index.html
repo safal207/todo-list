@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
-    <meta name="theme-color" content="#fff7e7">
+    <meta name="theme-color" content="#fff4df">
     <title>Хватит кормить задачи «завтраками». Сделано!</title>
     <link rel="canonical" href="https://safal207.github.io/todo-list/">
 
@@ -28,15 +28,31 @@
     <meta name="twitter:title" content="Хватит кормить задачи «завтраками». Сделано!">
     <meta name="twitter:description" content="«Сделано» — список дел с таймером. Записал задачу — время пошло. Поставил галочку — увидел, сколько времени дело было открыто. Меньше «потом». Больше «готово». Жми и делай!">
     <link rel="stylesheet" href="styles.css?v=cloud-1">
+    <link rel="stylesheet" href="game-preview.css?v=pause-alert-1">
+    <link rel="stylesheet" href="game-juice.css?v=1">
+    <link rel="stylesheet" href="brand-flavor.css?v=1">
+    <link rel="stylesheet" href="fox-evolution.css?v=1">
+    <link rel="stylesheet" href="fox-evolution-art-v2.css?v=1">
+    <link rel="stylesheet" href="fox-ceremony.css?v=31">
+    <link rel="stylesheet" href="fox-microreactions.css?v=1">
     <script src="clock.js?v=open-time" defer></script>
-    <script src="effects.js" defer></script>
+    <script src="effects.js?v=31" defer></script>
+    <script src="game.js?v=5" defer></script>
+    <script src="game-preview.js?v=31" defer></script>
+    <script src="focus.js?v=pause-alert-1" defer></script>
+    <script src="shop.js?v=1" defer></script>
+    <script src="game-juice.js?v=1" defer></script>
+    <script src="fox-evolution.js?v=31" defer></script>
+    <script src="fox-evolution-art-v2.js?v=1" defer></script>
+    <script src="fox-ceremony.js?v=31" defer></script>
+    <script src="fox-microreactions.js?v=1" defer></script>
     <script src="share-poster.js" defer></script>
     <script src="analytics.js?v=pilot-1" defer></script>
-    <script src="backup.js?v=1" defer></script>
+    <script src="backup.js?v=2" defer></script>
     <script src="cloud-config.js?v=1" defer></script>
-    <script src="cloud-merge.js?v=1" defer></script>
-    <script src="app.js?v=cloud-1" defer></script>
-    <script src="cloud-sync.js?v=1" defer></script>
+    <script src="cloud-merge.js?v=2" defer></script>
+    <script src="app.js?v=wallet-2" defer></script>
+    <script src="cloud-sync.js?v=2" defer></script>
   </head>
   <body>
     <dialog id="welcome" class="welcome" aria-labelledby="welcome-title" aria-describedby="welcome-detail">
@@ -57,6 +73,136 @@
         <p id="storage-warning" class="storage-warning" role="status" hidden>Сохранение недоступно. Изменения могут исчезнуть после обновления страницы.</p>
       </header>
 
+    <!-- Real XP, coin and energy economy; focus is opt-in and does not block tasks. -->
+    <section id="game-preview" class="game-preview" aria-label="Игровые ресурсы">
+      <button id="game-preview-toggle" class="game-preview-toggle" type="button" aria-expanded="false" aria-controls="game-preview-details">
+        <span class="game-preview-caption"><strong>Награды</strong><small>LVL <span id="game-level-chip">1</span></small></span>
+        <span class="game-preview-resources">
+          <span id="game-coins" class="game-resource game-resource--coins" aria-label="Монеты: 0">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-coin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff5a4"/><stop offset=".46" stop-color="#ffc32f"/><stop offset="1" stop-color="#e77908"/></linearGradient></defs><circle cx="22" cy="22" r="20" fill="#ad610d"/><circle cx="22" cy="20" r="18" fill="url(#sdelano-coin)" stroke="#fff2a2" stroke-width="2"/><circle cx="22" cy="20" r="13.6" fill="none" stroke="#bc7011" stroke-width="1.4"/><circle cx="15.4" cy="17.2" r="2.5" fill="#a55c0b"/><circle cx="21" cy="13.8" r="2.5" fill="#a55c0b"/><circle cx="27" cy="16.1" r="2.5" fill="#a55c0b"/><path d="M15.5 24.5c1-4.8 4-7 6.5-7s6 3 7 7c1.2 4.5-3.2 6.3-6.8 4.4-3.2-1.6-7.7.2-6.7-4.4Z" fill="#a55c0b"/><path d="M9 13c4-6 9-7 13-7" fill="none" stroke="#fff5c4" stroke-width="2" stroke-linecap="round"/></svg>
+            </span>
+            <span class="game-resource-amount">0</span>
+          </span>
+          <span id="game-xp" class="game-resource game-resource--xp" aria-label="Опыт: 0 XP">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-crystal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a5faff"/><stop offset=".48" stop-color="#6086fc"/><stop offset="1" stop-color="#9d50ee"/></linearGradient></defs><path d="M22 2 35 13l-3 21-10 8-11-8-3-21Z" fill="url(#sdelano-crystal)" stroke="#e0f7ff" stroke-width="2"/><path d="M22 2v40M8 13l14 8 13-8M11 34l11-13 10 13" stroke="#d7f7ff" stroke-opacity=".65" stroke-width="1.4" fill="none"/><path d="M22 2 8 13l14 8Z" fill="#d3feff" fill-opacity=".55"/><path d="M22 21 35 13l-3 21Z" fill="#473bd4" fill-opacity=".28"/></svg>
+            </span>
+            <span class="game-resource-amount">0 <small>XP</small></span>
+          </span>
+          <span id="game-energy" class="game-resource game-resource--energy" aria-label="Энергия: 5 из 5">
+            <span class="game-resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 44 44" focusable="false"><defs><linearGradient id="sdelano-energy" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e8ff77"/><stop offset=".55" stop-color="#72eb68"/><stop offset="1" stop-color="#18bd9b"/></linearGradient></defs><path d="M25 2 8 24h13l-3 18 19-27H24Z" fill="url(#sdelano-energy)" stroke="#e9ffcb" stroke-width="2" stroke-linejoin="round"/><path d="M25 8 14 22h12" stroke="#fffbc0" stroke-opacity=".8" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            </span>
+            <span class="game-resource-amount">5/5</span>
+          </span>
+        </span>
+        <span class="game-preview-chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div id="game-preview-details" class="game-preview-details" hidden>
+        <div class="game-preview-about">
+          <span class="fox-evolution-figure fox-evolution-portrait" data-fox-stage="cub" aria-hidden="true">
+            <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+            <span class="fox-evolution-core">
+              <img src="assets/fox-mascot.webp" alt="" width="52" height="52" loading="lazy">
+              <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+            </span>
+            <span class="fox-evolution-crest"></span>
+          </span>
+          <div>
+            <strong>Награды за реальные дела</strong>
+            <p>Сделал дело — получи монеты и XP. Фокус добавляет опыт, а энергия восстанавливается со временем.</p>
+          </div>
+        </div>
+        <div class="game-level-details"><span id="game-level-label">Уровень 1</span><span id="game-level-counter">0 / 100 XP</span></div>
+        <progress id="game-level-progress" class="game-level-progress" max="100" value="0" aria-label="Опыт к следующему уровню"></progress>
+        <section class="fox-evolution-card" aria-label="Рост лисёнка">
+          <div class="fox-evolution-card-heading">
+            <strong>Лисёнок растёт с тобой</strong>
+            <span id="fox-evolution-stage" class="fox-evolution-stage">Малыш · LVL 1</span>
+          </div>
+          <ol class="fox-evolution-roadmap" aria-label="Четыре стадии взросления">
+            <li class="fox-evolution-milestone" data-stage="cub" data-unlocked="true" data-current="true" aria-current="step">Малыш</li>
+            <li class="fox-evolution-milestone" data-stage="student" data-unlocked="false" data-current="false">Ученик</li>
+            <li class="fox-evolution-milestone" data-stage="hero" data-unlocked="false" data-current="false">Герой</li>
+            <li class="fox-evolution-milestone" data-stage="master" data-unlocked="false" data-current="false">Мастер</li>
+          </ol>
+          <p id="fox-evolution-next" class="fox-evolution-next">До «Ученика» — ещё 250 XP</p>
+          <progress id="fox-evolution-progress" class="fox-evolution-progress" value="0" max="250" aria-label="Прогресс роста лисёнка до стадии Ученик"></progress>
+        </section>
+        <section id="game-focus" class="game-focus" aria-label="Фокус-сессия на 15 минут">
+          <div class="game-focus-heading"><strong>Фокус · 15 минут</strong><span id="game-energy-next">Полный заряд</span></div>
+          <label class="game-energy-caption" for="game-energy-progress">Заряд для фокуса · 1 единица за 60 минут</label>
+          <progress id="game-energy-progress" class="game-energy-progress" value="5" max="5" aria-label="Запас энергии"></progress>
+          <div class="game-focus-meter">
+            <span id="game-focus-timer" class="game-focus-timer" role="timer" aria-label="Оставшееся время">15:00</span>
+            <div class="game-focus-meter-copy"><strong>+5 XP за сессию</strong><span>Максимум 3 бонуса в день</span></div>
+          </div>
+          <progress id="game-focus-progress" class="game-focus-progress" value="0" max="900000" aria-label="Прогресс фокус-сессии"></progress>
+          <div class="game-focus-actions">
+            <button id="game-focus-start" type="button">Начать фокус</button>
+            <button id="game-focus-pause" type="button" hidden>Пауза</button>
+            <button id="game-focus-resume" type="button" hidden>Продолжить</button>
+            <button id="game-focus-claim" type="button" hidden>Забрать +5 XP</button>
+            <button id="game-focus-cancel" type="button" class="game-focus-cancel" hidden>Отменить</button>
+          </div>
+          <p id="game-focus-status" class="game-focus-status" role="status" aria-live="polite">Вкладка должна оставаться открытой. При уходе таймер ставится на паузу.</p>
+          <div class="game-focus-alert-controls">
+            <button id="game-focus-alert-toggle" class="game-focus-alert-toggle" type="button" aria-pressed="false">Уведомление о паузе: выкл</button>
+            <p id="game-focus-alert-detail" class="game-focus-alert-detail" aria-live="polite">Необязательно: один сигнал с оставшимся временем, когда фокус встал на паузу.</p>
+          </div>
+          <p class="game-focus-note">При нулевой энергии список задач работает как обычно. Заряд списывается только при получении бонуса.</p>
+        </section>
+        <details id="game-shop" class="game-shop">
+          <summary><span>Магазин лисёнка</span><span id="game-shop-balance" class="game-shop-wallet">0 монет</span></summary>
+          <div class="game-shop-content">
+            <div class="game-shop-intro">
+              <span class="game-hero-fox game-shop-fox fox-evolution-figure" id="game-shop-fox" data-fox-stage="cub">
+                <span class="fox-evolution-halo" aria-hidden="true"></span><span class="fox-evolution-tail" aria-hidden="true"></span>
+                <span class="fox-evolution-core">
+                  <img src="assets/fox-mascot.webp" width="96" height="96" alt="Лисёнок" loading="lazy">
+                  <span class="game-fox-glasses" aria-hidden="true"></span><span class="game-fox-scarf" aria-hidden="true"></span>
+                </span>
+                <span class="fox-evolution-crest" aria-hidden="true"></span>
+              </span>
+              <p>Выполняй настоящие дела и украшай своего лисёнка. Монеты игровые, все покупки — только за успехи в приложении.</p>
+            </div>
+            <ul class="game-shop-grid" aria-label="Предметы магазина">
+              <li class="game-shop-card" data-item="scarf">
+                <span class="game-shop-icon game-shop-icon--scarf" aria-hidden="true">🧣</span>
+                <span class="game-shop-name">Золотой шарфик</span>
+                <span class="game-shop-card-status">Цена: 50 монет</span>
+                <button class="game-shop-action" type="button">Купить · 50</button>
+              </li>
+              <li class="game-shop-card" data-item="glasses">
+                <span class="game-shop-icon game-shop-icon--glasses" aria-hidden="true">🕶️</span>
+                <span class="game-shop-name">Синие очки</span>
+                <span class="game-shop-card-status">Цена: 100 монет</span>
+                <button class="game-shop-action" type="button">Купить · 100</button>
+              </li>
+              <li class="game-shop-card" data-item="cosmic">
+                <span class="game-shop-icon game-shop-icon--cosmic" aria-hidden="true">🌌</span>
+                <span class="game-shop-name">Космическая тема</span>
+                <span class="game-shop-card-status">Цена: 150 монет</span>
+                <button class="game-shop-action" type="button">Купить · 150</button>
+              </li>
+              <li class="game-shop-card" data-item="sparkle">
+                <span class="game-shop-icon game-shop-icon--sparkle" aria-hidden="true">✨</span>
+                <span class="game-shop-name">Искры победы</span>
+                <span class="game-shop-card-status">Цена: 200 монет</span>
+                <button class="game-shop-action" type="button">Купить · 200</button>
+              </li>
+            </ul>
+            <p id="game-shop-message" class="game-shop-message" role="status" aria-live="polite">Выбирай награду за достигнутые цели. Купленные предметы остаются в коллекции.</p>
+            <p class="game-shop-note">Предмет покупается один раз, затем его можно надевать и снимать без дополнительных списаний.</p>
+          </div>
+        </details>
+        <button id="game-preview-try" class="game-preview-try" type="button">Послушать награду (демо)</button>
+        <p id="game-preview-feedback" class="game-preview-feedback" role="status" aria-live="polite"></p>
+      </div>
+      <p id="fox-evolution-notice" class="fox-evolution-notice" role="status" aria-live="polite" hidden></p>
+    </section>
+
       <main>
         <section id="shared-achievement" class="shared-achievement" aria-labelledby="shared-achievement-heading" hidden>
           <span class="shared-kicker">Тебе бросили вызов</span>
@@ -68,10 +214,18 @@
           <section class="task-panel" aria-labelledby="page-heading">
             <div class="mini-hero">
               <div>
+                <p class="flavor-kicker">Дела со вкусом</p>
                 <h1 id="page-heading" tabindex="-1">Список задач</h1>
-                <p>Начни с одного дела.</p>
+                <p>Одно дело — одна победа. Прожарим?</p>
               </div>
-              <img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
+              <span class="game-hero-fox fox-evolution-figure" data-fox-stage="cub" aria-hidden="true">
+                <span class="fox-evolution-halo"></span><span class="fox-evolution-tail"></span>
+                <span class="fox-evolution-core">
+                  <img class="hero-mascot" src="assets/fox-mascot.webp" width="64" height="64" alt="" decoding="async">
+                  <span class="game-fox-glasses"></span><span class="game-fox-scarf"></span>
+                </span>
+                <span class="fox-evolution-crest"></span>
+              </span>
             </div>
             <form id="task-form">
               <label for="task-title">Новая задача</label>
@@ -199,6 +353,10 @@
                       <button id="cloud-signout" class="backup-cancel" type="button">Выйти</button>
                     </div>
                   </div>
+                  <div class="backup-preview">
+                    <button id="cloud-wallet-toggle" class="backup-button" type="button" hidden>Включить перенос монет и магазина</button>
+                  </div>
+                  <p id="cloud-wallet-detail" class="backup-hint">Игровые ресурсы пока хранятся только на этом устройстве.</p>
                   <p id="cloud-status" class="backup-status" role="status" aria-live="polite"></p>
                   <p class="backup-hint">Нужен интернет. Если изменения на устройствах конфликтуют, синхронизация останавливается без перезаписи. Перед подключением сохрани резервную копию JSON.</p>
                 </div>
@@ -206,11 +364,11 @@
               <details id="backup-tools" class="backup-tools">
                 <summary>Резервная копия задач</summary>
                 <div class="backup-content">
-                  <p>Сохрани свои дела на телефон или компьютер, чтобы восстановить их в другом браузере. Файл содержит названия задач — храни его у себя.</p>
-                  <button id="backup-download" class="backup-button" type="button">Скачать копию (.json)</button>
+                  <p>Полная копия v2 сохраняет задачи, достижения, монеты, XP, энергию и купленные предметы. Файл содержит личные названия задач — никому не передавай без необходимости.</p>
+                  <button id="backup-download" class="backup-button" type="button">Скачать полную копию (.json)</button>
                   <label for="backup-file">Восстановить из файла</label>
                   <input id="backup-file" type="file" accept=".json,application/json" aria-describedby="backup-file-hint">
-                  <p id="backup-file-hint" class="backup-hint">При восстановлении новые дела добавятся к текущим. Совпадающие задачи не перезаписываются.</p>
+                  <p id="backup-file-hint" class="backup-hint">Поддерживаются копии v1 и v2. Задачи добавляются без дублей. Кошелёк v2 переносится только в пустую игровую коллекцию либо при точном совпадении: разные непустые кошельки не складываются.</p>
                   <div id="backup-preview" class="backup-preview" hidden>
                     <p id="backup-preview-summary"></p>
                     <button id="backup-import" class="backup-button" type="button">Добавить задачи из копии</button>

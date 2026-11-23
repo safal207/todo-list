@@ -38,8 +38,13 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
   });
   try {
     await page.goto(origin, { waitUntil: "networkidle" });
+    // Welcome can auto-close while WebKit finishes networkidle and layout.
+    // Enter only if the dialog is still open; never wait on a hidden button.
+    await page.evaluate(() => {
+      const welcome = document.querySelector("#welcome");
+      if (welcome?.open) document.querySelector("#welcome-start")?.click();
+    });
     await showProgress(page);
-    await page.locator("#welcome-start").click();
     await page.reload({ waitUntil: "networkidle" });
     assert.equal(await page.locator("#progress-toggle").getAttribute("aria-expanded"), "false",
       "Returning to the app starts with a compact progress bar");
@@ -86,7 +91,8 @@ for (const [width, height] of [[390, 844], [320, 700], [1280, 800]]) {
       "https://safal207.github.io/todo-list/");
     assert.equal(await page.locator("#page-heading").textContent(), "Список задач");
     assert.equal(await page.locator(".site-header .brand-icon").count(), 1);
-    assert.equal(await page.locator(".mini-hero p").textContent(), "Начни с одного дела.");
+    assert.equal(await page.locator(".mini-hero p:not(.flavor-kicker)").textContent(), "Одно дело — одна победа. Прожарим?");
+    assert.equal(await page.locator(".flavor-kicker").textContent(), "Дела со вкусом");
     const mascot = page.locator(".hero-mascot");
     assert.ok(await mascot.evaluate(img => img.complete && img.naturalWidth > 0), "The fox mascot image must load");
     assert.equal(await mascot.evaluate(img => getComputedStyle(img).animationName), "mascot-hello");

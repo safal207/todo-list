@@ -19,6 +19,27 @@ on:
       - "share-poster.js"
       - "clock.js"
       - "effects.js"
+      - "game-preview.js"
+      - "game.js"
+      - "focus.js"
+      - "focus-pause-sw.js"
+      - "shop.js"
+      - "game-preview.css"
+      - "game-juice.js"
+      - "game-juice.css"
+      - "brand-flavor.css"
+      - "fox-evolution.js"
+      - "fox-evolution.css"
+      - "fox-evolution-art-v2.js"
+      - "fox-evolution-art-v2.css"
+      - "fox-phone-preview.html"
+      - "fox-phone-preview.js"
+      - "fox-phone-feedback.js"
+      - "fox-ceremony.css"
+      - "fox-ceremony.js"
+      - "fox-microreactions.js"
+      - "fox-micro-phone-preview.js"
+      - "fox-microreactions.css"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -42,6 +63,26 @@ on:
       - "share-poster.js"
       - "clock.js"
       - "effects.js"
+      - "game-preview.js"
+      - "game-preview.css"
+      - "game-juice.js"
+      - "game-juice.css"
+      - "brand-flavor.css"
+      - "fox-evolution.js"
+      - "fox-evolution.css"
+      - "fox-evolution-art-v2.js"
+      - "fox-evolution-art-v2.css"
+      - "fox-phone-preview.html"
+      - "fox-phone-preview.js"
+      - "fox-phone-feedback.js"
+      - "fox-ceremony.css"
+      - "fox-ceremony.js"
+      - "fox-microreactions.js"
+      - "fox-microreactions.css"
+      - "game.js"
+      - "focus.js"
+      - "focus-pause-sw.js"
+      - "shop.js"
       - "invite/index.html"
       - "tests/*.mjs"
       - ".github/workflows/qa-smoke.yml"
@@ -68,12 +109,48 @@ jobs:
         run: |
           npm install --no-save --no-package-lock playwright@1.62.1
           npx playwright install --with-deps "$SDELANO_QA_ENGINE"
+      - name: Verify external mobile demo entrypoint
+        if: matrix.browser == 'chromium'
+        env:
+          PREVIEW_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -eu
+          url="https://raw.githack.com/safal207/todo-list/$PREVIEW_SHA/fox-phone-preview.html"
+          curl -fL --retry 2 --max-time 30 --output /tmp/sdelano-fox-phone-preview.html "$url"
+          grep -q 'Fox Evolution v3' /tmp/sdelano-fox-phone-preview.html
+          grep -q 'phone-qa-complete' /tmp/sdelano-fox-phone-preview.html
+          grep -q 'phone-qa-review' /tmp/sdelano-fox-phone-preview.html
+          printf 'Mobile preview fetched: %s bytes\\n' "$(wc -c </tmp/sdelano-fox-phone-preview.html)"
       - name: Serve and test mobile + desktop
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/tasks-qa-server.log 2>&1 &
           node tests/qa-smoke.mjs
+          if [ "$SDELANO_QA_ENGINE" = "chromium" ]; then
+            SDELANO_QA_HEADED=1 xvfb-run -a -s "-screen 0 1280x1024x24" node tests/focus-native-notification.mjs
+          fi
+          node tests/game-preview.mjs
+          node tests/game-juice.mjs
+          node tests/fox-evolution.mjs
+          node tests/fox-evolution-art-v2.mjs
+          node tests/fox-ceremony.mjs
+          node tests/fox-smooth.mjs
+          node tests/fox-phone-preview.mjs
+          node tests/fox-phone-feedback.mjs
+          node tests/fox-smooth-v31.mjs
+          node tests/fox-microreactions.mjs
+          node tests/fox-microreactions-integration.mjs
+          node tests/fox-micro-phone-preview.mjs
+          node tests/brand-flavor.mjs
+          node tests/game-economy.mjs
+          node tests/game-focus.mjs
+          node tests/focus-clock-e2e.mjs
+          node tests/focus-pause-notification.mjs
+          node tests/game-shop.mjs
+          node tests/game-wallet-sync.mjs
+          node tests/release-mobile-journey.mjs
           node tests/first-visit.mjs
           node tests/pilot-results.mjs
+          node tests/pilot-delight.mjs
           node tests/task-edit.mjs
           node tests/backup-restore.mjs
           node tests/cloud-sync.mjs

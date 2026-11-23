@@ -1,0 +1,248 @@
+/* Fox Evolution v1 — cosmetic growth derived from the existing XP level.
+ * Original fox illustration is preserved in every stage.
+ * All layers are visual and never write to the wallet. */
+.fox-evolution-figure {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  isolation: isolate;
+  overflow: visible;
+  vertical-align: middle;
+}
+.fox-evolution-halo,
+.fox-evolution-tail,
+.fox-evolution-crest,
+.fox-evolution-core {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+.fox-evolution-halo {
+  z-index: 0;
+  inset: 9%;
+  border-radius: 50%;
+  border: 2px solid #f0bb74a1;
+  background: radial-gradient(circle at 38% 35%, #fffbd6aa, #ffce826b 65%, #db874831);
+  box-shadow: 0 2px 7px #ad67312e;
+}
+.fox-evolution-tail {
+  z-index: 1;
+  right: -4%;
+  bottom: 15%;
+  width: 28%;
+  height: 38%;
+  border: 2px solid #b96a2b;
+  border-radius: 12% 93% 24% 80%;
+  background: linear-gradient(130deg, #e87932, #ffbc68 64%, #fff4d8 66%);
+  transform: rotate(-34deg) scale(.55);
+  transform-origin: 20% 90%;
+  opacity: .55;
+}
+.fox-evolution-core {
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 83%;
+  transform: scale(.81) translateY(8%);
+}
+.fox-evolution-figure .fox-evolution-core img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.fox-evolution-figure .game-fox-glasses,
+.fox-evolution-figure .game-fox-scarf {
+  z-index: 2;
+}
+.fox-evolution-crest {
+  z-index: 3;
+  top: -2%;
+  right: 1%;
+  width: 25%;
+  aspect-ratio: 1;
+  border: 1px solid #be801f;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 29%, #fffbb7 0 19%, #ffc950 45%, #db8729);
+  box-shadow: 0 2px 3px #7e481c38;
+  opacity: 0;
+  transform: scale(.6);
+}
+.fox-evolution-portrait {
+  width: 3.4rem;
+  height: 3.4rem;
+  flex: none;
+}
+.fox-evolution-figure[data-fox-stage="student"] .fox-evolution-core {
+  transform: scale(.97) translateY(1%);
+}
+.fox-evolution-figure[data-fox-stage="student"] .fox-evolution-halo {
+  border-color: #dbaf62;
+  background: radial-gradient(circle at 33% 35%, #fffdd2, #ffd17f8f 72%, #f7a54d40);
+}
+.fox-evolution-figure[data-fox-stage="student"] .fox-evolution-tail {
+  transform: rotate(-38deg) scale(.85);
+  opacity: .85;
+}
+.fox-evolution-figure[data-fox-stage="student"] .fox-evolution-crest {
+  opacity: 1;
+  background: radial-gradient(circle at 32% 25%, #fff8c6, #facb4c 64%, #d38628);
+}
+.fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-core {
+  transform: scale(1.11) translateY(-3%);
+}
+.fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-halo {
+  border-color: #eaa84c;
+  border-width: 3px;
+  background: radial-gradient(circle at 35% 30%, #fff8bb, #ffcd6b9a 55%, #f0782c4d);
+  box-shadow: 0 0 0 3px #ffdd957c, 0 3px 10px #cb783941;
+}
+.fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-tail {
+  right: -10%;
+  width: 36%;
+  height: 47%;
+  opacity: 1;
+  transform: rotate(-36deg) scale(1.08);
+  box-shadow: 2px 2px 3px #99552b2d;
+}
+.fox-evolution-figure[data-fox-stage="hero"] .fox-evolution-crest {
+  top: -9%;
+  right: -6%;
+  width: 30%;
+  opacity: 1;
+  background: linear-gradient(150deg, #fff6b1, #efae38 56%, #d6752f);
+}
+.fox-evolution-figure[data-fox-stage="master"] .fox-evolution-core {
+  transform: scale(1.18) translateY(-5%);
+}
+.fox-evolution-figure[data-fox-stage="master"] .fox-evolution-halo {
+  inset: 3%;
+  border: 3px solid #d0a03b;
+  background: radial-gradient(circle at 38% 30%, #fffcda, #ffda87bb 58%, #fa96585a);
+  box-shadow: 0 0 0 3px #fff3bd, 0 0 18px #f5a63c8c, 0 4px 8px #9b5a2944;
+}
+.fox-evolution-figure[data-fox-stage="master"] .fox-evolution-tail {
+  right: -17%;
+  bottom: 11%;
+  width: 47%;
+  height: 57%;
+  opacity: 1;
+  transform: rotate(-40deg) scale(1.16);
+  background: linear-gradient(120deg, #f28b2a 9%, #ffba57 60%, #fff6da 62%);
+  box-shadow: 0 2px 9px #b7763b69;
+}
+.fox-evolution-figure[data-fox-stage="master"] .fox-evolution-crest {
+  top: -15%;
+  right: -12%;
+  width: 40%;
+  aspect-ratio: 1.15;
+  opacity: 1;
+  border-radius: .3rem .3rem .7rem .7rem;
+  clip-path: polygon(0% 36%, 20% 51%, 30% 4%, 53% 42%, 74% 0%, 84% 47%, 100% 27%, 92% 95%, 6% 95%);
+  background: linear-gradient(130deg, #ffe78c, #f5b73c 65%, #bb7621);
+  box-shadow: 0 2px 5px #a7651f50;
+  border: 0;
+}
+.fox-evolution-figure[data-fox-mood="resting"] .fox-evolution-halo {
+  filter: saturate(.7);
+}
+.fox-evolution-card {
+  margin-top: .75rem;
+  padding: .75rem .8rem;
+  border: 1px solid #dfae6c;
+  border-radius: .85rem;
+  background: linear-gradient(140deg, #fff4d6, #fffaf0);
+}
+.fox-evolution-card-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .35rem .65rem;
+  flex-wrap: wrap;
+}
+.fox-evolution-card-heading strong { color: #62361c; font-size: .96rem; font-weight: 900; }
+.fox-evolution-stage { color: #8b491c; font-weight: 850; font-size: .82rem; }
+.fox-evolution-roadmap {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .35rem;
+  margin: .75rem 0 .65rem;
+  padding: 0;
+  list-style: none;
+}
+.fox-evolution-milestone {
+  min-width: 0;
+  padding: .35rem .15rem;
+  text-align: center;
+  border: 1px solid #e4c49b;
+  border-radius: .62rem;
+  background: #fffcf4;
+  color: #82634e;
+  font-size: .69rem;
+  font-weight: 800;
+}
+.fox-evolution-milestone[data-unlocked="true"] {
+  border-color: #c38b41;
+  color: #6f3e1b;
+  background: linear-gradient(145deg, #ffe7ad, #ffd381);
+}
+.fox-evolution-milestone[data-current="true"] {
+  outline: 2px solid #a85c24;
+  outline-offset: 1px;
+  box-shadow: 0 2px 0 #b37a4240;
+}
+.fox-evolution-next { font-size: .79rem; font-weight: 750; color: #744a2e; line-height: 1.4; }
+.fox-evolution-progress {
+  width: 100%;
+  height: .5rem;
+  display: block;
+  margin-top: .4rem;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #ead5b5;
+  accent-color: #df943a;
+}
+.fox-evolution-progress::-webkit-progress-bar { background: #ead5b5; }
+.fox-evolution-progress::-webkit-progress-value { background: linear-gradient(90deg, #efb73c, #ed813b); border-radius: 999px; }
+.fox-evolution-progress::-moz-progress-bar { background: #dd9340; border-radius: 999px; }
+.fox-evolution-notice {
+  padding: .55rem .75rem;
+  margin-top: .75rem;
+  color: #5c2e16;
+  background: linear-gradient(140deg, #ffe5a0, #ffcb6e);
+  border: 2px solid #be7a2b;
+  border-radius: .8rem;
+  font-size: .88rem;
+  font-weight: 900;
+}
+.fox-evolution-notice[hidden] { display: none !important; }
+@keyframes sdelano-fox-grow {
+  0% { transform: translateY(4px) scale(.88); filter: brightness(1); }
+  28% { transform: translateY(-8px) scale(1.22); filter: brightness(1.19) drop-shadow(0 0 9px #ffda6e); }
+  60% { transform: translateY(-2px) scale(.98); }
+  100% { transform: translateY(0) scale(1); filter: brightness(1); }
+}
+@keyframes sdelano-fox-grow-notice {
+  0% { opacity: 0; transform: translateY(9px) scale(.92); }
+  45% { opacity: 1; transform: translateY(-2px) scale(1.03); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fox-evolution-core { transition: transform .48s cubic-bezier(.2,.75,.18,1); }
+  .fox-evolution-tail, .fox-evolution-halo, .fox-evolution-crest { transition: transform .48s ease, background .4s ease, opacity .35s ease; }
+  /* Animate the halo rather than the body: age-specific body scale stays stable. */
+  .fox-evolution--grown .fox-evolution-halo { animation: sdelano-fox-grow 1.05s ease-out both; }
+  .fox-evolution-notice:not([hidden]) { animation: sdelano-fox-grow-notice .55s ease-out both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fox-evolution-core, .fox-evolution-tail, .fox-evolution-halo, .fox-evolution-crest,
+  .fox-evolution-notice { animation: none !important; transition: none !important; }
+}
+@media (max-width: 350px) {
+  .fox-evolution-card { padding: .6rem .5rem; }
+  .fox-evolution-roadmap { gap: .2rem; }
+  .fox-evolution-milestone { font-size: .6rem; }
+}

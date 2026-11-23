@@ -18,6 +18,9 @@
   const signIn = document.querySelector("#cloud-signin");
   const signOut = document.querySelector("#cloud-signout");
   const syncNow = document.querySelector("#cloud-sync-now");
+  const walletToggle = document.querySelector("#cloud-wallet-toggle");
+  const walletDetail = document.querySelector("#cloud-wallet-detail");
+  const game = window.sdelanoGame;
   const authActions = document.querySelector("#cloud-auth-actions");
   const signedIn = document.querySelector("#cloud-signed-in");
   const status = document.querySelector("#cloud-status");
@@ -40,6 +43,11 @@
         localStorage.getItem("sdelano.cloud.enabled." + user.id) === "1");
     } catch { return false; }
   }
+  function walletEnabled() {
+    try { return Boolean(user && enabled() &&
+      localStorage.getItem("sdelano.cloud.wallet.enabled." + user.id) === "1"); }
+    catch { return false; }
+  }
   function canUseAccount() {
     try {
       const owner = localStorage.getItem(ownerKey);
@@ -59,7 +67,9 @@
       threeSteps: localStorage.getItem("sdelano.three-steps.v1") === "1",
       record: Math.max(0, Number(localStorage.getItem("sdelano.milestone.record.v1")) || 0)
     };
-    return JSON.parse(backup.create(tasks, achievements));
+    return JSON.parse(walletEnabled() ?
+      backup.createPortable(tasks, achievements, game.exportWallet()) :
+      backup.create(tasks, achievements));
   }
   function getBaseline(id) {
     try {
@@ -72,8 +82,10 @@
   function validateCloud(payload) {
     return backup.parse(JSON.stringify(payload));
   }
-  function snap(tasks, achievements) {
-    return JSON.parse(backup.create(tasks, achievements));
+  function snap(tasks, achievements, wallet) {
+    return JSON.parse(walletEnabled() ?
+      backup.createPortable(tasks, achievements, wallet) :
+      backup.create(tasks, achievements));
   }
   function getCurrentSessionName() {
     const name = user?.email;
@@ -87,6 +99,16 @@
     syncNow.disabled = !active || running || !canUseAccount();
     syncNow.textContent = enabled() ? "Синхронизировать сейчас" : "Включить синхронизацию";
     signOut.disabled = !active || running;
+    if (walletToggle && walletDetail) {
+      walletToggle.hidden = !active;
+      walletToggle.disabled = !active || !enabled() || running || walletEnabled();
+      walletToggle.textContent = walletEnabled() ?
+        "Игровая синхронизация включена" : "Включить перенос монет и магазина";
+      walletDetail.textContent = walletEnabled() ?
+        "XP, монеты, энергия и покупки синхронизируются с этим аккаунтом. " +
+          "Конфликтующие изменения остановят обмен данными." :
+        "Игровой кошелёк пока хранится только здесь. Для облачного переноса нужно отдельное согласие.";
+    }
   }
 
   function applyLocal(snapshot, id) {
@@ -94,6 +116,10 @@
     // NEVER partially write or silently overwrite the user's current tasks.
     const raw = JSON.stringify(snapshot.tasks);
     const original = localStorage.getItem("todo-list.tasks.v1");
+    const originalWallet = localStorage.getItem(game.key);
+    if (snapshot.game && !walletEnabled()) {
+      throw new Error("В облаке есть игровой кошелёк. Включи синхронизацию игровых ресурсов для безопасного продолжения.");
+    }
     const checkpoint = {
       "sdelano.first-win.v1": localStorage.getItem("sdelano.first-win.v1"),
       "sdelano.three-steps.v1": localStorage.getItem("sdelano.three-steps.v1"),
@@ -102,6 +128,9 @@
     };
     try {
       localStorage.setItem("todo-list.tasks.v1", raw);
+      if (walletEnabled() && snapshot.game) {
+        localStorage.setItem(game.key, JSON.stringify(game.cloneWallet(snapshot.game)));
+      }
       localStorage.setItem("sdelano.first-win.v1", snapshot.achievements.firstWin ? "1" : "0");
       localStorage.setItem("sdelano.three-steps.v1", snapshot.achievements.threeSteps ? "1" : "0");
       localStorage.setItem("sdelano.milestone.record.v1", String(snapshot.achievements.record));
@@ -111,6 +140,8 @@
       try {
         if (original === null) localStorage.removeItem("todo-list.tasks.v1");
         else localStorage.setItem("todo-list.tasks.v1", original);
+        if (originalWallet === null) localStorage.removeItem(game.key);
+        else localStorage.setItem(game.key, originalWallet);
         for (const [k,v] of Object.entries(checkpoint)) {
           if (v === null) localStorage.removeItem(k);
           else localStorage.setItem(k,v);
@@ -119,6 +150,7 @@
       throw new Error("Облако обновлено, но устройство не сохранило данные. Не очищай браузер; проверь место и повтори.");
     }
     window.dispatchEvent(new Event("sdelano:cloud-applied"));
+    if (walletEnabled() && snapshot.game) window.dispatchEvent(new Event("sdelano:game-changed"));
   }
 
   // An origin-wide lock serializes cloud work with existing local task writes.
@@ -153,18 +185,23 @@
           // an instruction to delete every local task.
           throw new Error("Облачная копия исчезла. Скачай JSON-копию и проверь аккаунт перед повторной настройкой.");
         }
-        const remote = record ? validateCloud(record.snapshot) : snap([], {
-          firstWin: false, threeSteps: false, record: 0
-        });
+        const remote = record ? validateCloud(record.snapshot) :
+          JSON.parse(backup.create([], { firstWin: false, threeSteps: false, record: 0 }));
+        if (!walletEnabled() && remote.game) {
+          pausedConflict = true;
+          message("В облаке есть игровой кошелёк. Чтобы избежать его удаления, " +
+            "включи перенос монет и магазина на этом устройстве.", true);
+          return;
+        }
         const result = merger.merge(local, remote, base);
         if (result.conflicts.length) {
           pausedConflict = true;
           message("Найдены разные изменения в " + result.conflicts.length +
-            " задачах. Синхронизация приостановлена, чтобы ничего не потерять. " +
+            " задачах или игровом кошельке. Синхронизация приостановлена, чтобы ничего не потерять. " +
             "Сохрани JSON-копии с обоих устройств и согласуй изменения.", true);
           return;
         }
-        const combined = snap(result.tasks, result.achievements);
+        const combined = snap(result.tasks, result.achievements, result.game);
         if (merger.sameSnapshot(combined, remote)) {
           applyLocal(combined, user.id);
           message("Все задачи актуальны на этом устройстве и в облаке.");
@@ -296,7 +333,8 @@
     if (!user || !canUseAccount()) return;
     if (!enabled()) {
       const accepted = window.confirm(
-        "Включить облако? Названия задач, состояния и таймеры будут храниться на сервере Supabase в аккаунте, связанном с этой почтой. Рекомендуется сначала скачать JSON-копию. Продолжить?"
+        "Включить облако для задач? Названия, состояния и таймеры будут сохранены в Supabase. " +
+        "Для XP, монет и магазина понадобится отдельное согласие. Сначала скачай JSON-копию. Продолжить?"
       );
       if (!accepted) return;
       try {
@@ -310,6 +348,28 @@
     }
     pausedConflict = false;
     void sync();
+  });
+  walletToggle?.addEventListener("click", () => {
+    if (!user || !enabled() || walletEnabled() || !canUseAccount()) return;
+    const accepted = window.confirm(
+      "Переносить XP, монеты, энергию и покупки в облако этого аккаунта? " +
+      "Данные не защищены сквозным шифрованием. Сначала скачай полную JSON-копию. Продолжить?"
+    );
+    if (!accepted) return;
+    try {
+      localStorage.setItem("sdelano.cloud.wallet.enabled." + user.id, "1");
+      game.exportWallet(); // Fail closed if local wallet is damaged.
+    } catch {
+      localStorage.removeItem("sdelano.cloud.wallet.enabled." + user.id);
+      message("Игровой кошелёк недоступен. Облачный перенос не включён.", true);
+      return;
+    }
+    pausedConflict = false;
+    renderAuth();
+    void sync();
+  });
+  window.addEventListener("sdelano:game-changed", () => {
+    if (walletEnabled()) scheduleSync();
   });
   window.addEventListener("sdelano:tasks-changed", () => scheduleSync());
   window.addEventListener("sdelano:achievements-changed", () => scheduleSync());

@@ -6,7 +6,8 @@ create table if not exists public.sdelano_sync_v1 (
   snapshot jsonb not null check (
     jsonb_typeof(snapshot) = 'object'
     and snapshot->>'format' = 'sdelano-task-backup'
-    and snapshot->>'version' = '1'
+    and snapshot->>'version' in ('1', '2')
+    and (snapshot->>'version' = '1' or jsonb_typeof(snapshot->'game') = 'object')
     and jsonb_typeof(snapshot->'tasks') = 'array'
     and jsonb_array_length(snapshot->'tasks') <= 5000
     and jsonb_typeof(snapshot->'achievements') = 'object'
@@ -34,3 +35,18 @@ create policy "delete own snapshot" on public.sdelano_sync_v1
 
 comment on table public.sdelano_sync_v1 is
   'Private versioned JSON snapshot of tasks; one owner per row. RLS required.';
+
+-- A legacy client must never downgrade a wallet snapshot to tasks-only v1.
+create or replace function public.sdelano_prevent_snapshot_downgrade()
+returns trigger language plpgsql as $$
+begin
+  if old.snapshot->>'version' = '2' and new.snapshot->>'version' <> '2' then
+    raise exception 'Cannot downgrade a wallet backup from v2 to v1';
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists sdelano_snapshot_no_downgrade on public.sdelano_sync_v1;
+create trigger sdelano_snapshot_no_downgrade
+  before update on public.sdelano_sync_v1
+  for each row execute function public.sdelano_prevent_snapshot_downgrade();

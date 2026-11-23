@@ -39,7 +39,9 @@ for (const width of [320, 390, 1280]) {
     const source = await sourceContext.newPage();
     source.on("pageerror", error => errors.push("source " + error.message));
     await source.goto(origin);
-    await source.locator("#welcome-start").click();
+    await source.evaluate(() => {
+      if (document.querySelector("#welcome")?.open) document.querySelector("#welcome-start")?.click();
+    });
     await add(source, "Моё личное дело");
     await add(source, "Вторая задача");
     const original = await stored(source);
@@ -61,7 +63,10 @@ for (const width of [320, 390, 1280]) {
     const exportText = bytes.toString("utf8");
     const exported = JSON.parse(exportText);
     assert.equal(exported.format, "sdelano-task-backup");
-    assert.equal(exported.version, 1);
+    assert.equal(exported.version, 2);
+    assert.equal(exported.game.version, 1);
+    assert.equal(exported.game.grants.filter(g => g.key.startsWith("task:")).length, 1);
+    assert.equal(exported.game.grants.reduce((total,g) => total + g.xp, 0), 20);
     assert.equal(exported.tasks.length, 2);
     assert.equal(exported.achievements.firstWin, true);
     assert.equal(exported.achievements.record, 1);
@@ -70,7 +75,9 @@ for (const width of [320, 390, 1280]) {
     const fresh = await targetContext.newPage();
     fresh.on("pageerror", error => errors.push("target " + error.message));
     await fresh.goto(origin);
-    await fresh.locator("#welcome-start").click();
+    await fresh.evaluate(() => {
+      if (document.querySelector("#welcome")?.open) document.querySelector("#welcome-start")?.click();
+    });
     await openBackup(fresh);
     assert.equal(await fresh.locator("#backup-preview").isVisible(), false);
 
@@ -114,6 +121,10 @@ for (const width of [320, 390, 1280]) {
       }
     }
     assert.equal(await fresh.locator("#percentage").textContent(), "50%");
+    assert.deepEqual(await fresh.evaluate(() => {
+      const data = window.sdelanoGame.inspect();
+      return [data.xp, data.coins, data.energy];
+    }), [20, 10, 5], "Portable v2 restores game rewards");
     assert.equal(await fresh.locator("#milestone-record").textContent(), record);
     assert.match(await fresh.locator("#backup-status").textContent(), /Восстановлено: 2/);
     assert.equal(await fresh.locator(".task-checkbox:checked").count(), 1);
