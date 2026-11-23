@@ -20,6 +20,17 @@ async function notes(page) {
     }));
   }, tag);
 }
+async function waitForNotification(page) {
+  // Return the observed notification in the SAME poll. A headful CI runner
+  // without a desktop notification daemon can close it immediately afterward.
+  const handle = await page.waitForFunction(async tag => {
+    const registration = await navigator.serviceWorker.getRegistration("./");
+    const item = (await registration.getNotifications({ tag }))[0];
+    return item && { title: item.title, body: item.body,
+      tag: item.tag, silent: item.silent };
+  }, tag, { timeout: 12_000 });
+  return handle.jsonValue();
+}
 async function ensureOpen(page) {
   if (await page.locator("#game-preview-toggle").getAttribute("aria-expanded") === "false")
     await page.locator("#game-preview-toggle").click();
@@ -75,16 +86,11 @@ try {
 
       await page.locator("#game-focus-start").click();
       await background(page);
-      await page.waitForFunction(async tag => {
-        const registration = await navigator.serviceWorker.getRegistration("./");
-        return (await registration.getNotifications({ tag })).length === 1;
-      }, tag, { timeout: 12_000 });
-      let entries = await notes(page);
-      assert.equal(entries.length, 1, "One real browser notification on pause");
-      assert.equal(entries[0].title, "Фокус на паузе");
-      assert.match(entries[0].body, /Осталось 15:00/);
-      assert.equal(entries[0].tag, tag);
-      assert.equal(entries[0].silent, true);
+      const first = await waitForNotification(page);
+      assert.equal(first.title, "Фокус на паузе");
+      assert.match(first.body, /Осталось 15:00/);
+      assert.equal(first.tag, tag);
+      assert.equal(first.silent, true);
       assert.equal(await page.evaluate(() => window.sdelanoGame.inspect().xp), 0);
 
       await foreground(page);
@@ -102,11 +108,9 @@ try {
       assert.equal(await page.locator("#game-focus-resume").isVisible(), true);
       await page.locator("#game-focus-resume").click();
       await background(page);
-      await page.waitForFunction(async tag => {
-        const registration = await navigator.serviceWorker.getRegistration("./");
-        return (await registration.getNotifications({ tag })).length === 1;
-      }, tag, { timeout: 12_000 });
-      assert.equal((await notes(page)).length, 1);
+      const second = await waitForNotification(page);
+      assert.equal(second.title, "Фокус на паузе");
+      assert.match(second.body, /Осталось 15:00/);
 
       await foreground(page);
       await page.locator("#game-focus-alert-toggle").click();
