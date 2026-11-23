@@ -17,7 +17,8 @@
       detail: { xp: 5, energy: after.energy,
         levelUp: after.level > before.level ? after.level : 0 }
     }));
+    window.taskFeedback?.play("xp"); // The same earned-XP sound as real focus; no extra chime.
     button.disabled = true;
-    result.textContent = "Фокус завершён (демо): +5 XP. Один короткий кивок, без звука, монет и повторяющихся анимаций.";
+    result.textContent = "Фокус завершён (демо): +5 XP. Чуть выразительнее кивок и мягкий звук XP (если включён), без монет и повторяющихся анимаций.";
   });
 })();

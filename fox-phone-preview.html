@@ -103,7 +103,9 @@ window.taskFeedback={
       if(!audio)audio=new Type();
       if(audio.state==="suspended")void audio.resume();
       const base={tap:520,complete:700,coins:990,xp:800,reward:910}[kind]||520;
-      const notes=kind==="level"
+      const notes=kind==="xp"
+        ? [[590,0,.09],[790,.085,.11],[1030,.19,.145]]
+        : kind==="level"
         ? [[560,0,.12],[730,.13,.15],[910,.28,.17]]
         : [[base,0,.14]];
       const t=audio.currentTime;
@@ -113,7 +115,7 @@ window.taskFeedback={
         oscillator.frequency.setValueAtTime(frequency,t+delay);
         if(kind!=="level")oscillator.frequency.linearRampToValueAtTime(frequency*1.24,t+delay+length*.8);
         gain.gain.setValueAtTime(.0001,t+delay);
-        gain.gain.exponentialRampToValueAtTime(kind==="level"?.022:.035,t+delay+.018);
+        gain.gain.exponentialRampToValueAtTime(kind==="level"?.022:kind==="xp"?.041:.035,t+delay+.018);
         gain.gain.exponentialRampToValueAtTime(.0001,t+delay+length);
         oscillator.connect(gain).connect(audio.destination);
         oscillator.start(t+delay);oscillator.stop(t+delay+length+.01);
@@ -239,7 +241,7 @@ window.taskFeedback={
 </div>
 <section class="phone-qa-panel" aria-labelledby="phone-micro-heading">
   <h2 id="phone-micro-heading">Микрореакция после полезного шага</h2>
-  <p class="phone-qa-hint">Сначала проверь короткий кивок после подтверждённого фокуса. Это имитация уже завершённых 15 минут: +5 XP только в памяти демостраницы, без записи задач, XP или монет на устройстве. Звука у кивка нет.</p>
+  <p class="phone-qa-hint">Сначала проверь короткий кивок после подтверждённого фокуса. Это имитация уже завершённых 15 минут: +5 XP только в памяти демостраницы, без записи задач, XP или монет на устройстве. Кивок сопровождает существующий короткий звук XP, если звуки включены.</p>
   <button id="phone-qa-micro" class="phone-qa-secondary" type="button" style="width:100%;min-height:48px">Завершён фокус · +5 XP (демо)</button>
   <p id="phone-qa-micro-result" class="phone-qa-result" role="status" aria-live="polite">После нажатия лисёнок один раз слегка кивнёт. Для повторения нажми «Повторить» выше.</p>
 </section>

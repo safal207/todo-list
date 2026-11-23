@@ -31,7 +31,7 @@
     if (document.hidden || reduced.matches || !fox.getClientRects().length) return;
     if (stopTimer !== null) return; // No interruptions or queued loops.
     fox.classList.add(CLASS);
-    stopTimer = setTimeout(clear, 620);
+    stopTimer = setTimeout(clear, 675);
   }
   window.addEventListener("sdelano:reward-earned", earned);
   window.addEventListener("sdelano:focus-earned", earned);

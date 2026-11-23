@@ -28,18 +28,33 @@ try {
         return [wallet.xp, wallet.coins, Object.keys(localStorage).length];
       });
       assert.deepEqual(initial, [240, 0, 0]);
+      await page.evaluate(() => {
+        // Spy on the existing feedback API, not AudioContext internals.
+        window.__foxDemoPlayed = [];
+        const play = window.taskFeedback.play;
+        window.taskFeedback.play = function(kind) {
+          window.__foxDemoPlayed.push(kind);
+          return play.call(this, kind);
+        };
+      });
       await page.locator("#phone-qa-micro").click();
+      assert.deepEqual(await page.evaluate(() => window.__foxDemoPlayed), ["xp"],
+        "Exactly one existing earned-XP sound; no extra microreaction audio layer");
       assert.equal(await page.locator("#phone-qa-micro").isDisabled(), true);
       assert.deepEqual(await page.evaluate(() => {
         const wallet = window.sdelanoGame.inspect();
         return [wallet.xp, wallet.coins, Object.keys(localStorage).length];
       }), [245, 0, 0]);
       assert.equal(await page.locator(selector).count(), reduced ? 0 : 1);
-      if (!reduced) assert.match(await page.locator(selector).evaluate(el =>
-        getComputedStyle(el).animationName), /sdelano-fox-micro-nod/);
+      if (!reduced) {
+        assert.match(await page.locator(selector).evaluate(el =>
+          getComputedStyle(el).animationName), /sdelano-fox-micro-nod/);
+        assert.equal(await page.locator(selector).evaluate(el =>
+          getComputedStyle(el).animationDuration), "0.6s");
+      }
       await page.screenshot({ path: "artifacts/fox-micro-phone-nod-" +
         engine + "-" + width + ".png", fullPage: true });
-      await page.waitForTimeout(700);
+      await page.waitForTimeout(730);
       assert.equal(await page.locator(selector).count(), 0,
         "A completed nod must not replay on its own");
 
