@@ -17,10 +17,11 @@
   const finishText = document.querySelector("#phone-review-finish-text");
   const editButton = document.querySelector("#phone-review-edit");
   const nav = document.querySelector(".phone-review-nav");
+  const actions = document.querySelector("#phone-review-actions");
   const fields = [...panel.querySelectorAll(".phone-review-field")];
   if (!demo || !complete || !panel || !copyButton || !note || !status ||
       !output || !outputLabel || !progress || !prevButton || !nextButton ||
-      !shareButton || !finishBanner || !finishText || !editButton || !nav ||
+      !shareButton || !finishBanner || !finishText || !editButton || !nav || !actions ||
       fields.length !== 5) return;
   let activeQuestion = 0;
   let finished = false;
@@ -32,6 +33,7 @@
     progress.textContent = "Вопрос " + (activeQuestion + 1) + " из " + fields.length;
     progress.hidden = finished;
     nav.hidden = finished;
+    actions.hidden = !finished;
     finishBanner.hidden = !finished;
     prevButton.hidden = activeQuestion === 0;
     nextButton.hidden = false;
