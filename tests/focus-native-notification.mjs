@@ -21,15 +21,23 @@ async function notes(page) {
   }, tag);
 }
 async function waitForNotification(page) {
-  // Return the observed notification in the SAME poll. A headful CI runner
-  // without a desktop notification daemon can close it immediately afterward.
-  const handle = await page.waitForFunction(async tag => {
-    const registration = await navigator.serviceWorker.getRegistration("./");
-    const item = (await registration.getNotifications({ tag }))[0];
-    return item && { title: item.title, body: item.body,
-      tag: item.tag, silent: item.silent };
-  }, tag, { timeout: 12_000 });
-  return handle.jsonValue();
+  // Poll real getNotifications() calls from Node, *not* an async callback to
+  // page.waitForFunction. Every observation is complete before it is checked.
+  const until = Date.now() + 12_000;
+  do {
+    const found = await notes(page);
+    if (found.length) return found[0];
+    await new Promise(resolve => setTimeout(resolve, 100));
+  } while (Date.now() < until);
+  throw new Error("Native notification never appeared in getNotifications()");
+}
+async function waitForNoNotification(page) {
+  const until = Date.now() + 12_000;
+  do {
+    if ((await notes(page)).length === 0) return;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  } while (Date.now() < until);
+  throw new Error("Stale browser notification did not close");
 }
 async function ensureOpen(page) {
   if (await page.locator("#game-preview-toggle").getAttribute("aria-expanded") === "false")
@@ -94,10 +102,7 @@ try {
       assert.equal(await page.evaluate(() => window.sdelanoGame.inspect().xp), 0);
 
       await foreground(page);
-      await page.waitForFunction(async tag => {
-        const registration = await navigator.serviceWorker.getRegistration("./");
-        return (await registration.getNotifications({ tag })).length === 0;
-      }, tag, { timeout: 12_000 });
+      await waitForNoNotification(page);
 
       // Reload preserves the opted-in setting and does not prompt anew;
       // the real worker remains registered and active.
@@ -117,10 +122,7 @@ try {
       assert.equal(await page.locator("#game-focus-alert-toggle").getAttribute("aria-pressed"), "false");
       assert.equal(await page.evaluate(() =>
         localStorage.getItem("sdelano.focus.pause-alerts.v1")), "off");
-      await page.waitForFunction(async tag => {
-        const registration = await navigator.serviceWorker.getRegistration("./");
-        return (await registration.getNotifications({ tag })).length === 0;
-      }, tag, { timeout: 12_000 });
+      await waitForNoNotification(page);
       assert.deepEqual(errors, []);
       console.log("Native Service Worker notification QA passed: chromium", width);
     } finally {
