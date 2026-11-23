@@ -62,6 +62,11 @@ try {
       assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 5 из 5/);
       await page.locator('input[name="review-focus"][value="3"]').check();
       assert.equal(await page.locator(".phone-review-field:visible").count(), 1);
+      // Measure the active question BEFORE finishing the wizard: the finish
+      // screen intentionally hides all questions and their touch targets.
+      const minTapHeight = await page.locator(".phone-review-field:visible .phone-review-scale label span")
+        .first().evaluate(el => el.getBoundingClientRect().height);
+      assert.ok(minTapHeight >= 44, "Touch targets must be at least 44px high");
       await page.locator("#phone-review-prev").click();
       assert.match(await page.locator("#phone-review-step").textContent(), /Вопрос 4 из 5/);
       await page.locator("#phone-review-next").click();
@@ -84,8 +89,6 @@ try {
       await page.locator("#phone-review-next").click();
       assert.equal(await page.locator("#phone-review-finish").isVisible(), true);
       await page.locator("#phone-review-note").fill("Искры красивые, но размер можно увеличить.");
-      const minTapHeight = await page.locator('.phone-review-field:not([hidden]) .phone-review-scale label span').first()
-        .evaluate(el => el.getBoundingClientRect().height);
       if (width === 390) {
         assert.equal(await page.locator("#phone-review-share").isVisible(), true);
         assert.equal(await page.locator("#phone-review-share").isEnabled(), true);
@@ -95,7 +98,6 @@ try {
         assert.match(shared?.text || "", /Золотая вспышка: 4\/5/);
         assert.equal(shared?.title, "Сделано · Fox Evolution");
       }
-      assert.ok(minTapHeight >= 44, "Touch targets must be at least 44px high");
       if (width === 320) {
         // Simulate a privacy-restricted mobile browser with no Clipboard API.
         await page.evaluate(() => {
